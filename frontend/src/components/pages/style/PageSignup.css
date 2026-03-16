@@ -1,0 +1,164 @@
+.signup-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  color: #fff;
+  background-image: url(http://localhost:8000/static/images/signuppage/signup-background.jpg);
+  background-position: 0 50%;
+}
+
+.signup-box {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  background: transparent;
+  padding: 24px;
+  background-color: transparent;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  border-radius: 15px;
+  backdrop-filter: blur(15px);
+}
+
+.signup-box h1 {
+  font-size: 28px;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.social-signup-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 16px;
+  border: 1px solid #666;
+  border-radius: 50px;
+  background-color: transparent;
+  color: #fff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.google-signup-btn:hover {
+  background-color: rgb(255, 255, 255);
+  color: #000;
+}
+
+.facebook-signup-btn:hover {
+  background-color: #1877f2;
+}
+
+
+.divider {
+  display: flex; 
+  align-items: center; 
+  margin: 24px 0;
+}
+
+.divider-line-left,
+.divider-right-right {
+  flex: 1;
+  height: 1px; 
+  background-color: #666; 
+}
+
+.divider-line-left {
+  margin-right: 10px;
+}
+
+.divider-right-right {
+  margin-left: 10px; 
+}
+
+.divider-text {
+  color: #999;
+  font-size: 14px;
+  padding: 0 8px; 
+  background-color: transparent;
+}
+
+.signup-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 10px;
+  background-color: transparent;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 14px;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #888;
+}
+
+.signup-btn {
+  width: 100%;
+  padding: 12px;
+  background-color: #1db954;
+  color: #000;
+  font-weight: bold;
+  font-size: 16px;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.signup-btn:hover {
+  background-color: #1ed760;
+}
+
+.login-text {
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+}
+
+.login-text a {
+  color: #999;
+  text-decoration: none;
+}
+
+.login-text a:hover {
+  text-decoration: underline;
+  color: #1ed760;
+}
+
+.login-text a {
+  color: #fff;
+}
+
+.password-strength {
+  margin-top: 5px;
+  font-size: 12px;
+}
+
+.password-strength.strong {
+  color: #1ed760;
+}
+
+.password-strength.weak {
+  color: #ff4d4d;
+}
