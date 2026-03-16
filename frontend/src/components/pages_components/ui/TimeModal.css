@@ -1,0 +1,71 @@
+.timer-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  .timer-modal-content {
+    background: #2a2a2a;
+    padding: 20px;
+    border-radius: 10px;
+    text-align: center;
+    color: white;
+    width: 300px;
+  }
+  
+  .timer-modal-content h2 {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+  }
+  
+  .timer-inputs {
+    margin-bottom: 10px;
+  }
+  
+  .timer-modal-content input {
+    width: 60px;
+    margin: 0 5px;
+    padding: 5px;
+    background: #3a3a3a;
+    border: none;
+    color: white;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .timer-modal-content p {
+    margin-bottom: 20px;
+    font-size: 0.9em;
+    color: #a0a0a0;
+  }
+  
+  .timer-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+  
+  .timer-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+  }
+  
+  .save-button {
+    background: #0e9941;
+    color: white;
+  }
+  
+  .cancel-button {
+    background: #4a5568;
+    color: white;
+  }
