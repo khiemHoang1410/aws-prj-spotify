@@ -150,20 +150,20 @@ erDiagram
     
     Spotify_Playlists {
         string playlistId PK "Partition Key"
-        string songId SK "Sort Key (Chứa Mã Bài Hát hoặc chữ 'METADATA')"
+        string songId "SK - Sort Key (Chứa Mã Bài Hát hoặc chữ 'METADATA')"
         string playlistName "Chỉ có ở dòng METADATA"
         string addedAt "Thuộc tính"
     }
     
     Spotify_UserInteractions {
         string userId PK "Partition Key"
-        string interactionId SK "Sort Key (Ví dụ: LIKE#SONG_123, HISTORY#SONG_456)"
+        string interactionId "SK - Sort Key (Ví dụ: LIKE#SONG_123, HISTORY#SONG_456)"
         string timestamp "Thuộc tính"
     }
     
     Spotify_Messages {
         string conversationId PK "Partition Key (Ví dụ: userA_userB)"
-        string timestamp SK "Sort Key (Thời gian nhắn ISO 8601)"
+        string timestamp "SK - Sort Key (Thời gian nhắn ISO 8601)"
         string senderId "Thuộc tính"
         string content "Thuộc tính"
     }
@@ -173,10 +173,9 @@ erDiagram
     Spotify_Users ||--o{ Spotify_UserInteractions : "Thực hiện (Logic)"
     Spotify_Songs ||--o{ Spotify_Playlists : "Nằm trong (Logic)"
     Spotify_Songs ||--o{ Spotify_UserInteractions : "Bị tác động (Logic)"
-```
 
 ---
-
+```
 ## 🗑️ Quản lý hạ tầng (Dọn dẹp)
 
 Nếu muốn xoá toàn bộ Database, API và Lambda để không tốn chi phí, **tuyệt đối không xóa tay trên web**. Hãy chạy lệnh sau tại thư mục `/backend`:
