@@ -1,0 +1,38 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  spotify-clone-backend
+
+Resources:
+  # 1. Khởi tạo API Gateway đọc từ file swagger
+  SpotifyApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      DefinitionBody:
+        'Fn::Transform':
+          Name: 'AWS::Include'
+          Parameters:
+            Location: swagger.yaml
+
+  # 2. Khởi tạo Lambda function
+  GetSongsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/get-songs/
+      Handler: app.handler # Trỏ tới file app.js và hàm handler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            RestApiId: !Ref SpotifyApi
+            Path: /songs
+            Method: get
+
+Outputs:
+  ApiUrl:
+    Description: "API Gateway endpoint URL"
+    Value: !Sub "https://${SpotifyApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/"

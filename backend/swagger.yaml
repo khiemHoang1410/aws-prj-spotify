@@ -1,0 +1,23 @@
+openapi: "3.0.1"
+info:
+  title: "Spotify Clone API"
+  version: "1.0.0"
+paths:
+  /songs:
+    get:
+      summary: "Lấy danh sách bài hát"
+      responses:
+        "200":
+          description: "Thành công"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+      # Đoạn này báo cho AWS biết API này sẽ chạy hàm Lambda nào
+      x-amazon-apigateway-integration:
+        httpMethod: "POST"
+        type: "aws_proxy"
+        uri: 
+          Fn::Sub: "arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetSongsFunction.Arn}/invocations"
