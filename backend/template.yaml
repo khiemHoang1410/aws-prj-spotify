@@ -20,10 +20,18 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/get-songs/
-      Handler: app.handler # Trỏ tới file app.js và hàm handler
+      Handler: app.handler
       Runtime: nodejs20.x
       Architectures:
         - x86_64
+      # --- THÊM TỪ ĐOẠN NÀY ---
+      Environment:
+        Variables:
+          SONGS_TABLE: !Ref SongsTable # Truyền tên bảng vào biến môi trường cho Node.js đọc
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref SongsTable # SAM policy cấp quyền chỉ đọc cho Lambda này
+      # --- KẾT THÚC ĐOẠN THÊM ---
       Events:
         ApiEvent:
           Type: Api
@@ -31,6 +39,84 @@ Resources:
             RestApiId: !Ref SpotifyApi
             Path: /songs
             Method: get
+# --- THÊM VÀO TỪ ĐOẠN NÀY DƯỚI RESOURCES ---
+
+  # 1. Bảng Users
+  UsersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Spotify_Users
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+
+  # 2. Bảng Songs
+  SongsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Spotify_Songs
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: songId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: songId
+          KeyType: HASH
+
+  # 3. Bảng Playlists
+  PlaylistsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Spotify_Playlists
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: playlistId
+          AttributeType: S
+        - AttributeName: songId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: playlistId
+          KeyType: HASH
+        - AttributeName: songId
+          KeyType: RANGE
+
+  # 4. Bảng User Interactions (Likes, History, etc.)
+  UserInteractionsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Spotify_UserInteractions
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: interactionId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: interactionId
+          KeyType: RANGE
+
+  # 5. Bảng Messages (Cho tính năng chat tương lai)
+  MessagesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Spotify_Messages
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: conversationId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: conversationId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
 
 Outputs:
   ApiUrl:
