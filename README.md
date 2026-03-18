@@ -173,6 +173,7 @@ erDiagram
     Spotify_Users ||--o{ Spotify_UserInteractions : "Thực hiện (Logic)"
     Spotify_Songs ||--o{ Spotify_Playlists : "Nằm trong (Logic)"
     Spotify_Songs ||--o{ Spotify_UserInteractions : "Bị tác động (Logic)"
+    Spotify_Users ||--o{ Spotify_Messages : "Gửi tin nhắn (Logic)"
 
 ---
 ```
