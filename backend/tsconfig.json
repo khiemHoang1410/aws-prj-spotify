@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    /* Cấu hình cơ bản */
+    "target": "ES2024",                  /* Hỗ trợ cú pháp hiện đại cho Node 18/20 */
+    "module": "nodenext",                /* Chuẩn tương thích tốt nhất với Serverless v3 */
+    "lib": ["ES2024", "ESNext"],         /* Thư viện hàm hỗ trợ */
+    "moduleResolution": "node16",          /* Cách TS tìm kiếm các node_modules */
+    
+    /* Đường dẫn và Đầu ra */
+    "rootDir": "./",                     /* Gốc là thư mục hiện tại */
+    "outDir": "./.build",                /* Nơi chứa file JS sau khi build (Serverless dùng cái này) */
+    "sourceMap": true,                   /* Cực quan trọng để debug lỗi trên AWS */
+    "removeComments": true,              /* Xóa comment cho file JS nhẹ hơn */
+
+    /* Kiểm tra kiểu dữ liệu (Strict Mode) */
+    "strict": true,                      /* Bật mọi chế độ kiểm tra lỗi chặt chẽ */
+    "noImplicitAny": true,               /* Không cho phép biến kiểu 'any' ẩn danh */
+    "strictNullChecks": true,            /* Kiểm tra lỗi null/undefined cực kỹ */
+    
+    /* Tương thích thư viện */
+    "esModuleInterop": true,             /* Cho phép import kiểu CommonJS như ES6 */
+    "skipLibCheck": true,                /* Bỏ qua kiểm tra lỗi trong các thư viện node_modules */
+    "forceConsistentCasingInFileNames": true, /* Kiểm tra trùng tên file viết hoa/thường */
+    
+    /* Giải quyết lỗi 'process' và Node types */
+    "types": ["node"],                   /* Ép TS nhận diện global variables của Node.js */
+    "paths": {
+      "@/*": ["./src/*"] 
+    },
+  },
+  "include": [
+    "src/**/*",                          /* Chỉ gom các file trong src để build */
+    "serverless.ts",                     /* Nếu bạn dùng file config .ts */
+    "handler.ts"                         /* File handler ở root (nếu có) */
+  ],
+  "exclude": [
+    "node_modules",                      /* Tuyệt đối không build node_modules */
+    ".serverless",                       /* Bỏ qua rác của Serverless */
+    ".build",                            /* Bỏ qua thư mục output */
+    "**/*.test.ts"                       /* Bỏ qua file unit test khi build */
+  ]
+}

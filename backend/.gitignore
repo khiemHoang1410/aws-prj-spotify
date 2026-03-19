@@ -1,11 +1,11 @@
-# Tạo file .gitignore với các nội dung cần thiết
+
 @"
 # Dependencies
 node_modules/
 dist/
 .build/
 .serverless/
-
+package-lock.json
 # Env & Secrets
 .env
 .env.*
@@ -21,3 +21,14 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 "@ | Out-File -FilePath .gitignore -Encoding utf8
+
+# IDE & OS files
+.vscode/
+.idea/
+
+# DynamoDB Local
+.dynamodb/
+shell-log.txt
+
+# Testing
+coverage/

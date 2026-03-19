@@ -1,21 +1,31 @@
 {
   "name": "backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Spotify Backend for AWS First Cloud Journey Workshop",
   "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+  "engines": {
+    "node": ">=20.0.0"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
+  "scripts": {
+    "dev": "sls offline",
+    "deploy": "sls deploy",
+    "remove": "sls remove"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.535.0",
+    "@aws-sdk/client-s3": "3.535.0",
+    "@aws-sdk/lib-dynamodb": "^3.535.0",
+    "@aws-sdk/s3-request-presigner": "3.535.0",
+    "uuid": "9.0.1"
+  },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.161",
-    "@types/node": "^25.5.0",
-    "serverless": "^3.40.0",
-    "serverless-offline": "^14.5.0",
-    "serverless-plugin-typescript": "^2.1.5",
-    "typescript": "^5.9.3"
+    "@types/aws-lambda": "8.10.130",
+    "@types/node": "20.10.0",
+    "@types/uuid": "9.0.7",
+    "esbuild": "0.20.1",
+    "serverless": "3.38.0",
+    "serverless-esbuild": "1.52.1",
+    "serverless-offline": "13.3.3",
+    "typescript": "5.3.3"
   }
 }
