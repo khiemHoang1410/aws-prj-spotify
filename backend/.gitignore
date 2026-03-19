@@ -1,0 +1,23 @@
+# Tạo file .gitignore với các nội dung cần thiết
+@"
+# Dependencies
+node_modules/
+dist/
+.build/
+.serverless/
+
+# Env & Secrets
+.env
+.env.*
+!.env.example
+
+# Debug & Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+"@ | Out-File -FilePath .gitignore -Encoding utf8
