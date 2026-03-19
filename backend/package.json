@@ -9,5 +9,13 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs"
+  "type": "commonjs",
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.161",
+    "@types/node": "^25.5.0",
+    "serverless": "^3.40.0",
+    "serverless-offline": "^14.5.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.9.3"
+  }
 }
