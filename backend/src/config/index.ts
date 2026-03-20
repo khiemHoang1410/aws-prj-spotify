@@ -1,16 +1,22 @@
-// path: src/config/index.ts
+/// <reference path="../../sst-env.d.ts" />
+import { Resource } from "sst";
 
 export const CONFIG = {
-    REGION: process.env.REGION || 'us-east-1',
-    TABLE_NAME: process.env.TABLE_NAME || 'spotify-aws-workshop-dev-table',
+    // SST/AWS SDK sẽ tự hiểu Region, nhưng mình cứ để fallback cho chắc
+    REGION: process.env.AWS_REGION || 'ap-southeast-1',
+    
+    // Lấy trực tiếp từ Resource đã được "link" - Typesafe 100%
+    TABLE_NAME: Resource.SpotifyTable.name,
+    
     S3: {
-        BUCKET_NAME: process.env.BUCKET_NAME || 'spotify-aws-workshop-dev-media',
+        BUCKET_NAME: Resource.SpotifyMedia.name,
         URL_EXPIRATION: 300, // 5 phút cho Pre-signed URL
     },
-    STAGE: process.env.STAGE || 'dev',
+    
+    // Trong SST v3, Stage thường được quản lý ở cấp độ cao hơn, 
+    // nhưng nếu cần in ra để debug thì có thể lấy qua logic của app
+    STAGE: process.env.SST_STAGE || 'dev',
 } as const;
 
-// Kiểm tra lỗi cấu hình sớm (Fail-fast)
-if (!process.env.TABLE_NAME && process.env.NODE_ENV === 'production') {
-    throw new Error("❌ Cấu hình TABLE_NAME bị thiếu trong môi trường Production!");
-}
+// Với Resource, ông không cần check Fail-fast bằng tay nữa 
+// vì nếu Resource không tồn tại, TypeScript sẽ báo đỏ ngay lúc ông gõ code!
