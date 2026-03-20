@@ -1,10 +1,32 @@
-import React from 'react';
+import React,{ useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import PlayerBar from './components/PlayerBar';
+import { useDispatch, useSelector } from 'react-redux';
+import { getCurrentUser } from './services/AuthService'; // Thêm dòng import
+import { loginSuccess } from './store/authSlice'; // Thêm dòng import
 import AuthModal from './components/AuthModal'; // Thêm dòng import
+import PageIntro from './pages/PageIntro'; // IMPORT FILE PAGE INTRO CỦA BẠN VÀO ĐÂY
 
 function App() {
+  const dispatch = useDispatch();
+  // 2. Thêm hàm useEffect này ngay dưới khai báo dispatch:
+  const { currentView } = useSelector((state) => state.ui);
+  useEffect(() => {
+    const restoreSession = async () => {
+      const user = await getCurrentUser();
+      if (user) {
+        // Nếu tìm thấy Token và chưa hết hạn -> Nạp thẳng vào Redux (Vượt qua màn hình Login)
+        dispatch(loginSuccess(user));
+      }
+    };
+    restoreSession();
+  }, [dispatch]);
+
+  // NẾU STATE LÀ 'intro' -> RENDER ĐỘC LẬP TRANG INTRO
+  if (currentView === 'intro') {
+    return <PageIntro />;
+  }
   return (
     // Container bao ngoài cùng: Phủ kín màn hình, nền đen tuyền, chữ trắng
     <div className="h-screen w-full flex flex-col bg-black text-white overflow-hidden font-sans">
