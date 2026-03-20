@@ -32,3 +32,6 @@ shell-log.txt
 
 # Testing
 coverage/
+
+# sst
+.sst
