@@ -1,0 +1,22 @@
+﻿{
+    "compilerOptions": {
+        "target": "ESNext",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "strict": true,
+        "skipLibCheck": true,
+        "esModuleInterop": true,
+        "paths": {
+
+            "@/*": [
+                "./src/*"
+            ]
+        }
+    },
+    "include": [
+        "src/**/*.ts",
+        "sst.config.ts",
+        ".sst/platform/config.d.ts",
+        "sst-env.d.ts"
+    ]
+}

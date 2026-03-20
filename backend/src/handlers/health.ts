@@ -1,19 +1,17 @@
-import { APIGatewayProxyHandler } from 'aws-lambda';
-import { Resource } from "sst"; // Thư viện thần thánh của SST
+import { Resource } from "sst";
+import type { APIGatewayProxyHandler } from "aws-lambda";
 
 export const handler: APIGatewayProxyHandler = async (event) => {
-    // SST tự quản lý Stage, bạn lấy qua Resource.App.stage
-    console.log("🚀 Health check triggered for stage:", Resource.App.stage);
+    // SST v3 không có Resource.App.stage, tui dùng App Name thay thế nhé
+    console.log("🚀 Health check for:", Resource.SpotifyTable.name);
 
-    return {
+    return {    
         statusCode: 200,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
             status: "UP",
             message: "Spotify API is Live!",
             details: {
-                environment: Resource.App.stage,
-                // In ra tên Table/Bucket để chắc chắn Link đã hoạt động
                 tableName: Resource.SpotifyTable.name,
                 bucketName: Resource.SpotifyMedia.name,
             },
