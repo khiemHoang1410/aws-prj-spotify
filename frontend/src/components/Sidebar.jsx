@@ -1,24 +1,20 @@
 import React from 'react';
-import { Home, Search, Library, Plus } from 'lucide-react';
+import { Library, Plus, AudioLines } from 'lucide-react';
+import { useDispatch } from 'react-redux'; // 1. Thêm dòng này
+import { setView } from '../store/uiSlice'; // 2. Thêm dòng này
 
 export default function Sidebar() {
+  const dispatch = useDispatch(); // 3. Khởi tạo dispatch
   return (
-    // Thẻ nav bọc toàn bộ sidebar, h-full để cao sát màn hình, p-2 để tạo khoảng cách với viền
     <nav className="h-full flex flex-col gap-2 p-2">
       
-      {/* KHỐI 1: MENU ĐIỀU HƯỚNG CHÍNH (Home, Search) */}
-      <div className="bg-[#121212] rounded-lg p-4 flex flex-col gap-4">
-        {/* Nút Home */}
-        <a href="#" className="flex items-center gap-4 text-white font-bold hover:text-white transition duration-200">
-          <Home size={24} />
-          <span>Trang chủ</span>
-        </a>
-        
-        {/* Nút Search */}
-        <a href="#" className="flex items-center gap-4 text-[#b3b3b3] font-bold hover:text-white transition duration-200">
-          <Search size={24} />
-          <span>Tìm kiếm</span>
-        </a>
+      {/* KHỐI 1: LOGO SPOTIFY */}
+      <div 
+        className="bg-[#121212] rounded-lg p-5 flex items-center gap-3 text-white cursor-pointer hover:text-[#1ed760] transition duration-200"
+        onClick={() => dispatch(setView('intro'))}
+      >
+        <AudioLines size={28} />
+        <span className="font-bold text-lg tracking-tight">Spotify</span>
       </div>
 
       {/* KHỐI 2: THƯ VIỆN (Library & Playlists) */}
@@ -36,9 +32,8 @@ export default function Sidebar() {
           </button>
         </div>
 
-        {/* Danh sách Playlist (Khu vực này có thể cuộn được nếu có quá nhiều playlist) */}
+        {/* Danh sách Playlist */}
         <div className="flex-1 overflow-y-auto px-2 pb-2">
-          {/* Mock dữ liệu vài cái playlist để giao diện đỡ trống */}
           <div className="mt-2 flex flex-col gap-3">
             <div className="p-2 bg-[#1a1a1a] rounded-md cursor-pointer hover:bg-[#282828] transition duration-200">
               <h4 className="text-white font-semibold">Tạo danh sách phát đầu tiên của bạn</h4>

@@ -2,22 +2,45 @@
  * File này xử lý các tác vụ liên quan đến User Authentication (AWS Amplify/Cognito)
  */
 
-// Hàm giả lập lấy Token. Sau này ráp Amplify thật, nó sẽ tự động handle việc refresh token ở đây.
+const TOKEN_KEY = "spotify_mock_auth";
+const ACCESS_TOKEN_EXPIRY = 15 * 60 * 1000; // Mô phỏng 15 phút (tính bằng milliseconds)
+
+// ==========================================
+// 1. CÁC HÀM QUẢN LÝ TOKEN (Chuẩn bị cho Amplify)
+// ==========================================
+
+// Hàm thay thế AWS Amplify: Auth.fetchAuthSession()
+export const fetchAuthSession = async () => {
+  const sessionStr = localStorage.getItem(TOKEN_KEY);
+  if (!sessionStr) return null;
+
+  let session = JSON.parse(sessionStr);
+
+  // Kiểm tra xem accessToken hết hạn chưa
+  if (Date.now() > session.expiresAt) {
+    console.log("Token hết hạn 15 phút! Dùng RefreshToken để lấy AccessToken mới...");
+    
+    // Giả lập cấp lại Token mới
+    session.accessToken = "mock_access_token_NEW_" + Date.now();
+    session.expiresAt = Date.now() + ACCESS_TOKEN_EXPIRY;
+    
+    // Lưu ngược lại phiên bản mới nhất vào bộ nhớ
+    localStorage.setItem(TOKEN_KEY, JSON.stringify(session));
+  }
+  return session;
+};
+
+// Hàm lấy Token gắn vào Header API
 export const getAuthToken = async () => {
   try {
-    // TODO: Khi có Amplify, thay bằng: 
-    // const session = await Auth.currentSession();
-    // return session.getIdToken().getJwtToken();
-
-    // Hiện tại giả lập trả về token ảo
-    return "mock_jwt_token_123456"; 
+    const session = await fetchAuthSession();
+    return session ? session.accessToken : null; 
   } catch (error) {
     console.error("Không thể lấy token xác thực", error);
     return null;
   }
 };
 
-// Hàm tạo Header chuẩn có đính kèm Bearer Token
 export const getAuthHeaders = async () => {
   const token = await getAuthToken();
   return {
@@ -26,30 +49,44 @@ export const getAuthHeaders = async () => {
   };
 };
 
+// Hàm phục hồi User từ Token (Dùng khi F5 Reload trang)
+export const getCurrentUser = async () => {
+  const session = await fetchAuthSession();
+  return session ? session.user : null;
+};
+
 // ==========================================
-// API FUNCTIONS (Giả lập chờ AWS Amplify)
+// 2. CÁC HÀM ĐĂNG NHẬP / ĐĂNG KÝ / ĐĂNG XUẤT
 // ==========================================
 
-// Hàm xử lý Đăng nhập
 export const login = async (email, password) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      // Giả lập check database
       if (email === "test@gmail.com" && password === "123456") {
-        resolve({
+        const userData = {
           user_id: "USER_001",
           username: "Spotify Lover",
           email: email,
           avatar_url: "https://i.pravatar.cc/150?img=11"
-        });
+        };
+        
+        // Lưu phiên đăng nhập xuống localStorage
+        const sessionData = {
+          user: userData,
+          accessToken: "mock_access_token_" + Date.now(),
+          refreshToken: "mock_refresh_token_xyz",
+          expiresAt: Date.now() + ACCESS_TOKEN_EXPIRY
+        };
+        localStorage.setItem(TOKEN_KEY, JSON.stringify(sessionData));
+        
+        resolve(userData);
       } else {
         reject(new Error("Email hoặc mật khẩu không đúng! (Gợi ý: test@gmail.com / 123456)"));
       }
-    }, 800); // Giả lập chờ 0.8s
+    }, 800);
   });
 };
 
-// Hàm xử lý Đăng ký
 export const register = async (username, email, password) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
@@ -57,13 +94,29 @@ export const register = async (username, email, password) => {
         reject(new Error("Email không hợp lệ!"));
         return;
       }
-      // Giả lập đăng ký thành công và tự động đăng nhập luôn
-      resolve({
+      
+      const userData = {
         user_id: `USER_${Math.floor(Math.random() * 1000)}`,
         username: username,
         email: email,
         avatar_url: "https://i.pravatar.cc/150?img=12"
-      });
+      };
+
+      // Đăng ký xong tự động lưu session như đăng nhập
+      const sessionData = {
+        user: userData,
+        accessToken: "mock_access_token_" + Date.now(),
+        refreshToken: "mock_refresh_token_xyz",
+        expiresAt: Date.now() + ACCESS_TOKEN_EXPIRY
+      };
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(sessionData));
+
+      resolve(userData);
     }, 800);
   });
+};
+
+export const logoutUser = async () => {
+  // Xóa sạch Token khi Đăng xuất
+  localStorage.removeItem(TOKEN_KEY);
 };

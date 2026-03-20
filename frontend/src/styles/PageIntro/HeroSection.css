@@ -1,0 +1,87 @@
+/* Định dạng cơ bản của nút (Giống Ảnh 1) */
+.btn-get-started {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 36px;
+  background-color: transparent;
+  color: #b2ff05; /* Màu xanh lá chanh đặc trưng */
+  border: 2px solid #b2ff05;
+  border-radius: 99px; /* Bo tròn hoàn toàn */
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  overflow: hidden; /* Quan trọng để màu nền không bị tràn ra ngoài viền */
+  transition: color 0.3s ease;
+  z-index: 1;
+}
+
+/* LỚP NỀN ẢO: Chạy từ giữa ra 2 bên */
+.btn-get-started::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0; /* Ban đầu không có chiều rộng */
+  height: 100%;
+  background-color: #b2ff05;
+  z-index: -1;
+  transition: width 0.4s ease-out; /* Tốc độ di chuyển ra 2 bên */
+}
+
+/* Định dạng chung cho 2 mũi tên */
+.btn-get-started svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: all 0.3s ease;
+}
+
+/* MŨI TÊN TRÁI: Ban đầu tàng hình và bị ép nhỏ lại */
+.btn-get-started .arr-2 {
+  opacity: 0;
+  width: 0; 
+  transform: translateX(-20px);
+}
+
+/* MŨI TÊN PHẢI: Ban đầu hiển thị bình thường */
+.btn-get-started .arr-1 {
+  opacity: 1;
+  width: 24px;
+  transform: translateX(0);
+}
+
+/* ========================================= */
+/* HIỆU ỨNG KHI HOVER CHUỘT VÀO (Giống Ảnh 2) */
+/* ========================================= */
+
+.btn-get-started:hover {
+  color: #000; /* Chữ đổi thành màu đen */
+}
+
+/* Nền xanh trượt từ giữa ra bọc kín viền */
+.btn-get-started:hover::before {
+  width: 101%; 
+}
+
+/* Mũi tên trái hiện ra trượt vào */
+.btn-get-started:hover .arr-2 {
+  opacity: 1;
+  width: 24px;
+  transform: translateX(0); 
+}
+
+/* Mũi tên phải tàng hình trượt đi mất */
+.btn-get-started:hover .arr-1 {
+  opacity: 0;
+  width: 0;
+  transform: translateX(20px); 
+}
+
+/* Ẩn thẻ span.circle thừa trong HTML của bạn */
+.btn-get-started .circle {
+  display: none;
+}

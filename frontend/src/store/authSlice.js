@@ -4,14 +4,13 @@ const initialState = {
   isAuthenticated: false,
   user: null,
   isModalOpen: false,
-  modalType: 'login', // 'login' hoặc 'register'
+  modalType: 'login', 
 };
 
 const authSlice = createSlice({
   name: 'auth',
   initialState,
   reducers: {
-    // Xử lý Modal
     openModal: (state, action) => {
       state.isModalOpen = true;
       state.modalType = action.payload || 'login';
@@ -19,11 +18,10 @@ const authSlice = createSlice({
     closeModal: (state) => {
       state.isModalOpen = false;
     },
-    // Xử lý User
     loginSuccess: (state, action) => {
       state.isAuthenticated = true;
       state.user = action.payload;
-      state.isModalOpen = false; // Đăng nhập xong thì tự đóng modal
+      state.isModalOpen = false;
     },
     logout: (state) => {
       state.isAuthenticated = false;
