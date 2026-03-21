@@ -1,4 +1,4 @@
-// path: sst.config.ts
+// sst.config.ts
 
 export default $config({
   app(input) {
@@ -29,10 +29,10 @@ export default $config({
         route: {
           handler: {
             link: [table, bucket], // Để ở đây thì tất cả Route đều có quyền truy cập Table/Bucket
-            vpc: {
-              securityGroups: ["sg-025f66f667f5365b2"],
-              privateSubnets: ["subnet-01c8103f393077241"], // Sửa thành privateSubnets
-            },
+            // vpc: {
+            //   securityGroups: ["sg-025f66f667f5365b2"],
+            //   privateSubnets: ["subnet-01c8103f393077241"], 
+            // },
           },
         },
       },
