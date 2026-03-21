@@ -1,18 +1,22 @@
-// path: src/domain/entities/Song.ts
+// backend\src\domain\entities\Song.ts
 
-export interface Song {
-    songId: string;
-    title: string;
-    artistName: string;
-    albumId: string;
-    durationSeconds: number;
-    fileUrl: string;
-    createdAt: string;
-}
+import { z } from "zod";
 
-// Interface dành riêng cho DynamoDB (Single Table Design)
-export interface SongItem extends Song {
-    pk: `SONG#${string}` | `PLAYLIST#${string}`; 
-    sk: "METADATA" | `SONG#${string}`;
-    entityType: "SONG"; // Nên có thêm trường này để dễ lọc (FilterExpression)
-}
+export const SongSchema = z.object({
+    id: z.uuid({ message: "ID không đúng định dạng UUID" }), // Sửa ở đây
+    title: z.string().min(1, "Tên bài hát không được để trống").max(255),
+    artistId: z.number().int().positive(),
+    albumId: z.number().int().positive().optional().nullable(),
+    duration: z.number().int().min(1, "Thời lượng phải lớn hơn 0"),
+    fileUrl: z.url({ message: "Link nhạc phải là URL hợp lệ" }), // Sửa ở đây
+    coverUrl: z.url().optional().nullable(), // Sửa ở đây
+    lyrics: z.string().optional().nullable(),
+    createdAt: z.iso.datetime().optional(), 
+    updateAt: z.iso.datetime().optional(), 
+});
+
+
+
+
+// 2. Export Type để dùng khắp mọi nơi trong dự án
+export type Song = z.infer<typeof SongSchema>;
