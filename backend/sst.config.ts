@@ -9,43 +9,56 @@ export default $config({
     };
   },
   async run() {
-    // 1. Hạ tầng cơ bản
+    // 1. Load Routes (Dùng dynamic import)
+    const { songRoutes } = await import("./src/infrastructure/routes/song.routes.js");
+    const { artistRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
+
+    // 2. Hạ tầng cơ bản
     const table = new sst.aws.Dynamo("SpotifyTable", {
       fields: { pk: "string", sk: "string" },
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
     });
 
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
-      cors: {
-        allowMethods: ["GET", "POST", "PUT", "DELETE"],
-        allowOrigins: ["*"], // Cho phép mọi Domain gọi vào (Phù hợp để test)
-      }
+      cors: true
     });
 
-
-    // 2. API Gateway với cấu hình VPC
+    // 3. API Gateway với cấu hình VPC (Giữ lại để dành)
     const api = new sst.aws.ApiGatewayV2("MyApi", {
       transform: {
         route: {
           handler: {
+<<<<<<< HEAD
             link: [table, bucket], // Để ở đây thì tất cả Route đều có quyền truy cập Table/Bucket
             // vpc: {
             //   securityGroups: ["sg-025f66f667f5365b2"],
             //   privateSubnets: ["subnet-01c8103f393077241"], 
             // },
+=======
+            link: [table, bucket], 
+            /* 
+            vpc: {
+              securityGroups: ["sg-025f66f667f5365b2"],
+              privateSubnets: ["subnet-01c8103f393077241"], 
+            },
+            */
+>>>>>>> khiem
           },
         },
       },
     });
 
-    // Bây giờ định nghĩa Route cực kỳ ngắn gọn
-    api.route("GET /health", "src/handlers/health.handler");
+    // 4. Đăng ký Routes từ file cấu hình (Dùng vòng lặp sạch sẽ)
+    Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
+    Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    api.route("POST /songs/upload-url", "src/handlers/getUploadUrl.handler");
+    // 5. Đăng ký Health Check (ĐỂ NGOÀI VÒNG LẶP)
+    api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
 
-    
     return {
       api: api.url,
+      bucketName: bucket.name,
+      tableName: table.name,
     };
   },
 });

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Resource } from "sst";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
@@ -35,3 +36,15 @@ export class SongRepository {
         return (response.Item as Song) || null;
     }
 }
+=======
+import { BaseRepository } from "./BaseRepository";
+import { Song } from "../../domain/entities/Song";
+
+// Chỉ cần kế thừa và định nghĩa Prefix, mọi thứ khác Base lo hết
+export class SongRepository extends BaseRepository<Song> {
+    protected readonly entityPrefix = "SONG";
+
+    // Nếu sau này bạn cần tìm bài hát theo ArtistId (GSI), 
+    // bạn mới cần viết thêm hàm riêng ở đây.
+}
+>>>>>>> khiem
