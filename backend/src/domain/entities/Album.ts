@@ -6,7 +6,8 @@ export const AlbumSchema = z.object({
     artistId: z.uuid(),
     releaseDate: z.string().optional(),
     coverImage: z.url().optional().nullable(),
-    createdAt: z.iso.datetime().optional(),
+    createdAt: z.iso.datetime(),
+    updateAt: z.iso.datetime(),
 });
 
 export type Album = z.infer<typeof AlbumSchema>;

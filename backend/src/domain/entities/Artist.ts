@@ -6,8 +6,8 @@ export const ArtistSchema = z.object({
     bio: z.string().optional().nullable(),
     photoUrl: z.url().optional().nullable(),
     backgroundUrl: z.url().optional().nullable(),
-    createdAt: z.iso.datetime().optional(),
-    updateAt: z.iso.datetime().optional(),
+    createdAt: z.iso.datetime(),
+    updateAt: z.iso.datetime(),
 });
 
 export type Artist = z.infer<typeof ArtistSchema>;

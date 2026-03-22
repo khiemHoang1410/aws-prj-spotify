@@ -11,8 +11,8 @@ export const SongSchema = z.object({
     fileUrl: z.url({ message: "Link nhạc phải là URL hợp lệ" }), // Sửa ở đây
     coverUrl: z.url().optional().nullable(), // Sửa ở đây
     lyrics: z.string().optional().nullable(),
-    createdAt: z.iso.datetime().optional(), 
-    updateAt: z.iso.datetime().optional(), 
+    createdAt: z.iso.datetime(), 
+    updateAt: z.iso.datetime(), 
 });
 
 
