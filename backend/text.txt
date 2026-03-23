@@ -5,3 +5,26 @@
     "fileId": "4eeaee31-dd5d-4f4f-81b2-4f38f775e814",
     "key": "raw/4eeaee31-dd5d-4f4f-81b2-4f38f775e814.mp3"
 }
+
+
+
+{
+  "type": "record",
+  "name": "Interactions",
+  "namespace": "com.amazonaws.personalize.schema",
+  "fields": [
+    {
+      "name": "USER_ID",
+      "type": "string"
+    },
+    {
+      "name": "ITEM_ID",
+      "type": "string"
+    },
+    {
+      "name": "TIMESTAMP",
+      "type": "long"
+    }
+  ],
+  "version": "1.0"
+}

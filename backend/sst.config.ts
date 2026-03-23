@@ -12,6 +12,7 @@ export default $config({
     // 1. Load Routes (Dùng dynamic import)
     const { songRoutes } = await import("./src/infrastructure/routes/song.routes.js");
     const { artistRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
+    const { albumRoutes } = await import("./src/infrastructure/routes/album.routes.js");
 
     // 2. Hạ tầng cơ bản
     const table = new sst.aws.Dynamo("SpotifyTable", {
@@ -61,6 +62,7 @@ export default $config({
 
     Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
+    Object.entries(albumRoutes).forEach(([route, handler]) => api.route(route, handler));
 
     // 5. Đăng ký Health Check và Docs
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");

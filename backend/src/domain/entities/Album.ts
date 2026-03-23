@@ -1,13 +1,14 @@
 import { z } from "zod";
 
 export const AlbumSchema = z.object({
-    id: z.uuid({ message: "ID album không hợp lệ" }),
-    title: z.string().min(1, "Tiêu đề album không được trống"),
-    artistId: z.uuid(),
-    releaseDate: z.string().optional(),
-    coverImage: z.url().optional().nullable(),
-    createdAt: z.iso.datetime(),
-    updateAt: z.iso.datetime(),
+    id: z.uuid({ message: "ID không đúng định dạng UUID" }).optional(),
+    title: z.string().min(1, "Tên album không được để trống").max(255),
+    artistId: z.uuid({ message: "artistId phải là UUID hợp lệ" }),
+    coverUrl: z.url().optional().nullable(),
+    releaseDate: z.string().optional().nullable(),
+    createdAt: z.iso.datetime().optional(),
+    updatedAt: z.iso.datetime().optional(),
 });
 
-export type Album = z.infer<typeof AlbumSchema>;
+export type AlbumInput = z.infer<typeof AlbumSchema>;
+export type Album = AlbumInput & { id: string };
