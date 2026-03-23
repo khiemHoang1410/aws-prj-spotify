@@ -9,15 +9,30 @@ export default $config({
     };
   },
   async run() {
-    // 1. Load Routes (Dùng dynamic import)
+    // 1. Load Routes
     const { songRoutes } = await import("./src/infrastructure/routes/song.routes.js");
     const { artistRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
     const { albumRoutes } = await import("./src/infrastructure/routes/album.routes.js");
+    const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
+    const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
 
-    // 2. Hạ tầng cơ bản
+    // 2. Cognito User Pool
+    const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
+      usernames: ["email"],
+      password: {
+        minLength: 8,
+        requireNumbers: true,
+        requireUppercase: false,
+        requireSymbols: false,
+      },
+    });
+
+    const userPoolClient = new sst.aws.CognitoUserPoolClient("SpotifyUserPoolClient", {
+      userPool: userPool.id,
+    });
+
+    // 3. DynamoDB
     const table = new sst.aws.Dynamo("SpotifyTable", {
-      // ÉP TÊN VẬT LÝ TẠI ĐÂY
-      // Nó sẽ hiện đúng tên này trên AWS Console
       name: "Spotify-MainTable",
       fields: {
         pk: "string",
@@ -25,46 +40,57 @@ export default $config({
         name: "string",
         artistId: "string",
         entityType: "string",
+        userId: "string",
       },
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
       globalIndexes: {
         NameIndex: { hashKey: "name" },
         ArtistIdIndex: { hashKey: "artistId", rangeKey: "sk" },
         EntityTypeIndex: { hashKey: "entityType", rangeKey: "sk" },
+        UserIdIndex: { hashKey: "userId", rangeKey: "sk" },
       },
     });
 
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
-      cors: true
+      cors: true,
     });
 
-    // 3. API Gateway với cấu hình VPC (Giữ lại để dành)
+    // 4. API Gateway
     const api = new sst.aws.ApiGatewayV2("MyApi", {
-      // Cách này ngắn gọn và cấp quyền link cho mọi route bạn add vào sau đó
       link: [table, bucket],
-
-      // Nếu bạn CẦN dùng VPC (khi nào dùng RDS hoặc ElastiCache mới cần mở cái này)
-      /*
-      transform: {
-        route: {
-          handler: {
-            vpc: {
-              securityGroups: ["sg-025f66f667f5365b2"],
-              privateSubnets: ["subnet-01c8103f393077241"], 
-            },
-          },
-        },
-      },
-      */
     });
 
-    // 4. Đăng ký Routes từ file cấu hình (Dùng vòng lặp sạch sẽ)
+    // 5. Cognito Authorizer
+    const authorizer = api.addAuthorizer({
+      name: "CognitoAuthorizer",
+      jwt: {
+        issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
+        audiences: [userPoolClient.id],
+      },
+    });
 
+    // 6. Đăng ký Routes
     Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(albumRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    // 5. Đăng ký Health Check và Docs
+    // Auth routes (public - không cần JWT)
+    Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
+
+    // Admin routes (cần JWT + admin role)
+    Object.entries(adminRoutes).forEach(([route, handler]) =>
+      api.route(route, handler, { auth: { jwt: { authorizer: authorizer.id } } })
+    );
+
+    // Protected routes (cần JWT)
+    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", {
+      auth: { jwt: { authorizer: authorizer.id } },
+    });
+    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", {
+      auth: { jwt: { authorizer: authorizer.id } },
+    });
+
+    // System routes
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
     api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler");
     api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler");
@@ -73,6 +99,8 @@ export default $config({
       api: api.url,
       bucketName: bucket.name,
       tableName: table.name,
+      userPoolId: userPool.id,
+      userPoolClientId: userPoolClient.id,
     };
   },
 });

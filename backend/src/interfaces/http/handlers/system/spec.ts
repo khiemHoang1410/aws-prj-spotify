@@ -9,6 +9,7 @@ export const handler = async () => {
         tags: [
             { name: "System", description: "Hệ thống" },
             { name: "Artists", description: "Quản lý nghệ sĩ" },
+            { name: "Albums", description: "Quản lý album" },
             { name: "Songs", description: "Quản lý bài hát" },
         ],
         paths: {
@@ -156,6 +157,62 @@ export const handler = async () => {
                     },
                 },
             },
+            "/albums": {
+                post: {
+                    tags: ["Albums"],
+                    summary: "Tạo album mới",
+                    requestBody: {
+                        required: true,
+                        content: {
+                            "application/json": {
+                                schema: {
+                                    type: "object",
+                                    required: ["title", "artistId"],
+                                    properties: {
+                                        title: { type: "string", example: "Sky Tour" },
+                                        artistId: { type: "string", format: "uuid" },
+                                        coverUrl: { type: "string", format: "uri", nullable: true },
+                                        releaseDate: { type: "string", example: "2019-08-08", nullable: true },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    responses: {
+                        "200": { description: "Tạo thành công", content: { "application/json": { schema: { "$ref": "#/components/schemas/Album" } } } },
+                        "400": { description: "Dữ liệu không hợp lệ" },
+                        "404": { description: "Nghệ sĩ không tồn tại" },
+                    },
+                },
+                get: {
+                    tags: ["Albums"],
+                    summary: "Lấy danh sách tất cả album",
+                    responses: {
+                        "200": { description: "Danh sách album", content: { "application/json": { schema: { type: "array", items: { "$ref": "#/components/schemas/Album" } } } } },
+                    },
+                },
+            },
+            "/albums/{id}": {
+                get: {
+                    tags: ["Albums"],
+                    summary: "Lấy thông tin album theo ID",
+                    parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+                    responses: {
+                        "200": { description: "Thông tin album", content: { "application/json": { schema: { "$ref": "#/components/schemas/Album" } } } },
+                        "404": { description: "Không tìm thấy album" },
+                    },
+                },
+            },
+            "/albums/{id}/songs": {
+                get: {
+                    tags: ["Albums"],
+                    summary: "Lấy danh sách bài hát trong album",
+                    parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }],
+                    responses: {
+                        "200": { description: "Danh sách bài hát", content: { "application/json": { schema: { type: "array", items: { "$ref": "#/components/schemas/Song" } } } } },
+                    },
+                },
+            },
             "/songs/{id}": {
                 get: {
                     tags: ["Songs"],
@@ -193,6 +250,18 @@ export const handler = async () => {
                         fileUrl: { type: "string", format: "uri" },
                         coverUrl: { type: "string", format: "uri", nullable: true },
                         lyrics: { type: "string", nullable: true },
+                        createdAt: { type: "string", format: "date-time" },
+                        updatedAt: { type: "string", format: "date-time" },
+                    },
+                },
+                Album: {
+                    type: "object",
+                    properties: {
+                        id: { type: "string", format: "uuid" },
+                        title: { type: "string" },
+                        artistId: { type: "string", format: "uuid" },
+                        coverUrl: { type: "string", format: "uri", nullable: true },
+                        releaseDate: { type: "string", nullable: true },
                         createdAt: { type: "string", format: "date-time" },
                         updatedAt: { type: "string", format: "date-time" },
                     },
