@@ -15,8 +15,18 @@ export default $config({
 
     // 2. Hạ tầng cơ bản
     const table = new sst.aws.Dynamo("SpotifyTable", {
-      fields: { pk: "string", sk: "string" },
+      // ÉP TÊN VẬT LÝ TẠI ĐÂY
+      // Nó sẽ hiện đúng tên này trên AWS Console
+      name: "Spotify-MainTable",
+      fields: {
+        pk: "string",
+        sk: "string",
+        name: "string"
+      },
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
+      globalIndexes: {
+        NameIndex: { hashKey: "name" },
+      },
     });
 
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
@@ -25,22 +35,26 @@ export default $config({
 
     // 3. API Gateway với cấu hình VPC (Giữ lại để dành)
     const api = new sst.aws.ApiGatewayV2("MyApi", {
+      // Cách này ngắn gọn và cấp quyền link cho mọi route bạn add vào sau đó
+      link: [table, bucket],
+
+      // Nếu bạn CẦN dùng VPC (khi nào dùng RDS hoặc ElastiCache mới cần mở cái này)
+      /*
       transform: {
         route: {
           handler: {
-            link: [table, bucket], 
-            /* 
             vpc: {
               securityGroups: ["sg-025f66f667f5365b2"],
               privateSubnets: ["subnet-01c8103f393077241"], 
             },
-            */
           },
         },
       },
+      */
     });
 
     // 4. Đăng ký Routes từ file cấu hình (Dùng vòng lặp sạch sẽ)
+
     Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
 
