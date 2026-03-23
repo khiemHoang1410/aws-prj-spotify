@@ -10,9 +10,9 @@ export default $config({
   },
   async run() {
     // 1. Load Routes
-    const { songRoutes } = await import("./src/infrastructure/routes/song.routes.js");
-    const { artistRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
-    const { albumRoutes } = await import("./src/infrastructure/routes/album.routes.js");
+    const { songPublicRoutes, songProtectedRoutes } = await import("./src/infrastructure/routes/song.routes.js");
+    const { artistPublicRoutes, artistProtectedRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
+    const { albumPublicRoutes, albumProtectedRoutes } = await import("./src/infrastructure/routes/album.routes.js");
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
     const { playlistRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
@@ -79,30 +79,25 @@ export default $config({
     });
 
     // 6. Đăng ký Routes
-    Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
-    Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
-    Object.entries(albumRoutes).forEach(([route, handler]) => api.route(route, handler));
+    // Public routes (không cần JWT)
+    Object.entries(songPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
+    Object.entries(artistPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
+    Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
 
     // Auth routes (public)
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    // Playlist routes (cần JWT)
-    Object.entries(playlistRoutes).forEach(([route, handler]) =>
-      api.route(route, handler, { auth: { jwt: { authorizer: authorizer.id } } })
-    );
+    // Protected routes - cần JWT
+    const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
 
-    // Admin routes (cần JWT + admin role)
-    Object.entries(adminRoutes).forEach(([route, handler]) =>
-      api.route(route, handler, { auth: { jwt: { authorizer: authorizer.id } } })
-    );
+    Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    Object.entries(artistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    Object.entries(playlistRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
 
-    // Protected routes (cần JWT)
-    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", {
-      auth: { jwt: { authorizer: authorizer.id } },
-    });
-    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", {
-      auth: { jwt: { authorizer: authorizer.id } },
-    });
+    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", jwtAuth);
+    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", jwtAuth);
 
     // System routes
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
