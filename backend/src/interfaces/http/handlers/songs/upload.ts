@@ -2,44 +2,22 @@ import { Resource } from "sst";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
+import { makeAuthHandler } from "../../middlewares/withAuth";
 
 const s3Client = new S3Client({});
 
-export const handler = async (event: any) => {
-    try {
-        // 1. Tạo một cái tên file duy nhất (UUID) để tránh trùng lặp trên S3
-        const fileId = uuidv4();
-        const fileName = `${fileId}.mp3`;
+export const handler = makeAuthHandler(async (_body, _params, _auth) => {
+    const fileId = uuidv4();
+    const fileName = `${fileId}.mp3`;
 
-        // 2. Chuẩn bị lệnh upload lên S3
-        const command = new PutObjectCommand({
-            Bucket: Resource.SpotifyMedia.name,
-            Key: `raw/${fileName}`, // Lưu vào thư mục tạm 'raw'
-            ContentType: "audio/mpeg", // Chỉ chấp nhận file nhạc
-        });
+    const command = new PutObjectCommand({
+        Bucket: Resource.SpotifyMedia.name,
+        Key: `raw/${fileName}`,
+        ContentType: "audio/mpeg",
+    });
 
-        // 3. Tạo "vé thông hành" (Presigned URL) có hạn trong 5 phút (300 giây)
-        const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
+    const fileUrl = `https://${Resource.SpotifyMedia.name}.s3.amazonaws.com/raw/${fileName}`;
 
-        // fileUrl là URL public dùng để lưu vào DB sau khi upload xong
-        const fileUrl = `https://${Resource.SpotifyMedia.name}.s3.amazonaws.com/raw/${fileName}`;
-
-        return {
-            statusCode: 200,
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                message: "Link upload",
-                uploadUrl: uploadUrl,
-                fileUrl: fileUrl,
-                fileId: fileId,
-                key: `raw/${fileName}`
-            }),
-        };
-    } catch (error) {
-        console.error("Lỗi rồi đại vương ơi:", error);
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: "Không lấy được link upload!" }),
-        };
-    }
-};
+    return { success: true, data: { uploadUrl, fileUrl, fileId, key: `raw/${fileName}` } } as any;
+}, "artist");

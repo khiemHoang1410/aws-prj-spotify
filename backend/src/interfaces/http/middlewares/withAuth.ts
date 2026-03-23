@@ -88,7 +88,7 @@ export const makeAuthHandler = (
                 return {
                     statusCode: 200,
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify(result.data),
+                    body: result.data !== undefined ? JSON.stringify(result.data) : JSON.stringify({ message: "Thành công" }),
                 };
             }
 
