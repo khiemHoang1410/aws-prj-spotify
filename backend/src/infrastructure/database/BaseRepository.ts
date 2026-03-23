@@ -22,7 +22,9 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 updatedAt: now,
             };
             await docClient.send(new PutCommand({ TableName: this.tableName, Item: itemToSave }));
-            return Success(itemToSave as T);
+            // Strip DynamoDB internal fields trước khi return
+            const { pk, sk, entityType, ...clean } = itemToSave as any;
+            return Success(clean as T);
         } catch (error: any) {
             return Failure(`Lỗi lưu dữ liệu ${this.entityPrefix}: ${error.message}`, 500);
         }

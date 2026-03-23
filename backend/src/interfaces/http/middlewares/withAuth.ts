@@ -15,12 +15,15 @@ export const extractAuth = (event: any): Result<AuthContext> => {
 
     const userId = claims.sub;
     const email = claims.email;
-    // Cognito groups được inject dưới dạng string "admin,artist" hoặc array
-    const groups: string[] = claims["cognito:groups"]
-        ? (Array.isArray(claims["cognito:groups"])
-            ? claims["cognito:groups"]
-            : claims["cognito:groups"].split(","))
-        : [];
+    // API Gateway V2 inject cognito:groups dạng "[admin]" hoặc "[admin,artist]"
+    let groups: string[] = [];
+    const rawGroups = claims["cognito:groups"];
+    if (rawGroups && typeof rawGroups === "string") {
+        // Strip brackets và split: "[admin,artist]" → ["admin", "artist"]
+        groups = rawGroups.replace(/^\[|\]$/g, "").split(",").map((g: string) => g.trim()).filter(Boolean);
+    } else if (Array.isArray(rawGroups)) {
+        groups = rawGroups;
+    }
 
     const role = groups.includes("admin")
         ? "admin"
@@ -68,7 +71,16 @@ export const makeAuthHandler = (
                 };
             }
 
-            const body = event.body ? JSON.parse(event.body) : {};
+            let body = {};
+            try {
+                body = event.body ? JSON.parse(event.body) : {};
+            } catch {
+                return {
+                    statusCode: 400,
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ error: "Request body không hợp lệ (invalid JSON)" }),
+                };
+            }
             const params = event.pathParameters || {};
             const result = await logic(body, params, auth);
 
