@@ -1,6 +1,6 @@
 import { Resource } from "sst";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const client = new DynamoDBClient({});
@@ -51,6 +51,51 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
             return Success((response.Items as T[]) || []);
         } catch (error: any) {
             return Failure(`Lỗi lấy danh sách ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    async update(id: string, fields: Partial<Omit<T, "id" | "createdAt">>): Promise<Result<T>> {
+        try {
+            const now = new Date().toISOString();
+            const updates = { ...fields, updatedAt: now };
+            const keys = Object.keys(updates);
+
+            const updateExpr = "SET " + keys.map((k, i) => `#f${i} = :v${i}`).join(", ");
+            const exprNames = Object.fromEntries(keys.map((k, i) => [`#f${i}`, k]));
+            const exprValues = Object.fromEntries(keys.map((k, i) => [`:v${i}`, (updates as any)[k]]));
+
+            const response = await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
+                UpdateExpression: updateExpr,
+                ExpressionAttributeNames: exprNames,
+                ExpressionAttributeValues: exprValues,
+                ConditionExpression: "attribute_exists(pk)",
+                ReturnValues: "ALL_NEW",
+            }));
+
+            return Success(response.Attributes as T);
+        } catch (error: any) {
+            if (error.name === "ConditionalCheckFailedException") {
+                return Failure(`${this.entityPrefix} không tồn tại`, 404);
+            }
+            return Failure(`Lỗi cập nhật ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    async delete(id: string): Promise<Result<void>> {
+        try {
+            await docClient.send(new DeleteCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
+                ConditionExpression: "attribute_exists(pk)",
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            if (error.name === "ConditionalCheckFailedException") {
+                return Failure(`${this.entityPrefix} không tồn tại`, 404);
+            }
+            return Failure(`Lỗi xóa ${this.entityPrefix}: ${error.message}`, 500);
         }
     }
 }

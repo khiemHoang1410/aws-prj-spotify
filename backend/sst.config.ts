@@ -15,6 +15,7 @@ export default $config({
     const { albumRoutes } = await import("./src/infrastructure/routes/album.routes.js");
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
+    const { playlistRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -27,8 +28,8 @@ export default $config({
       },
     });
 
-    const userPoolClient = new sst.aws.CognitoUserPoolClient("SpotifyUserPoolClient", {
-      userPool: userPool.id,
+    const userPoolClient = userPool.addClient("SpotifyUserPoolClient", {
+      userPoolId: userPool.id,
     });
 
     // 3. DynamoDB
@@ -74,8 +75,13 @@ export default $config({
     Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(albumRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    // Auth routes (public - không cần JWT)
+    // Auth routes (public)
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
+
+    // Playlist routes (cần JWT)
+    Object.entries(playlistRoutes).forEach(([route, handler]) =>
+      api.route(route, handler, { auth: { jwt: { authorizer: authorizer.id } } })
+    );
 
     // Admin routes (cần JWT + admin role)
     Object.entries(adminRoutes).forEach(([route, handler]) =>
