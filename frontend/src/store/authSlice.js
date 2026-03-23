@@ -1,10 +1,14 @@
 import { createSlice } from '@reduxjs/toolkit';
+import { VERIFY_STATUS } from '../constants/enums';
 
 const initialState = {
   isAuthenticated: false,
   user: null,
   isModalOpen: false,
-  modalType: 'login', 
+  modalType: 'login',
+  likedSongs: [],
+  verifyStatus: VERIFY_STATUS.IDLE,
+  verifyMessage: '',
 };
 
 const authSlice = createSlice({
@@ -26,9 +30,25 @@ const authSlice = createSlice({
     logout: (state) => {
       state.isAuthenticated = false;
       state.user = null;
+      state.likedSongs = [];
+      state.verifyStatus = VERIFY_STATUS.IDLE;
+      state.verifyMessage = '';
+    },
+    toggleLikeSong: (state, action) => {
+      const song = action.payload;
+      const index = state.likedSongs.findIndex(s => s.song_id === song.song_id);
+      if (index >= 0) {
+        state.likedSongs.splice(index, 1);
+      } else {
+        state.likedSongs.push(song);
+      }
+    },
+    setVerifyStatus: (state, action) => {
+      state.verifyStatus = action.payload.status;
+      state.verifyMessage = action.payload.message || '';
     },
   },
 });
 
-export const { openModal, closeModal, loginSuccess, logout } = authSlice.actions;
+export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus } = authSlice.actions;
 export default authSlice.reducer;

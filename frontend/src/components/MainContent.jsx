@@ -3,7 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal, logout } from '../store/authSlice';
 import { setSearchQuery, toggleBrowse, setView } from '../store/uiSlice'; 
-import { ChevronLeft, ChevronRight, Home,Bell, Users } from 'lucide-react'; // Thêm icon Home
+import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react'; // [S6-004.4]
+import { ROLES } from '../constants/enums';
 
 import CardSong from './CardSong';
 import SearchContent from './SearchContent'; 
@@ -11,11 +12,23 @@ import SearchResults from './SearchResults';
 import SearchBar from './SearchBar'; 
 import { getSongs } from '../services/SongService';
 import { logoutUser } from '../services/AuthService'; // <-- THÊM DÒNG NÀY
+import LyricsContent from './LyricsContent';
+import ArtistVerifyPage from '../pages/ArtistVerifyPage';
+import UploadSongPage from '../pages/UploadSongPage';
+import AdminLayout from '../pages/admin/AdminLayout';
+import PlaylistDetailPage from '../pages/PlaylistDetailPage';
+import ProfilePage from '../pages/ProfilePage';
+import SettingsPage from '../pages/SettingsPage';
+import CategoryPage from '../pages/CategoryPage';
+import LikedSongsPage from '../pages/LikedSongsPage';
+import ArtistProfilePage from '../pages/ArtistProfilePage'; // [S6-003.4]
+import ArtistDashboardPage from '../pages/ArtistDashboardPage'; // [S6-004.3]
 
 export default function MainContent() {
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false); // Thêm dòng này
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showAllSongs, setShowAllSongs] = useState(false);
   
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { currentView, searchQuery, isBrowsing, isSearchSubmitted } = useSelector((state) => state.ui); 
@@ -105,12 +118,59 @@ export default function MainContent() {
               {/* Giao diện Dropdown Menu */}
               {isUserMenuOpen && (
                 <div className="absolute top-12 right-0 w-48 bg-[#282828] rounded-md shadow-2xl z-50 p-1 border border-[#3e3e3e] text-sm font-semibold">
-                  <button className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition">
+                  <button
+                    className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
+                    onClick={() => { setIsUserMenuOpen(false); dispatch(setView('profile')); }}
+                  >
                     Tài khoản
                   </button>
-                  <button className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition">
+                  <button
+                    className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
+                    onClick={() => { setIsUserMenuOpen(false); dispatch(setView('settings')); }}
+                  >
                     Cài đặt
                   </button>
+
+                  {user?.role !== ROLES.ARTIST && user?.role !== ROLES.ADMIN && (
+                    <button
+                      className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition flex items-center gap-2"
+                      onClick={() => { setIsUserMenuOpen(false); dispatch(setView('artist-verify')); }}
+                    >
+                      <BadgeCheck size={14} />
+                      Đăng ký nghệ sĩ
+                    </button>
+                  )}
+
+                  {user?.role === ROLES.ARTIST && (
+                    <button
+                      className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition flex items-center gap-2"
+                      onClick={() => { setIsUserMenuOpen(false); dispatch(setView('upload')); }}
+                    >
+                      <Upload size={14} />
+                      Upload nhạc
+                    </button>
+                  )}
+
+                  {/* [S6-004.4] Thống kê nghệ sĩ */}
+                  {user?.role === ROLES.ARTIST && (
+                    <button
+                      className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition flex items-center gap-2"
+                      onClick={() => { setIsUserMenuOpen(false); dispatch(setView('artist-dashboard')); }}
+                    >
+                      <BarChart3 size={14} />
+                      Thống kê
+                    </button>
+                  )}
+
+                  {user?.role === ROLES.ADMIN && (
+                    <button
+                      className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition flex items-center gap-2"
+                      onClick={() => { setIsUserMenuOpen(false); dispatch(setView('admin')); }}
+                    >
+                      <ShieldCheck size={14} />
+                      Admin Panel
+                    </button>
+                  )}
                   
                   {/* Đường kẻ ngang phân cách */}
                   <div className="h-[1px] bg-[#3e3e3e] my-1"></div>
@@ -118,10 +178,10 @@ export default function MainContent() {
                   <button 
                     className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
                     onClick={async () => {
-                      setIsUserMenuOpen(false); // Đóng menu
-                      await logoutUser();       // Xóa token localStorage
-                      dispatch(logout());       // Reset Redux
-                      window.location.reload(); // Quét sạch UI
+                      setIsUserMenuOpen(false);
+                      await logoutUser();
+                      dispatch(logout());
+                      window.location.reload();
                     }}
                   >
                     Đăng xuất
@@ -137,16 +197,26 @@ export default function MainContent() {
       {/* 2. HIỂN THỊ NỘI DUNG TÙY THEO TAB ĐANG CHỌN */}
       {currentView === 'home' && (
         <>
-          <div className="flex items-end justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white hover:underline cursor-pointer">Đề xuất cho bạn</h2>
-            <span className="text-sm font-bold text-[#b3b3b3] hover:underline cursor-pointer">Hiện tất cả</span>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white">Đề xuất cho bạn</h2>
+            <button
+              onClick={() => setShowAllSongs((prev) => !prev)}
+              className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
+            >
+              {showAllSongs ? 'Thu gọn' : 'Hiện tất cả'}
+            </button>
           </div>
 
           {loading ? (
             <div className="text-[#b3b3b3] text-center mt-10">Đang tải nhạc...</div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
-              {songs.length > 0 ? songs.map((song) => <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />) : <div className="text-[#b3b3b3] col-span-full">Không có bài hát nào.</div>}
+            <div className="grid grid-cols-5 gap-6 transition-all duration-300">
+              {(showAllSongs ? songs : songs.slice(0, 5)).map((song) => (
+                <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              ))}
+              {songs.length === 0 && (
+                <div className="text-[#b3b3b3] col-span-full">Không có bài hát nào.</div>
+              )}
             </div>
           )}
         </>
@@ -170,6 +240,41 @@ export default function MainContent() {
             )}
          </>
       )}
+
+      {/* C. NẾU Ở TAB LỜI BÀI HÁT */}
+      {currentView === 'lyrics' && (
+         <LyricsContent />
+      )}
+
+      {/* D. NẾU Ở TAB ĐĂNG KÝ NGHỆ SĨ */}
+      {currentView === 'artist-verify' && <ArtistVerifyPage />}
+
+      {/* E. NẾU Ở TAB UPLOAD NHẠC */}
+      {currentView === 'upload' && <UploadSongPage />}
+
+      {/* F. NẾU Ở TAB ADMIN */}
+      {currentView === 'admin' && <AdminLayout />}
+
+      {/* G. PLAYLIST DETAIL */}
+      {currentView === 'playlist-detail' && <PlaylistDetailPage />}
+
+      {/* H. PROFILE */}
+      {currentView === 'profile' && <ProfilePage />}
+
+      {/* I. SETTINGS */}
+      {currentView === 'settings' && <SettingsPage />}
+
+      {/* J. CATEGORY DETAIL */}
+      {currentView === 'category-detail' && <CategoryPage />}
+
+      {/* K. LIKED SONGS */}
+      {currentView === 'liked-songs' && <LikedSongsPage />}
+
+      {/* L. ARTIST PROFILE — [S6-003.4] */}
+      {currentView === 'artist-profile' && <ArtistProfilePage />}
+
+      {/* M. ARTIST DASHBOARD — [S6-004.3] */}
+      {currentView === 'artist-dashboard' && <ArtistDashboardPage />}
 
     </div>
   );

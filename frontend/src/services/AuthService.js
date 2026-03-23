@@ -1,9 +1,46 @@
 /**
  * File này xử lý các tác vụ liên quan đến User Authentication (AWS Amplify/Cognito)
  */
+import { ROLES } from '../constants/enums';
 
 const TOKEN_KEY = "spotify_mock_auth";
 const ACCESS_TOKEN_EXPIRY = 15 * 60 * 1000; // Mô phỏng 15 phút (tính bằng milliseconds)
+
+// ==========================================
+// MOCK ACCOUNTS (Role-based testing)
+// ==========================================
+const MOCK_ACCOUNTS = {
+  'user@test.com': {
+    id: 'USER_001',
+    user_id: 'USER_001',
+    username: 'Spotify User',
+    name: 'Spotify User',
+    email: 'user@test.com',
+    role: ROLES.USER,
+    isVerified: false,
+    avatar_url: 'https://i.pravatar.cc/150?img=11',
+  },
+  'artist@test.com': {
+    id: 'USER_002',
+    user_id: 'USER_002',
+    username: 'Artist Test',
+    name: 'Artist Test',
+    email: 'artist@test.com',
+    role: ROLES.ARTIST,
+    isVerified: true,
+    avatar_url: 'https://i.pravatar.cc/150?img=12',
+  },
+  'admin@test.com': {
+    id: 'USER_003',
+    user_id: 'USER_003',
+    username: 'Admin',
+    name: 'Admin',
+    email: 'admin@test.com',
+    role: ROLES.ADMIN,
+    isVerified: true,
+    avatar_url: 'https://i.pravatar.cc/150?img=13',
+  },
+};
 
 // ==========================================
 // 1. CÁC HÀM QUẢN LÝ TOKEN (Chuẩn bị cho Amplify)
@@ -62,27 +99,20 @@ export const getCurrentUser = async () => {
 export const login = async (email, password) => {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
-      if (email === "test@gmail.com" && password === "123456") {
-        const userData = {
-          user_id: "USER_001",
-          username: "Spotify Lover",
-          email: email,
-          avatar_url: "https://i.pravatar.cc/150?img=11"
-        };
-        
-        // Lưu phiên đăng nhập xuống localStorage
-        const sessionData = {
-          user: userData,
-          accessToken: "mock_access_token_" + Date.now(),
-          refreshToken: "mock_refresh_token_xyz",
-          expiresAt: Date.now() + ACCESS_TOKEN_EXPIRY
-        };
-        localStorage.setItem(TOKEN_KEY, JSON.stringify(sessionData));
-        
-        resolve(userData);
-      } else {
-        reject(new Error("Email hoặc mật khẩu không đúng! (Gợi ý: test@gmail.com / 123456)"));
+      const account = MOCK_ACCOUNTS[email];
+      if (!account) {
+        reject(new Error("Tài khoản không tồn tại"));
+        return;
       }
+      const userData = { ...account };
+      const sessionData = {
+        user: userData,
+        accessToken: "mock_access_token_" + Date.now(),
+        refreshToken: "mock_refresh_token_xyz",
+        expiresAt: Date.now() + ACCESS_TOKEN_EXPIRY
+      };
+      localStorage.setItem(TOKEN_KEY, JSON.stringify(sessionData));
+      resolve(userData);
     }, 800);
   });
 };
