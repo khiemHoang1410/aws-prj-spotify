@@ -1,0 +1,30 @@
+{
+    "message": "Link upload",
+    "uploadUrl": "https://spotify-backend-khiemhoang-spotifymediabucket-theurevz.s3.ap-southeast-1.amazonaws.com/raw/4eeaee31-dd5d-4f4f-81b2-4f38f775e814.mp3?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=ASIAURBF27FAWNHXN3KN%2F20260323%2Fap-southeast-1%2Fs3%2Faws4_request&X-Amz-Date=20260323T044411Z&X-Amz-Expires=300&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEK3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaDmFwLXNvdXRoZWFzdC0xIkcwRQIhAO3x714n5R0lwAjg2KYmJEZ1%2BxuwYPvr7arv4JNF%2FXPQAiA1oTTiVfT0%2FzFEX%2BAVa%2BOTJz%2BFQLF6dlGVXSnDo2SciCqDBQh2EAAaDDMxMTQ2NDQ5MTMyOSIMdjb3vQe5gtqfRk9IKuAETNMsbKUOgq5PE%2BN1xr6EWHkLNoh5j3cBljxl2dsmP76wK7NMWhL3hczailwaaiuGFmWPT%2BQ%2B6rc78237LMCb9OgU3FkWiMichTopiETr6c1qfkrYl2OKRPH7g4x%2F%2FHCSqi1nfM2wcL6ao9%2BeaIEy8bOstFrJji1YwtmbRiPTJF6N5yMnC%2Fh5IZeSUMydyhCwPAyEoPcbUvvuN4w4sAz3d3MWi632HEYYjsIddoGJ32va73Yfdbq0FG%2BHVxVLd1fn1szHI7NLH0JWM%2BphbE22rYpT2OgvrEA%2BGaXhN1810%2BLuD7QD6wwPE4fmaA72joZVcV%2BJD6D6kWsyP0VOiFX6VQli1DgF%2FQYawcOOGak2t7PXZKzDoUSH1DQJ%2BNfhnI2NOXtXhIEyu3c%2F%2ByynuVi6rZ77sUixkhqKGJHMEuATnlVKKKZOmZroF8NG51dWbNUAI9T1MitCcldL88JAu8FPBePt9gz4LycEv9bA3xiHsRr1DRIUKVeMCkhxbZdbi27YMxh5yP%2FU8Z%2BzV2iLyy%2B%2BDsShCon0rHyfHGZA2z6D0ufGGW5HRcuCVvXHzZ5cC4RTvBQ8ZJTirfLUkIdquc93QVKsB6FNuWbekPo1unxsWrTl6Dg8yOZ6p9Y%2Fe4zKMnPiRlXhg9lnR5fVmijX%2BU65uhOlnDvZ%2FDGT0jUPs3cFWnaWGnzHGxMrfKVyceYayW6QmaVhKlu1%2B0zWv8bSBCfr44C2ZLyFsCSNOxTllT4koOgTV6dgFv0%2FyI4fJrF0Uj4WfFzAjcXyAVKZdTSrXQoinNQr25scPaxzNXZowtE6uQcwhoeDzgY6owHh1uS6N3ZOIgKQjwKMIsmjGayPbweC81WKFzxwvZgu3pY%2BB1XRbGFrv1pAuE4qxvKJF%2BsSLtgndYONmReyEIPwANO6IeWVXyYBe%2BvMdO%2B8rZLaI8CzmwDobgbrnuR3TJM1LvoXVyzA7knPRkkkMDsfxvwQyU%2Bl%2FlSVZrFWjRgn%2FuzZwIpfPncM2KMNNNJeVJMes8Z6jpFCPm3m5a1j6ZqXbnIE&X-Amz-Signature=a6cd50da5503f6771a415ecb697ab63ca7567b53b082b130552c379ae31356ff&X-Amz-SignedHeaders=host&x-amz-checksum-crc32=AAAAAA%3D%3D&x-amz-sdk-checksum-algorithm=CRC32&x-id=PutObject",
+    "fileUrl": "https://spotify-backend-khiemhoang-spotifymediabucket-theurevz.s3.amazonaws.com/raw/4eeaee31-dd5d-4f4f-81b2-4f38f775e814.mp3",
+    "fileId": "4eeaee31-dd5d-4f4f-81b2-4f38f775e814",
+    "key": "raw/4eeaee31-dd5d-4f4f-81b2-4f38f775e814.mp3"
+}
+
+
+
+{
+  "type": "record",
+  "name": "Interactions",
+  "namespace": "com.amazonaws.personalize.schema",
+  "fields": [
+    {
+      "name": "USER_ID",
+      "type": "string"
+    },
+    {
+      "name": "ITEM_ID",
+      "type": "string"
+    },
+    {
+      "name": "TIMESTAMP",
+      "type": "long"
+    }
+  ],
+  "version": "1.0"
+}
