@@ -22,9 +22,9 @@ export const makeHandler = (logic: (body: any, params: any) => Promise<Result<an
                 };
             }
 
-            // 4. Nếu thất bại, trả về lỗi 400 (Bad Request)
+            // 4. Nếu thất bại, dùng code từ Result (mặc định 400)
             return {
-                statusCode: 400,
+                statusCode: result.code ?? 400,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ error: result.error }),
             };
