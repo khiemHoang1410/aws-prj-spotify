@@ -1,10 +1,12 @@
 import { makeAuthHandler } from "../../middlewares/withAuth";
-import { Success } from "../../../../shared/utils/Result";
+import { UserRepository } from "../../../../infrastructure/database/UserRepository";
+import { Failure } from "../../../../shared/utils/Result";
+
+const userRepo = new UserRepository();
 
 export const handler = makeAuthHandler(async (_body, _params, auth) => {
-    return Success({
-        userId: auth.userId,
-        email: auth.email,
-        role: auth.role,
-    });
+    const result = await userRepo.findByUserId(auth.userId);
+    if (!result.success) return result;
+    if (!result.data) return Failure("Không tìm thấy thông tin user", 404);
+    return result;
 });

@@ -19,7 +19,7 @@ export class AuthService {
     async register(email: string, password: string, displayName: string): Promise<Result<{ message: string }>> {
         try {
             // 1. Đăng ký với Cognito
-            await cognitoClient.send(new SignUpCommand({
+            const signUpResult = await cognitoClient.send(new SignUpCommand({
                 ClientId: Resource.SpotifyUserPoolClient.id,
                 Username: email,
                 Password: password,
@@ -28,6 +28,18 @@ export class AuthService {
                     { Name: "name", Value: displayName },
                 ],
             }));
+
+            // 2. Lưu user vào DynamoDB (dùng Cognito sub làm id)
+            const userId = signUpResult.UserSub || uuidv7();
+            const user: User = {
+                id: userId,
+                email,
+                displayName,
+                role: "listener",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            await this.userRepo.save(user);
 
             return Success({ message: "Đăng ký thành công! Vui lòng kiểm tra email để xác nhận tài khoản." });
         } catch (error: any) {

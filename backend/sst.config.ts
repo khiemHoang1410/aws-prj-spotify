@@ -29,7 +29,15 @@ export default $config({
     });
 
     const userPoolClient = userPool.addClient("SpotifyUserPoolClient", {
-      userPoolId: userPool.id,
+      transform: {
+        client: (args) => {
+          args.explicitAuthFlows = [
+            "ALLOW_USER_PASSWORD_AUTH",
+            "ALLOW_USER_SRP_AUTH",
+            "ALLOW_REFRESH_TOKEN_AUTH",
+          ];
+        },
+      },
     });
 
     // 3. DynamoDB
@@ -58,7 +66,7 @@ export default $config({
 
     // 4. API Gateway
     const api = new sst.aws.ApiGatewayV2("MyApi", {
-      link: [table, bucket],
+      link: [table, bucket, userPool, userPoolClient],
     });
 
     // 5. Cognito Authorizer
