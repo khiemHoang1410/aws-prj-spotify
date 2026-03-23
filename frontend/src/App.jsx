@@ -1,17 +1,22 @@
-import React,{ useEffect } from 'react';
+import React, { useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import MainContent from './components/MainContent';
 import PlayerBar from './components/PlayerBar';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from './services/AuthService'; // Thêm dòng import
-import { loginSuccess } from './store/authSlice'; // Thêm dòng import
-import AuthModal from './components/AuthModal'; // Thêm dòng import
-import PageIntro from './pages/PageIntro'; // IMPORT FILE PAGE INTRO CỦA BẠN VÀO ĐÂY
+import { getCurrentUser } from './services/AuthService';
+import { loginSuccess } from './store/authSlice';
+import AuthModal from './components/AuthModal';
+import PageIntro from './pages/PageIntro';
+import QueueSidebar from './components/QueueSidebar';
+import Toast from './components/shared/Toast';
+import MiniLyricsPanel from './components/Lyrics/MiniLyricsPanel';
+import ReportModal from './components/ReportModal';
 
 function App() {
   const dispatch = useDispatch();
   // 2. Thêm hàm useEffect này ngay dưới khai báo dispatch:
-  const { currentView } = useSelector((state) => state.ui);
+  const { currentView, isPiP, isReportModalOpen } = useSelector((state) => state.ui);
+  const { currentSong } = useSelector((state) => state.player);
   useEffect(() => {
     const restoreSession = async () => {
       const user = await getCurrentUser();
@@ -28,34 +33,34 @@ function App() {
     return <PageIntro />;
   }
   return (
-    // Container bao ngoài cùng: Phủ kín màn hình, nền đen tuyền, chữ trắng
     <div className="h-screen w-full flex flex-col bg-black text-white overflow-hidden font-sans">
-      
-      {/* KHU VỰC THÂN TRÊN: Chiếm phần lớn không gian (flex-1) */}
+      {/* 2. TÌM KHU VỰC RENDER GIAO DIỆN CHÍNH VÀ SỬA THÀNH: */}
       <div className="flex-1 flex overflow-hidden">
         
-        {/* VÙNG 1: SIDEBAR (Cột trái) */}
-        {/* w-64 = rộng 256px, flex-shrink-0 = không bị ép nhỏ lại khi màn hình hẹp */}
-        <aside className="w-64 bg-black flex-shrink-0 flex flex-col">
-          <Sidebar />
-        </aside>
-
-        {/* VÙNG 2: MAIN CONTENT (Cột phải) */}
-        {/* flex-1 = chiếm toàn bộ phần diện tích còn lại. 
-            bg-[#121212] là màu nền xám đen đặc trưng của Spotify.
-            overflow-y-auto = cho phép cuộn dọc nếu danh sách nhạc quá dài */}
-        <main className="flex-1 bg-[#121212] rounded-lg mt-2 mr-2 mb-2 overflow-y-auto">
+        {/* CỘT TRÁI: SIDEBAR THƯ VIỆN */}
+        {currentView !== 'lyrics' && (
+          <aside className="w-64 bg-black flex-shrink-0 flex flex-col">
+            <Sidebar />
+          </aside>
+        )}
+        
+        {/* CỘT GIỮA: NỘI DUNG CHÍNH */}
+        <main className={`flex-1 bg-[#121212] rounded-lg mt-2 mr-2 mb-2 overflow-y-auto relative ${currentView === 'lyrics' ? 'ml-2' : ''}`}>
           <MainContent />
         </main>
 
+        {/* CỘT PHẢI: SIDEBAR HÀNG CHỜ (QUEUE) - Luôn sẵn sàng hiển thị */}
+        <QueueSidebar />
+        
       </div>
-
-      {/* KHU VỰC THÂN DƯỚI: PLAYER BAR */}
-      {/* h-24 = cao 96px, nằm cố định dưới đáy */}
-      <footer className="h-24 bg-black flex-shrink-0 border-t border-[#282828]">
+      
+      <footer className="h-24 bg-black flex-shrink-0 border-t border-[#282828] z-50">
         <PlayerBar />
       </footer>
-      <AuthModal /> {/* Thêm Modal vào đây để nó luôn nổi lên trên cùng */}
+      <AuthModal />
+      <Toast />
+      {isPiP && currentSong && <MiniLyricsPanel />}
+      {isReportModalOpen && <ReportModal />}
     </div>
   );
 }

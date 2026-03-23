@@ -117,6 +117,12 @@ export default function AuthModal() {
             {isLogin ? 'Đăng ký Spotify' : 'Đăng nhập tại đây'}
           </span>
         </div>
+
+        {isLogin && (
+          <p className="mt-4 text-center text-xs text-neutral-500">
+            Test: user@test.com / artist@test.com / admin@test.com (mật khẩu tùy ý)
+          </p>
+        )}
       </div>
     </div>
   );
