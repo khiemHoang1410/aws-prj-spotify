@@ -9,10 +9,12 @@ export class ArtistService {
     /**
      * Tạo hồ sơ nghệ sĩ mới
      */
-    async createArtist(rawData: any): Promise<Result<Artist>> {
+    async createArtist(rawData: any, userId?: string): Promise<Result<Artist>> {
         try {
-            // 1. Validation kiểu dữ liệu (Zod)
-            const validation = ArtistSchema.omit({ id: true }).safeParse(rawData);
+            const validation = ArtistSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse({
+                ...rawData,
+                userId: userId || rawData.userId || "system",
+            });
             if (!validation.success) {
                 return Failure(validation.error.issues[0].message);
             }

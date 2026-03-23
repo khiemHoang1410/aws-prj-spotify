@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const ArtistSchema = z.object({
     id: z.uuid({ message: "ID ca sĩ không hợp lệ" }).optional(),
-    userId: z.string().min(1), // Cognito sub của user sở hữu profile này
+    userId: z.string().min(1).optional().nullable(), // Cognito sub của user sở hữu profile này
     name: z.string().min(1, "Tên ca sĩ không được trống"),
     bio: z.string().optional().nullable(),
     photoUrl: z.url().optional().nullable(),
