@@ -21,12 +21,16 @@ export const handler = async (event: any) => {
         // 3. Tạo "vé thông hành" (Presigned URL) có hạn trong 5 phút (300 giây)
         const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: 300 });
 
+        // fileUrl là URL public dùng để lưu vào DB sau khi upload xong
+        const fileUrl = `https://${Resource.SpotifyMedia.name}.s3.amazonaws.com/raw/${fileName}`;
+
         return {
             statusCode: 200,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 message: "Link upload",
                 uploadUrl: uploadUrl,
+                fileUrl: fileUrl,
                 fileId: fileId,
                 key: `raw/${fileName}`
             }),
