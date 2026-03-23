@@ -3,4 +3,6 @@ export const songRoutes = {
     "POST /songs": "src/interfaces/http/handlers/songs/create.handler",
     "GET /songs": "src/interfaces/http/handlers/songs/list.handler",
     "GET /songs/{id}": "src/interfaces/http/handlers/songs/get.handler",
+    "PUT /songs/{id}": "src/interfaces/http/handlers/songs/update.handler",
+    "DELETE /songs/{id}": "src/interfaces/http/handlers/songs/delete.handler",
 };
