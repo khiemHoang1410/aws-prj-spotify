@@ -62,8 +62,10 @@ export default $config({
     Object.entries(songRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(artistRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    // 5. Đăng ký Health Check (ĐỂ NGOÀI VÒNG LẶP)
+    // 5. Đăng ký Health Check và Docs
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
+    api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler");
+    api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler");
 
     return {
       api: api.url,
