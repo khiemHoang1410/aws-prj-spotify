@@ -18,6 +18,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Dynamo"
     }
+    "SpotifyUserPool": {
+      "id": string
+      "type": "sst.aws.CognitoUserPool"
+    }
   }
 }
 /// <reference path="sst-env.d.ts" />
