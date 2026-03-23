@@ -21,11 +21,15 @@ export default $config({
       fields: {
         pk: "string",
         sk: "string",
-        name: "string"
+        name: "string",
+        artistId: "string",
+        entityType: "string",
       },
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
       globalIndexes: {
         NameIndex: { hashKey: "name" },
+        ArtistIdIndex: { hashKey: "artistId", rangeKey: "sk" },
+        EntityTypeIndex: { hashKey: "entityType", rangeKey: "sk" },
       },
     });
 

@@ -36,4 +36,8 @@ export class ArtistService {
     async getArtist(id: string): Promise<Result<Artist | null>> {
         return await this.artistRepo.findById(id);
     }
+
+    async getAllArtists(): Promise<Result<Artist[]>> {
+        return await this.artistRepo.findAll();
+    }
 }
