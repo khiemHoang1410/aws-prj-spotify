@@ -1,4 +1,15 @@
 {
+  "name": "spotify-backend-sst-ion",
+  "version": "1.0.0",
+  "description": "Spotify Backend using Clean Architecture and SST Ion",
+  "scripts": {
+    "dev": "sst dev",
+    "deploy": "sst deploy --stage prod",
+    "remove": "sst remove",
+    "console": "sst console",
+    "typecheck": "tsc --noEmit",
+    "state": "sst state"
+  },
   "dependencies": {
     "@aws-sdk/client-dynamodb": "^3.1013.0",
     "@aws-sdk/client-s3": "^3.1014.0",

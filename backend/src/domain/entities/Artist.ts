@@ -12,3 +12,5 @@ export const ArtistSchema = z.object({
 });
 
 export type Artist = z.infer<typeof ArtistSchema>;
+
+

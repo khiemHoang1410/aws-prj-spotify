@@ -1,0 +1,9 @@
+GET
+{{api_url}}/health
+Query Params
+200
+OK
+1.91 s
+285 B
+12345
+{    "status": "OK",    "message": "Hệ thống Spotify vẫn đang chạy vèo vèo!",    "timestamp": "2026-03-23T02:49:42.741Z"
