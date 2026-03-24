@@ -8,7 +8,10 @@
     "remove": "sst remove",
     "console": "sst console",
     "typecheck": "tsc --noEmit",
-    "state": "sst state"
+    "state": "sst state",
+    "test": "vitest --run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest --run --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.1014.0",
@@ -23,6 +26,8 @@
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
     "@types/node": "^25.5.0",
-    "@types/uuid": "^10.0.0"
+    "@types/uuid": "^10.0.0",
+    "@vitest/coverage-v8": "^4.1.1",
+    "vitest": "^4.1.1"
   }
 }
