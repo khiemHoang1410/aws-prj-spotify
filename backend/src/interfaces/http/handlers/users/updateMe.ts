@@ -1,18 +1,21 @@
+import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { UserRepository } from "../../../../infrastructure/database/UserRepository";
+import { validate, requireAtLeastOneField } from "../../../../shared/utils/validate";
 
 const userRepo = new UserRepository();
 
+const UpdateMeSchema = z.object({
+    displayName: z.string().min(1).max(100).optional(),
+    avatarUrl: z.url().nullable().optional(),
+});
+
 export const handler = makeAuthHandler(async (body, _params, auth) => {
-    const { displayName, avatarUrl } = body;
+    const v = validate(UpdateMeSchema, body);
+    if (!v.success) return v;
 
-    const fields: Record<string, any> = {};
-    if (displayName !== undefined) fields.displayName = displayName;
-    if (avatarUrl !== undefined) fields.avatarUrl = avatarUrl;
+    const fieldsResult = requireAtLeastOneField(v.data);
+    if (!fieldsResult.success) return fieldsResult;
 
-    if (Object.keys(fields).length === 0) {
-        return { success: false as const, error: "Không có trường nào để cập nhật", code: 400 };
-    }
-
-    return userRepo.update(auth.userId, fields);
+    return userRepo.update(auth.userId, fieldsResult.data);
 });

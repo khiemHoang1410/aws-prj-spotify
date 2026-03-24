@@ -1,4 +1,4 @@
-import { makeHandler } from "../../middlewares/makeHandler";
+import { makeAuthHandler } from "../../middlewares/withAuth";
 import { AlbumService } from "../../../../application/services/AlbumService";
 import { AlbumRepository } from "../../../../infrastructure/database/AlbumRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
@@ -6,6 +6,6 @@ import { SongRepository } from "../../../../infrastructure/database/SongReposito
 
 const albumService = new AlbumService(new AlbumRepository(), new ArtistRepository(), new SongRepository());
 
-export const handler = makeHandler(async (body: any) => {
-    return await albumService.createAlbum(body);
-});
+export const handler = makeAuthHandler(async (body) => {
+    return albumService.createAlbum(body);
+}, "artist");

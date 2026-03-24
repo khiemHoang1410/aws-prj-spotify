@@ -1,8 +1,10 @@
+import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { ArtistRequestService } from "../../../../application/services/ArtistRequestService";
 import { ArtistRequestRepository } from "../../../../infrastructure/database/ArtistRequestRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
 import { UserRepository } from "../../../../infrastructure/database/UserRepository";
+import { validate, validateUUID } from "../../../../shared/utils/validate";
 
 const artistRequestService = new ArtistRequestService(
     new ArtistRequestRepository(),
@@ -10,17 +12,37 @@ const artistRequestService = new ArtistRequestService(
     new UserRepository(),
 );
 
-// GET /admin/artist-requests - lấy danh sách pending
+const AdminNoteSchema = z.object({
+    adminNote: z.string().max(500).nullable().optional(),
+});
+
+const RejectSchema = z.object({
+    adminNote: z.string().min(1, "Lý do từ chối không được để trống").max(500),
+});
+
+// GET /admin/artist-requests
 export const listHandler = makeAuthHandler(async () => {
-    return await artistRequestService.getPendingRequests();
+    return artistRequestService.getPendingRequests();
 }, "admin");
 
 // POST /admin/artist-requests/{id}/approve
 export const approveHandler = makeAuthHandler(async (body, params) => {
-    return await artistRequestService.approveRequest(params.id, body.adminNote);
+    const idResult = validateUUID(params.id, "request ID");
+    if (!idResult.success) return idResult;
+
+    const v = validate(AdminNoteSchema, body);
+    if (!v.success) return v;
+
+    return artistRequestService.approveRequest(idResult.data, v.data.adminNote ?? undefined);
 }, "admin");
 
 // POST /admin/artist-requests/{id}/reject
 export const rejectHandler = makeAuthHandler(async (body, params) => {
-    return await artistRequestService.rejectRequest(params.id, body.adminNote || "Không đáp ứng yêu cầu");
+    const idResult = validateUUID(params.id, "request ID");
+    if (!idResult.success) return idResult;
+
+    const v = validate(RejectSchema, body);
+    if (!v.success) return v;
+
+    return artistRequestService.rejectRequest(idResult.data, v.data.adminNote);
 }, "admin");
