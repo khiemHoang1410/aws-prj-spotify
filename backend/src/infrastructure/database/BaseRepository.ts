@@ -36,7 +36,10 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 TableName: this.tableName,
                 Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
             }));
-            return Success((response.Item as T) || null);
+            const item = response.Item as any;
+            // Trả về null nếu đã soft delete
+            if (item?.deletedAt) return Success(null);
+            return Success((item as T) || null);
         } catch (error: any) {
             return Failure(`Lỗi truy vấn ${this.entityPrefix}: ${error.message}`, 500);
         }
@@ -48,6 +51,8 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 TableName: this.tableName,
                 IndexName: "EntityTypeIndex",
                 KeyConditionExpression: "entityType = :type AND sk = :sk",
+                // Filter out soft deleted items
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
             }));
             return Success((response.Items as T[]) || []);
@@ -62,6 +67,7 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 TableName: this.tableName,
                 IndexName: "EntityTypeIndex",
                 KeyConditionExpression: "entityType = :type AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
                 Limit: limit,
             };
@@ -108,6 +114,26 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
     }
 
     async delete(id: string): Promise<Result<void>> {
+        // Soft delete: set deletedAt thay vì xóa hẳn
+        try {
+            await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
+                UpdateExpression: "SET deletedAt = :now, updatedAt = :now",
+                ExpressionAttributeValues: { ":now": new Date().toISOString() },
+                ConditionExpression: "attribute_exists(pk) AND attribute_not_exists(deletedAt)",
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            if (error.name === "ConditionalCheckFailedException") {
+                return Failure(`${this.entityPrefix} không tồn tại`, 404);
+            }
+            return Failure(`Lỗi xóa ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    async hardDelete(id: string): Promise<Result<void>> {
+        // Xóa hẳn khỏi DB — chỉ dùng khi thực sự cần (GDPR, cleanup)
         try {
             await docClient.send(new DeleteCommand({
                 TableName: this.tableName,
