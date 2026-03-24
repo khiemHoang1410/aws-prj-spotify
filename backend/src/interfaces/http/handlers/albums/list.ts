@@ -1,11 +1,11 @@
 import { makeHandler } from "../../middlewares/makeHandler";
-import { AlbumService } from "../../../../application/services/AlbumService";
 import { AlbumRepository } from "../../../../infrastructure/database/AlbumRepository";
-import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { config } from "../../../../shared/config";
 
-const albumService = new AlbumService(new AlbumRepository(), new ArtistRepository(), new SongRepository());
+const albumRepo = new AlbumRepository();
 
-export const handler = makeHandler(async () => {
-    return await albumService.getAllAlbums();
+export const handler = makeHandler(async (_body, _params, query) => {
+    const limit = Math.min(Number(query.limit) || config.defaultPageSize, config.maxPageSize);
+    const cursor = query.cursor as string | undefined;
+    return albumRepo.findAllPaginated(limit, cursor);
 });
