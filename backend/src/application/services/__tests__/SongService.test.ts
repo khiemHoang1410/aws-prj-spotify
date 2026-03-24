@@ -54,7 +54,7 @@ describe("SongService.createSong", () => {
     it("trả về lỗi 404 khi artist không tồn tại", async () => {
         mockArtistRepo.findById.mockResolvedValue({ success: true, data: null });
 
-        const result = await songService.createSong(validSongInput);
+        const result = await songService.createSong(validSongInput) as any;
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(404);
@@ -62,7 +62,7 @@ describe("SongService.createSong", () => {
     });
 
     it("trả về lỗi 400 khi thiếu title", async () => {
-        const result = await songService.createSong({ ...validSongInput, title: "" });
+        const result = await songService.createSong({ ...validSongInput, title: "" }) as any;
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
@@ -70,21 +70,21 @@ describe("SongService.createSong", () => {
     });
 
     it("trả về lỗi 400 khi duration <= 0", async () => {
-        const result = await songService.createSong({ ...validSongInput, duration: 0 });
+        const result = await songService.createSong({ ...validSongInput, duration: 0 }) as any;
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
 
     it("trả về lỗi 400 khi fileUrl không hợp lệ", async () => {
-        const result = await songService.createSong({ ...validSongInput, fileUrl: "not-a-url" });
+        const result = await songService.createSong({ ...validSongInput, fileUrl: "not-a-url" }) as any;
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
 
     it("trả về lỗi 400 khi artistId không phải UUID", async () => {
-        const result = await songService.createSong({ ...validSongInput, artistId: "not-uuid" });
+        const result = await songService.createSong({ ...validSongInput, artistId: "not-uuid" }) as any;
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
@@ -96,7 +96,7 @@ describe("SongService.getSong", () => {
         const mockSong = { ...validSongInput, id: "song-id" };
         mockSongRepo.findById.mockResolvedValue({ success: true, data: mockSong });
 
-        const result = await songService.getSong("song-id");
+        const result = await songService.getSong("song-id") as any;
 
         expect(result.success).toBe(true);
         expect(result.data).toEqual(mockSong);
@@ -105,7 +105,7 @@ describe("SongService.getSong", () => {
     it("trả về null khi không tìm thấy", async () => {
         mockSongRepo.findById.mockResolvedValue({ success: true, data: null });
 
-        const result = await songService.getSong("non-existent");
+        const result = await songService.getSong("non-existent") as any;
 
         expect(result.success).toBe(true);
         expect(result.data).toBeNull();
@@ -117,7 +117,7 @@ describe("SongService.getSongsByArtist", () => {
         const songs = [{ ...validSongInput, id: "s1" }, { ...validSongInput, id: "s2" }];
         mockSongRepo.findByArtistId.mockResolvedValue({ success: true, data: songs });
 
-        const result = await songService.getSongsByArtist("artist-id");
+        const result = await songService.getSongsByArtist("artist-id") as any;
 
         expect(result.success).toBe(true);
         expect(result.data).toHaveLength(2);
