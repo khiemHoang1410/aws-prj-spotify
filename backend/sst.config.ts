@@ -15,7 +15,7 @@ export default $config({
     const { albumPublicRoutes, albumProtectedRoutes } = await import("./src/infrastructure/routes/album.routes.js");
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
-    const { playlistRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
+    const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -94,12 +94,13 @@ export default $config({
     Object.entries(artistPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
+    Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
 
     // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
     Object.entries(artistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
     Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
-    Object.entries(playlistRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    Object.entries(playlistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
     Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
 
     api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", jwtAuth);
