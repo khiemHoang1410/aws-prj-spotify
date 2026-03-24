@@ -30,19 +30,27 @@ export default $config({
 
     const userPoolClient = userPool.addClient("SpotifyUserPoolClient", {
       transform: {
-        client: (args) => {
+        client: (args: any) => {
           args.explicitAuthFlows = [
             "ALLOW_USER_PASSWORD_AUTH",
             "ALLOW_USER_SRP_AUTH",
             "ALLOW_REFRESH_TOKEN_AUTH",
           ];
+          // Thời gian sống của tokens (đơn vị: phút)
+          args.accessTokenValidity = 60;        // 1 giờ
+          args.idTokenValidity = 60;            // 1 giờ
+          args.refreshTokenValidity = 43200;    // 30 ngày (đơn vị: phút)
+          args.tokenValidityUnits = {
+            accessToken: "minutes",
+            idToken: "minutes",
+            refreshToken: "minutes",
+          };
         },
       },
     });
 
     // 3. DynamoDB
     const table = new sst.aws.Dynamo("SpotifyTable", {
-      name: "Spotify-MainTable",
       fields: {
         pk: "string",
         sk: "string",
@@ -79,17 +87,15 @@ export default $config({
     });
 
     // 6. Đăng ký Routes
-    // Public routes (không cần JWT)
+    const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
+
+    // Public routes
     Object.entries(songPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(artistPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
     Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
-
-    // Auth routes (public)
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
 
-    // Protected routes - cần JWT
-    const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
-
+    // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
     Object.entries(artistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
     Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
@@ -97,12 +103,14 @@ export default $config({
     Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
 
     api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", jwtAuth);
+    api.route("PUT /me", "src/interfaces/http/handlers/users/updateMe.handler", jwtAuth);
     api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", jwtAuth);
 
     // System routes
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
     api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler");
     api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler");
+    api.route("GET /search", "src/interfaces/http/handlers/search/search.handler");
 
     return {
       api: api.url,

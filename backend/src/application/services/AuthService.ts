@@ -4,6 +4,7 @@ import {
     InitiateAuthCommand,
     ConfirmSignUpCommand,
     AdminAddUserToGroupCommand,
+    GlobalSignOutCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 import { Resource } from "sst";
 import { UserRepository } from "../../infrastructure/database/UserRepository";
@@ -87,6 +88,35 @@ export class AuthService {
             if (error.name === "NotAuthorizedException") return Failure("Email hoặc mật khẩu không đúng", 401);
             if (error.name === "UserNotConfirmedException") return Failure("Tài khoản chưa được xác nhận email", 403);
             return Failure(`Lỗi đăng nhập: ${error.message}`, 500);
+        }
+    }
+
+    async refresh(refreshToken: string): Promise<Result<{ accessToken: string; idToken: string }>> {
+        try {
+            const response = await cognitoClient.send(new InitiateAuthCommand({
+                AuthFlow: "REFRESH_TOKEN_AUTH",
+                ClientId: Resource.SpotifyUserPoolClient.id,
+                AuthParameters: { REFRESH_TOKEN: refreshToken },
+            }));
+
+            const tokens = response.AuthenticationResult;
+            if (!tokens?.AccessToken || !tokens?.IdToken) {
+                return Failure("Refresh token không hợp lệ", 401);
+            }
+
+            return Success({ accessToken: tokens.AccessToken, idToken: tokens.IdToken });
+        } catch (error: any) {
+            if (error.name === "NotAuthorizedException") return Failure("Refresh token hết hạn hoặc không hợp lệ", 401);
+            return Failure(`Lỗi refresh token: ${error.message}`, 500);
+        }
+    }
+
+    async logout(accessToken: string): Promise<Result<{ message: string }>> {
+        try {
+            await cognitoClient.send(new GlobalSignOutCommand({ AccessToken: accessToken }));
+            return Success({ message: "Đăng xuất thành công" });
+        } catch (error: any) {
+            return Failure(`Lỗi đăng xuất: ${error.message}`, 500);
         }
     }
 
