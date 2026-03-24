@@ -30,7 +30,7 @@ export class SearchService {
             const artists = await this.artistRepo.findAll();
             if (!artists.success) return artists;
             result.artists = artists.data
-                .filter(a => a.name.toLowerCase().includes(keyword))
+                .filter(a => a.name.toLowerCase().normalize("NFD").includes(keyword.normalize("NFD")))
                 .slice(0, config.searchMaxResults);
         }
 
@@ -38,7 +38,7 @@ export class SearchService {
             const albums = await this.albumRepo.findAll();
             if (!albums.success) return albums;
             result.albums = albums.data
-                .filter(a => a.title.toLowerCase().includes(keyword))
+                .filter(a => a.title.toLowerCase().normalize("NFD").includes(keyword.normalize("NFD")))
                 .slice(0, config.searchMaxResults);
         }
 
