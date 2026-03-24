@@ -1,20 +1,19 @@
 import { Result } from "../../../shared/utils/Result";
+import { logger } from "../../../shared/utils/logger";
 
-/**
- * Master Wrapper: Biến một hàm logic thuần túy thành một Lambda Handler chuẩn AWS
- */
-export const makeHandler = (logic: (body: any, params: any) => Promise<Result<any>>) => {
+export const makeHandler = (logic: (body: any, params: any, query: any) => Promise<Result<any>>) => {
     return async (event: any) => {
+        const start = Date.now();
+        let statusCode = 200;
         try {
-            // 1. Tự động parse body (nếu có)
             const body = event.body ? JSON.parse(event.body) : {};
             const params = event.pathParameters || {};
+            const query = event.queryStringParameters || {};
 
-            // 2. Thực thi logic nghiệp vụ
-            const result = await logic(body, params);
+            const result = await logic(body, params, query);
 
-            // 3. Trả về response dựa trên Result pattern
             if (result.success) {
+                logger.request(event, 200, Date.now() - start);
                 return {
                     statusCode: 200,
                     headers: { "Content-Type": "application/json" },
@@ -22,15 +21,20 @@ export const makeHandler = (logic: (body: any, params: any) => Promise<Result<an
                 };
             }
 
-            // 4. Nếu thất bại, dùng code từ Result (mặc định 400)
+            statusCode = result.code ?? 400;
+            logger.request(event, statusCode, Date.now() - start);
             return {
-                statusCode: result.code ?? 400,
+                statusCode,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ error: result.error }),
             };
         } catch (error: any) {
-            // 5. Chốt chặn cuối cùng nếu có lỗi hệ thống (Crash)
-            console.error("CRITICAL_ERROR:", error);
+            logger.error("Unhandled exception in handler", {
+                requestId: event.requestContext?.requestId,
+                path: event.requestContext?.http?.path,
+                error: error.message,
+                stack: error.stack,
+            });
             return {
                 statusCode: 500,
                 headers: { "Content-Type": "application/json" },

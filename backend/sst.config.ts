@@ -1,11 +1,17 @@
 // sst.config.ts
+import { sstEnv } from "./sst.env.js";
 
 export default $config({
   app(input) {
     return {
       name: "spotify-backend",
-      removal: input?.stage === "production" ? "retain" : "remove",
+      removal: input?.stage === "prod" ? "retain" : "remove",
       home: "aws",
+      providers: {
+        aws: {
+          region: sstEnv.region,
+        },
+      },
     };
   },
   async run() {
@@ -15,13 +21,13 @@ export default $config({
     const { albumPublicRoutes, albumProtectedRoutes } = await import("./src/infrastructure/routes/album.routes.js");
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
-    const { playlistRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
+    const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
       usernames: ["email"],
       password: {
-        minLength: 8,
+        minLength: sstEnv.passwordMinLength,
         requireNumbers: true,
         requireUppercase: false,
         requireSymbols: false,
@@ -30,19 +36,26 @@ export default $config({
 
     const userPoolClient = userPool.addClient("SpotifyUserPoolClient", {
       transform: {
-        client: (args) => {
+        client: (args: any) => {
           args.explicitAuthFlows = [
             "ALLOW_USER_PASSWORD_AUTH",
             "ALLOW_USER_SRP_AUTH",
             "ALLOW_REFRESH_TOKEN_AUTH",
           ];
+          args.accessTokenValidity = sstEnv.accessTokenValidityMin;
+          args.idTokenValidity = sstEnv.idTokenValidityMin;
+          args.refreshTokenValidity = sstEnv.refreshTokenValidityMin;
+          args.tokenValidityUnits = {
+            accessToken: "minutes",
+            idToken: "minutes",
+            refreshToken: "minutes",
+          };
         },
       },
     });
 
     // 3. DynamoDB
     const table = new sst.aws.Dynamo("SpotifyTable", {
-      name: "Spotify-MainTable",
       fields: {
         pk: "string",
         sk: "string",
@@ -65,50 +78,70 @@ export default $config({
     });
 
     // 4. API Gateway
+    const isProd = $app.stage === "prod";
+    const domain = isProd ? sstEnv.prodApiDomain : sstEnv.devApiDomain;
+
+    // VPC config cho Lambda (chạy trong private subnet)
+    const lambdaVpcConfig = {
+        vpc: sstEnv.vpcId,
+        vpcSubnets: [sstEnv.privateSubnetId],
+        securityGroups: [sstEnv.lambdaSecurityGroupId],
+    };
+
     const api = new sst.aws.ApiGatewayV2("MyApi", {
-      transform: {
-        route: {
-          handler: {
-            link: [table, bucket], 
-            /* 
-            vpc: {
-              securityGroups: ["sg-025f66f667f5365b2"],
-              privateSubnets: ["subnet-01c8103f393077241"], 
-            },
-            */
-          },
-        },
+      link: [table, bucket, userPool, userPoolClient],
+      domain: {
+        name: domain,
+        dns: sst.aws.dns({ zone: sstEnv.baseDomain }),
+      },
+      cors: {
+        allowOrigins: isProd ? sstEnv.prodCorsOrigins : ["*"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowHeaders: ["Content-Type", "Authorization"],
+      },
+    });
+
+    // 5. Cognito Authorizer
+    const authorizer = api.addAuthorizer("CognitoAuthorizer", {
+      jwt: {
+        issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
+        audiences: [userPoolClient.id],
       },
     });
 
     // 6. Đăng ký Routes
-    // Public routes (không cần JWT)
-    Object.entries(songPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
-    Object.entries(artistPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
-    Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler));
-
-    // Auth routes (public)
-    Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler));
-
-    // Protected routes - cần JWT
     const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
+    const withVpc = { transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } } };
+    const withVpcAndAuth = { ...jwtAuth, ...withVpc };
 
-    Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
-    Object.entries(artistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
-    Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
-    Object.entries(playlistRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
-    Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, jwtAuth));
+    // Public routes
+    Object.entries(songPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(artistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
-    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", jwtAuth);
-    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", jwtAuth);
+    // Protected routes
+    Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(artistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(playlistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+
+    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", withVpcAndAuth);
+    api.route("PUT /me", "src/interfaces/http/handlers/users/updateMe.handler", withVpcAndAuth);
+    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", withVpcAndAuth);
+    api.route("POST /media/upload-image", "src/interfaces/http/handlers/media/uploadImage.handler", withVpcAndAuth);
 
     // System routes
-    api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");
-    api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler");
-    api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler");
+    api.route("GET /health", "src/interfaces/http/handlers/system/health.handler", withVpc);
+    api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler", withVpc);
+    api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler", withVpc);
+    api.route("GET /search", "src/interfaces/http/handlers/search/search.handler", withVpc);
 
     return {
       api: api.url,
+      apiDomain: `https://${domain}`,
       bucketName: bucket.name,
       tableName: table.name,
       userPoolId: userPool.id,

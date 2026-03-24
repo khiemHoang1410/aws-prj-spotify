@@ -1,26 +1,41 @@
+import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { PlaylistService } from "../../../../application/services/PlaylistService";
 import { PlaylistRepository } from "../../../../infrastructure/database/PlaylistRepository";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
-import { Failure } from "../../../../shared/utils/Result";
+import { validate, validateUUID } from "../../../../shared/utils/validate";
 
 const playlistService = new PlaylistService(new PlaylistRepository(), new SongRepository());
 
+const AddSongSchema = z.object({
+    songId: z.uuid({ message: "songId phải là UUID hợp lệ" }),
+});
+
 // GET /playlists/{id}/songs
 export const listHandler = makeAuthHandler(async (_body, params) => {
-    if (!params.id) return Failure("Thiếu playlist ID", 400);
-    return await playlistService.getPlaylistSongs(params.id);
+    const idResult = validateUUID(params.id, "playlist ID");
+    if (!idResult.success) return idResult;
+    return playlistService.getPlaylistSongs(idResult.data);
 });
 
 // POST /playlists/{id}/songs
 export const addHandler = makeAuthHandler(async (body, params, auth) => {
-    if (!params.id) return Failure("Thiếu playlist ID", 400);
-    if (!body.songId) return Failure("Thiếu songId", 400);
-    return await playlistService.addSong(params.id, body.songId, auth.userId);
+    const idResult = validateUUID(params.id, "playlist ID");
+    if (!idResult.success) return idResult;
+
+    const v = validate(AddSongSchema, body);
+    if (!v.success) return v;
+
+    return playlistService.addSong(idResult.data, v.data.songId, auth.userId);
 });
 
 // DELETE /playlists/{id}/songs/{songId}
 export const removeHandler = makeAuthHandler(async (_body, params, auth) => {
-    if (!params.id || !params.songId) return Failure("Thiếu playlist ID hoặc song ID", 400);
-    return await playlistService.removeSong(params.id, params.songId, auth.userId);
+    const idResult = validateUUID(params.id, "playlist ID");
+    if (!idResult.success) return idResult;
+
+    const songIdResult = validateUUID(params.songId, "song ID");
+    if (!songIdResult.success) return songIdResult;
+
+    return playlistService.removeSong(idResult.data, songIdResult.data, auth.userId);
 });

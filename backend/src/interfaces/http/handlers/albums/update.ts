@@ -1,16 +1,29 @@
+import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { AlbumRepository } from "../../../../infrastructure/database/AlbumRepository";
 import { Failure } from "../../../../shared/utils/Result";
+import { validate, validateUUID, requireAtLeastOneField } from "../../../../shared/utils/validate";
 
 const albumRepo = new AlbumRepository();
 
-export const handler = makeAuthHandler(async (body, params) => {
-    const { id } = params;
-    if (!id) return Failure("Thiếu album ID", 400);
+const UpdateAlbumSchema = z.object({
+    title: z.string().min(1).max(255).optional(),
+    coverUrl: z.url().nullable().optional(),
+    releaseDate: z.string().nullable().optional(),
+});
 
-    const existing = await albumRepo.findById(id);
+export const handler = makeAuthHandler(async (body, params) => {
+    const idResult = validateUUID(params.id, "album ID");
+    if (!idResult.success) return idResult;
+
+    const validation = validate(UpdateAlbumSchema, body);
+    if (!validation.success) return validation;
+
+    const fieldsResult = requireAtLeastOneField(validation.data);
+    if (!fieldsResult.success) return fieldsResult;
+
+    const existing = await albumRepo.findById(idResult.data);
     if (!existing.success || !existing.data) return Failure("Album không tồn tại", 404);
 
-    const { title, coverUrl, releaseDate } = body;
-    return await albumRepo.update(id, { title, coverUrl, releaseDate });
+    return albumRepo.update(idResult.data, fieldsResult.data);
 }, "artist");

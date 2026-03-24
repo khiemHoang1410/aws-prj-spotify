@@ -1,9 +1,11 @@
 import { makeHandler } from "../../middlewares/makeHandler";
-import { ArtistService } from "../../../../application/services/ArtistService";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
+import { config } from "../../../../shared/config";
 
-const artistService = new ArtistService(new ArtistRepository());
+const artistRepo = new ArtistRepository();
 
-export const handler = makeHandler(async () => {
-    return await artistService.getAllArtists();
+export const handler = makeHandler(async (_body, _params, query) => {
+    const limit = Math.min(Number(query.limit) || config.defaultPageSize, config.maxPageSize);
+    const cursor = query.cursor as string | undefined;
+    return artistRepo.findAllPaginated(limit, cursor);
 });

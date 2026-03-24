@@ -1,16 +1,31 @@
+import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { Failure } from "../../../../shared/utils/Result";
+import { validate, validateUUID, requireAtLeastOneField } from "../../../../shared/utils/validate";
 
 const songRepo = new SongRepository();
 
-export const handler = makeAuthHandler(async (body, params) => {
-    const { id } = params;
-    if (!id) return Failure("Thiếu song ID", 400);
+const UpdateSongSchema = z.object({
+    title: z.string().min(1).max(255).optional(),
+    duration: z.number().int().min(1).optional(),
+    coverUrl: z.url().nullable().optional(),
+    lyrics: z.string().nullable().optional(),
+    albumId: z.uuid().nullable().optional(),
+});
 
-    const existing = await songRepo.findById(id);
+export const handler = makeAuthHandler(async (body, params) => {
+    const idResult = validateUUID(params.id, "song ID");
+    if (!idResult.success) return idResult;
+
+    const validation = validate(UpdateSongSchema, body);
+    if (!validation.success) return validation;
+
+    const fieldsResult = requireAtLeastOneField(validation.data);
+    if (!fieldsResult.success) return fieldsResult;
+
+    const existing = await songRepo.findById(idResult.data);
     if (!existing.success || !existing.data) return Failure("Bài hát không tồn tại", 404);
 
-    const { title, duration, coverUrl, lyrics } = body;
-    return await songRepo.update(id, { title, duration, coverUrl, lyrics });
+    return songRepo.update(idResult.data, fieldsResult.data);
 }, "artist");

@@ -38,6 +38,10 @@ export class PlaylistService {
         return await this.playlistRepo.findByUserId(userId);
     }
 
+    async getPublicPlaylists(limit: number, cursor?: string): Promise<Result<any>> {
+        return await this.playlistRepo.findPublic(limit, cursor);
+    }
+
     async addSong(playlistId: string, songId: string, userId: string): Promise<Result<void>> {
         try {
             // Verify playlist thuộc về user
