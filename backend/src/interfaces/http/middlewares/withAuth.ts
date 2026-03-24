@@ -38,7 +38,7 @@ export const extractAuth = (event: any): Result<AuthContext> => {
  * makeHandler với auth - tự động extract và inject AuthContext
  */
 export const makeAuthHandler = (
-    logic: (body: any, params: any, auth: AuthContext) => Promise<Result<any>>,
+    logic: (body: any, params: any, auth: AuthContext, query: any) => Promise<Result<any>>,
     requiredRole?: "admin" | "artist" | "listener"
 ) => {
     return async (event: any) => {
@@ -54,7 +54,6 @@ export const makeAuthHandler = (
 
             const auth = authResult.data;
 
-            // Kiểm tra role nếu cần
             if (requiredRole === "admin" && auth.role !== "admin") {
                 return {
                     statusCode: 403,
@@ -82,7 +81,8 @@ export const makeAuthHandler = (
                 };
             }
             const params = event.pathParameters || {};
-            const result = await logic(body, params, auth);
+            const query = event.queryStringParameters || {};
+            const result = await logic(body, params, auth, query);
 
             if (result.success) {
                 return {

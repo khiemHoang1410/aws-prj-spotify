@@ -1,10 +1,11 @@
 import { makeHandler } from "../../middlewares/makeHandler";
-import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
-import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
+import { config } from "../../../../shared/config";
 
-const songService = new SongService(new SongRepository(), new ArtistRepository());
+const songRepo = new SongRepository();
 
-export const handler = makeHandler(async () => {
-    return await songService.getAllSongs();
+export const handler = makeHandler(async (_body, _params, query) => {
+    const limit = Math.min(Number(query.limit) || config.defaultPageSize, config.maxPageSize);
+    const cursor = query.cursor as string | undefined;
+    return songRepo.findAllPaginated(limit, cursor);
 });

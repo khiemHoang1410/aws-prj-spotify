@@ -105,6 +105,7 @@ export default $config({
     api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", jwtAuth);
     api.route("PUT /me", "src/interfaces/http/handlers/users/updateMe.handler", jwtAuth);
     api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", jwtAuth);
+    api.route("POST /media/upload-image", "src/interfaces/http/handlers/media/uploadImage.handler", jwtAuth);
 
     // System routes
     api.route("GET /health", "src/interfaces/http/handlers/system/health.handler");

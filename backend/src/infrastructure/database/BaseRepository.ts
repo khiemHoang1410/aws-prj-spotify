@@ -56,6 +56,28 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
         }
     }
 
+    async findAllPaginated(limit: number, cursor?: string): Promise<Result<{ items: T[]; nextCursor?: string }>> {
+        try {
+            const params: any = {
+                TableName: this.tableName,
+                IndexName: "EntityTypeIndex",
+                KeyConditionExpression: "entityType = :type AND sk = :sk",
+                ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
+                Limit: limit,
+            };
+            if (cursor) {
+                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+            }
+            const response = await docClient.send(new QueryCommand(params));
+            const nextCursor = response.LastEvaluatedKey
+                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                : undefined;
+            return Success({ items: (response.Items as T[]) || [], nextCursor });
+        } catch (error: any) {
+            return Failure(`Lỗi phân trang ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
     async update(id: string, fields: Partial<Omit<T, "id" | "createdAt">>): Promise<Result<T>> {
         try {
             const now = new Date().toISOString();
