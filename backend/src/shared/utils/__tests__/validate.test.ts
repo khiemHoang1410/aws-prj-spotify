@@ -12,7 +12,7 @@ describe("validate", () => {
     });
 
     it("trả về lỗi 400 khi không hợp lệ", () => {
-        const result = validate(schema, { name: "", age: -1 });
+        const result = validate(schema, { name: "", age: -1 }) as any;
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
@@ -31,13 +31,13 @@ describe("validateUUID", () => {
     });
 
     it("trả về lỗi khi undefined", () => {
-        const result = validateUUID(undefined, "artist ID");
+        const result = validateUUID(undefined, "artist ID") as any;
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
 
     it("trả về lỗi khi không phải UUID", () => {
-        const result = validateUUID("not-a-uuid", "artist ID");
+        const result = validateUUID("not-a-uuid", "artist ID") as any;
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
@@ -51,7 +51,7 @@ describe("requireAtLeastOneField", () => {
     });
 
     it("trả về lỗi khi tất cả fields đều undefined", () => {
-        const result = requireAtLeastOneField({ name: undefined, bio: undefined });
+        const result = requireAtLeastOneField({ name: undefined, bio: undefined }) as any;
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
     });
