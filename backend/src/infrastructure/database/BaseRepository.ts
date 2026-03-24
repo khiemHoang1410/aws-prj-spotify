@@ -1,73 +1,11 @@
 import { Resource } from "sst";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { DynamoDBDocumentClient, PutCommand, GetCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
-=======
-import { DynamoDBDocumentClient, PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
-=======
 import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
->>>>>>> khiem
 import { Result, Success, Failure } from "../../shared/utils/Result";
->>>>>>> khiem
 
 const client = new DynamoDBClient({});
 const docClient = DynamoDBDocumentClient.from(client);
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-export abstract class BaseRepository<T extends { id: string | number }> {
-    protected readonly tableName = Resource.SpotifyTable.name;
-    protected abstract readonly entityPrefix: string; // Ví dụ: "SONG", "ARTIST"
-
-    // Hàm Lưu (Save) - Tự động xử lý createdAt và updatedAt
-    async save(item: T): Promise<void> {
-        const now = new Date().toISOString();
-
-        const createdAt = (item as Record<string, any>).createdAt ?? now;
-
-        const itemToSave = {
-            pk: `${this.entityPrefix}#${item.id}`,
-            sk: "METADATA",
-            ...item,
-            createdAt,
-            updatedAt: now, // Luôn cập nhật thời gian mới nhất khi save
-        };
-
-        await docClient.send(new PutCommand({
-            TableName: this.tableName,
-            Item: itemToSave,
-        }));
-    }
-
-    // Hàm Lấy theo ID
-    async findById(id: string | number): Promise<T | null> {
-        const response = await docClient.send(new GetCommand({
-            TableName: this.tableName,
-            Key: {
-                pk: `${this.entityPrefix}#${id}`,
-                sk: "METADATA",
-            },
-        }));
-
-        return (response.Item as T) || null;
-    }
-
-    // Hàm Xóa
-    async delete(id: string | number): Promise<void> {
-        await docClient.send(new DeleteCommand({
-            TableName: this.tableName,
-            Key: {
-                pk: `${this.entityPrefix}#${id}`,
-                sk: "METADATA",
-            },
-        }));
-    }
-}
-=======
-// Ràng buộc T phải có ít nhất các trường này để đảm bảo Type Safety
-=======
->>>>>>> khiem
 export abstract class BaseRepository<T extends { id: string; createdAt?: string; updatedAt?: string }> {
     protected readonly tableName = Resource.SpotifyTable.name;
     protected abstract readonly entityPrefix: string;
@@ -84,7 +22,6 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 updatedAt: now,
             };
             await docClient.send(new PutCommand({ TableName: this.tableName, Item: itemToSave }));
-            // Strip DynamoDB internal fields trước khi return
             const { pk, sk, entityType, ...clean } = itemToSave as any;
             return Success(clean as T);
         } catch (error: any) {
@@ -98,7 +35,9 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 TableName: this.tableName,
                 Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
             }));
-            return Success((response.Item as T) || null);
+            const item = response.Item as any;
+            if (item?.deletedAt) return Success(null);
+            return Success((item as T) || null);
         } catch (error: any) {
             return Failure(`Lỗi truy vấn ${this.entityPrefix}: ${error.message}`, 500);
         }
@@ -110,11 +49,35 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 TableName: this.tableName,
                 IndexName: "EntityTypeIndex",
                 KeyConditionExpression: "entityType = :type AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
             }));
             return Success((response.Items as T[]) || []);
         } catch (error: any) {
             return Failure(`Lỗi lấy danh sách ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    async findAllPaginated(limit: number, cursor?: string): Promise<Result<{ items: T[]; nextCursor?: string }>> {
+        try {
+            const params: any = {
+                TableName: this.tableName,
+                IndexName: "EntityTypeIndex",
+                KeyConditionExpression: "entityType = :type AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
+                ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
+                Limit: limit,
+            };
+            if (cursor) {
+                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+            }
+            const response = await docClient.send(new QueryCommand(params));
+            const nextCursor = response.LastEvaluatedKey
+                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                : undefined;
+            return Success({ items: (response.Items as T[]) || [], nextCursor });
+        } catch (error: any) {
+            return Failure(`Lỗi phân trang ${this.entityPrefix}: ${error.message}`, 500);
         }
     }
 
@@ -149,6 +112,24 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
 
     async delete(id: string): Promise<Result<void>> {
         try {
+            await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
+                UpdateExpression: "SET deletedAt = :now, updatedAt = :now",
+                ExpressionAttributeValues: { ":now": new Date().toISOString() },
+                ConditionExpression: "attribute_exists(pk) AND attribute_not_exists(deletedAt)",
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            if (error.name === "ConditionalCheckFailedException") {
+                return Failure(`${this.entityPrefix} không tồn tại`, 404);
+            }
+            return Failure(`Lỗi xóa ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    async hardDelete(id: string): Promise<Result<void>> {
+        try {
             await docClient.send(new DeleteCommand({
                 TableName: this.tableName,
                 Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
@@ -163,4 +144,3 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
         }
     }
 }
->>>>>>> khiem

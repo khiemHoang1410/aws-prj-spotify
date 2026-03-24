@@ -62,6 +62,29 @@ export class PlaylistRepository {
         }
     }
 
+    async findPublic(limit: number, cursor?: string): Promise<Result<{ items: Playlist[]; nextCursor?: string }>> {
+        try {
+            const params: any = {
+                TableName: this.tableName,
+                IndexName: "EntityTypeIndex",
+                KeyConditionExpression: "entityType = :type AND sk = :sk",
+                FilterExpression: "isPublic = :pub",
+                ExpressionAttributeValues: { ":type": this.prefix, ":sk": "METADATA", ":pub": true },
+                Limit: limit,
+            };
+            if (cursor) {
+                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+            }
+            const response = await docClient.send(new QueryCommand(params));
+            const nextCursor = response.LastEvaluatedKey
+                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                : undefined;
+            return Success({ items: (response.Items as Playlist[]) || [], nextCursor });
+        } catch (error: any) {
+            return Failure(`Lỗi lấy public playlists: ${error.message}`, 500);
+        }
+    }
+
     async addSong(playlistId: string, song: Song): Promise<Result<void>> {
         try {
             await docClient.send(new PutCommand({

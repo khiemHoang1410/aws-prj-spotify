@@ -44,6 +44,22 @@ export class SongService {
         return await this.songRepo.findById(id);
     }
 
+    async getEnrichedSong(id: string): Promise<Result<any | null>> {
+        const songResult = await this.songRepo.findById(id);
+        if (!songResult.success || !songResult.data) return songResult as any;
+
+        const song = songResult.data;
+        const artistResult = await this.artistRepo.findById(song.artistId);
+
+        return {
+            success: true,
+            data: {
+                ...song,
+                artistName: artistResult.success && artistResult.data ? artistResult.data.name : null,
+            },
+        };
+    }
+
     async getAllSongs(): Promise<Result<Song[]>> {
         return await this.songRepo.findAll();
     }
