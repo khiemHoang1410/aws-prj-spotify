@@ -3,6 +3,7 @@ import playerReducer from './playerSlice';
 import authReducer from './authSlice';
 import uiReducer from './uiSlice';
 import settingsReducer from './settingsSlice';
+import notificationReducer from './notificationSlice';
 
 export const store = configureStore({
   reducer: {
@@ -10,5 +11,6 @@ export const store = configureStore({
     auth: authReducer,
     ui: uiReducer,
     settings: settingsReducer,
+    notification: notificationReducer,
   },
 });

@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { setCurrentSong } from '../store/playerSlice';
-import { openModal, logout } from '../store/authSlice';
+import { openModal, logout, setFollowedArtists } from '../store/authSlice';
 import { setSearchQuery, toggleBrowse, setView } from '../store/uiSlice'; 
 import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react'; // [S6-004.4]
 import { ROLES } from '../constants/enums';
@@ -11,6 +11,7 @@ import SearchContent from './SearchContent';
 import SearchResults from './SearchResults'; 
 import SearchBar from './SearchBar'; 
 import { getSongs } from '../services/SongService';
+import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
 import { logoutUser } from '../services/AuthService'; // <-- THÊM DÒNG NÀY
 import LyricsContent from './LyricsContent';
 import ArtistVerifyPage from '../pages/ArtistVerifyPage';
@@ -23,16 +24,28 @@ import CategoryPage from '../pages/CategoryPage';
 import LikedSongsPage from '../pages/LikedSongsPage';
 import ArtistProfilePage from '../pages/ArtistProfilePage'; // [S6-003.4]
 import ArtistDashboardPage from '../pages/ArtistDashboardPage'; // [S6-004.3]
+import EditSongPage from '../pages/EditSongPage'; // [S8-005.6]
+import AlbumDetailPage from '../pages/AlbumDetailPage'; // [S8-007.6]
+import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../services/NotificationService';
+import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../store/notificationSlice';
+import { getFollowedArtists } from '../services/ArtistService';
 
 export default function MainContent() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [songs, setSongs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAllSongs, setShowAllSongs] = useState(false);
+  const [trendingSongs, setTrendingSongs] = useState([]);
+  const [newReleases, setNewReleases] = useState([]);
+  const [personalizedSongs, setPersonalizedSongs] = useState([]);
+  const [discoverSongs, setDiscoverSongs] = useState([]);
+  const [expandedSections, setExpandedSections] = useState({});
   
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, likedSongs } = useSelector((state) => state.auth);
   const { currentView, searchQuery, isBrowsing, isSearchSubmitted } = useSelector((state) => state.ui); 
+  const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
   const dispatch = useDispatch();
+  const notifRef = useRef(null);
 
   useEffect(() => {
     const fetchMusic = async () => {
@@ -48,6 +61,33 @@ export default function MainContent() {
     };
     fetchMusic();
   }, []);
+
+  useEffect(() => {
+    if (songs.length === 0) return;
+    setTrendingSongs(getTrendingSongs(songs));
+    setNewReleases(getNewReleases(songs));
+    setPersonalizedSongs(getPersonalizedSongs(likedSongs || [], songs));
+    setDiscoverSongs(getDiscoverMix(likedSongs || [], songs));
+  }, [songs, likedSongs]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    getNotifications().then((data) => dispatch(setNotifications(data)));
+    getFollowedArtists().then((artists) => {
+      dispatch(setFollowedArtists(artists.map((a) => a.name)));
+    });
+  }, [isAuthenticated, dispatch]);
+
+  useEffect(() => {
+    if (!isDropdownOpen) return;
+    const handleClickOutside = (e) => {
+      if (notifRef.current && !notifRef.current.contains(e.target)) {
+        dispatch(closeNotificationDropdown());
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isDropdownOpen, dispatch]);
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {
@@ -101,10 +141,76 @@ export default function MainContent() {
                 <Users size={20} />
               </button>
 
-              {/* Nút Thông báo (Chuông) */}
-              <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition" title="Thông báo mới">
-                <Bell size={20} />
-              </button>
+              {/* Nút Thông báo (Chuông) + Dropdown */}
+              <div className="relative" ref={notifRef}>
+                <button
+                  className="text-[#b3b3b3] hover:text-white hover:scale-105 transition relative"
+                  title="Thông báo"
+                  onClick={() => dispatch(toggleNotificationDropdown())}
+                >
+                  <Bell size={20} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+
+                {isDropdownOpen && (
+                  <div className="absolute top-10 right-0 w-80 bg-[#282828] rounded-lg shadow-2xl z-50 border border-[#3e3e3e] overflow-hidden">
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-[#3e3e3e]">
+                      <h3 className="text-sm font-bold text-white">Thông báo</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          className="text-xs text-blue-400 hover:text-blue-300 font-semibold"
+                          onClick={async () => {
+                            await markAllAsRead();
+                            dispatch(markAllRead());
+                          }}
+                        >
+                          Đánh dấu tất cả đã đọc
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-72 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-4 py-8 text-center text-neutral-400 text-sm">
+                          Không có thông báo nào
+                        </div>
+                      ) : (
+                        notifications.map((notif) => (
+                          <div
+                            key={notif.id}
+                            className={`flex items-start gap-3 px-4 py-3 hover:bg-[#3e3e3e] cursor-pointer transition ${!notif.is_read ? 'bg-[#333]' : ''}`}
+                            onClick={async () => {
+                              if (!notif.is_read) {
+                                await markNotifAsRead(notif.id);
+                                dispatch(markRead(notif.id));
+                              }
+                            }}
+                          >
+                            <img
+                              src={notif.image_url || '/pictures/whiteBackground.jpg'}
+                              alt=""
+                              className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                            />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-white leading-tight">{notif.message}</p>
+                              <p className="text-xs text-neutral-400 mt-1">
+                                {new Date(notif.created_at).toLocaleDateString('vi-VN')}
+                              </p>
+                            </div>
+                            {!notif.is_read && (
+                              <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Avatar User (Bấm vào để mở Dropdown) */}
               <div 
@@ -197,27 +303,94 @@ export default function MainContent() {
       {/* 2. HIỂN THỊ NỘI DUNG TÙY THEO TAB ĐANG CHỌN */}
       {currentView === 'home' && (
         <>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Đề xuất cho bạn</h2>
-            <button
-              onClick={() => setShowAllSongs((prev) => !prev)}
-              className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
-            >
-              {showAllSongs ? 'Thu gọn' : 'Hiện tất cả'}
-            </button>
-          </div>
-
           {loading ? (
             <div className="text-[#b3b3b3] text-center mt-10">Đang tải nhạc...</div>
           ) : (
-            <div className="grid grid-cols-5 gap-6 transition-all duration-300">
-              {(showAllSongs ? songs : songs.slice(0, 5)).map((song) => (
-                <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
-              ))}
-              {songs.length === 0 && (
-                <div className="text-[#b3b3b3] col-span-full">Không có bài hát nào.</div>
+            <>
+              {/* Section 1: Dành cho bạn (chỉ khi đăng nhập + có liked songs) */}
+              {isAuthenticated && personalizedSongs.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-white">Dành cho bạn</h2>
+                    <button
+                      onClick={() => setExpandedSections((prev) => ({ ...prev, personalized: !prev.personalized }))}
+                      className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
+                    >
+                      {expandedSections.personalized ? 'Thu gọn' : 'Hiện tất cả'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-6">
+                    {(expandedSections.personalized ? personalizedSongs : personalizedSongs.slice(0, 5)).map((song) => (
+                      <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+                    ))}
+                  </div>
+                </div>
               )}
-            </div>
+
+              {/* Section 2: Thịnh hành */}
+              {trendingSongs.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-white">Thịnh hành</h2>
+                    <button
+                      onClick={() => setExpandedSections((prev) => ({ ...prev, trending: !prev.trending }))}
+                      className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
+                    >
+                      {expandedSections.trending ? 'Thu gọn' : 'Hiện tất cả'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-6">
+                    {(expandedSections.trending ? trendingSongs : trendingSongs.slice(0, 5)).map((song) => (
+                      <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 3: Mới phát hành */}
+              {newReleases.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-white">Mới phát hành</h2>
+                    <button
+                      onClick={() => setExpandedSections((prev) => ({ ...prev, newReleases: !prev.newReleases }))}
+                      className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
+                    >
+                      {expandedSections.newReleases ? 'Thu gọn' : 'Hiện tất cả'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-6">
+                    {(expandedSections.newReleases ? newReleases : newReleases.slice(0, 5)).map((song) => (
+                      <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Section 4: Khám phá (chỉ khi đăng nhập) */}
+              {isAuthenticated && discoverSongs.length > 0 && (
+                <div className="mb-8">
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-2xl font-bold text-white">Khám phá</h2>
+                    <button
+                      onClick={() => setExpandedSections((prev) => ({ ...prev, discover: !prev.discover }))}
+                      className="text-sm font-bold text-[#b3b3b3] hover:text-white transition"
+                    >
+                      {expandedSections.discover ? 'Thu gọn' : 'Hiện tất cả'}
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-5 gap-6">
+                    {(expandedSections.discover ? discoverSongs : discoverSongs.slice(0, 5)).map((song) => (
+                      <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {songs.length === 0 && (
+                <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>
+              )}
+            </>
           )}
         </>
       )}
@@ -275,6 +448,12 @@ export default function MainContent() {
 
       {/* M. ARTIST DASHBOARD — [S6-004.3] */}
       {currentView === 'artist-dashboard' && <ArtistDashboardPage />}
+
+      {/* N. EDIT SONG — [S8-005.6] */}
+      {currentView === 'edit-song' && <EditSongPage />}
+
+      {/* O. ALBUM DETAIL — [S8-007.6] */}
+      {currentView === 'album-detail' && <AlbumDetailPage />}
 
     </div>
   );

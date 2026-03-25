@@ -19,6 +19,10 @@ const mockSongs = [
     artist_background: "https://i.scdn.co/image/ab67618600001016c50961b7b7be0034ea366052",
     has_lyrics: true,
     categories: ['vpop', 'pop'],
+    play_count: 1250000,
+    created_at: '2024-06-15',
+    album_id: 'AL001',
+    album_name: 'Sky Tour',
   },
   { 
     song_id: "S2", 
@@ -32,6 +36,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['ballad', 'indie'],
+    play_count: 890000,
+    created_at: '2024-09-20',
+    album_id: 'AL002',
+    album_name: 'Ngủ Một Mình',
   },
   {
     song_id: "S3",
@@ -45,6 +53,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['vpop', 'ballad'],
+    play_count: 2100000,
+    created_at: '2023-12-01',
+    album_id: 'AL001',
+    album_name: 'Sky Tour',
   },
   {
     song_id: "S4",
@@ -58,6 +70,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['vpop', 'rap'],
+    play_count: 1800000,
+    created_at: '2023-08-10',
+    album_id: 'AL001',
+    album_name: 'Sky Tour',
   },
   {
     song_id: "S5",
@@ -71,6 +87,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['vpop', 'pop'],
+    play_count: 950000,
+    created_at: '2024-03-05',
+    album_id: null,
+    album_name: null,
   },
   {
     song_id: "S6",
@@ -84,6 +104,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['vpop', 'ballad'],
+    play_count: 1500000,
+    created_at: '2023-05-20',
+    album_id: null,
+    album_name: null,
   },
   {
     song_id: "S7",
@@ -97,6 +121,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['ballad', 'indie'],
+    play_count: 670000,
+    created_at: '2025-01-15',
+    album_id: 'AL002',
+    album_name: 'Ngủ Một Mình',
   },
   {
     song_id: "S8",
@@ -110,6 +138,10 @@ const mockSongs = [
     artist_background: "",
     has_lyrics: false,
     categories: ['ballad', 'indie'],
+    play_count: 420000,
+    created_at: '2024-11-28',
+    album_id: null,
+    album_name: null,
   },
 ];
 
@@ -327,6 +359,40 @@ export const searchSongs = (query) => {
 export const getSongsByCategory = (categoryId) =>
   mockSongs.filter((s) => s.categories?.includes(categoryId));
 
+export const searchWithRelevance = (query) => {
+  if (!query || query.trim().length === 0) return { songs: [], matchedCategories: [] };
+  const q = query.toLowerCase().trim();
+  const maxPlayCount = Math.max(...mockSongs.map((s) => s.play_count || 0), 1);
+
+  const scored = mockSongs.map((song) => {
+    let score = 0;
+    const titleLower = song.title.toLowerCase();
+    const artistLower = song.artist_name.toLowerCase();
+
+    if (titleLower === q) score += 100;
+    else if (titleLower.startsWith(q)) score += 80;
+    else if (titleLower.includes(q)) score += 60;
+
+    if (artistLower === q) score += 90;
+    else if (artistLower.startsWith(q)) score += 70;
+    else if (artistLower.includes(q)) score += 50;
+
+    if (song.categories?.some((c) => c.includes(q))) score += 30;
+
+    if (score > 0) {
+      score += Math.round(((song.play_count || 0) / maxPlayCount) * 10);
+    }
+
+    return { ...song, _score: score };
+  });
+
+  const matched = scored.filter((s) => s._score > 0).sort((a, b) => b._score - a._score);
+  const categoriesSet = new Set();
+  matched.forEach((s) => s.categories?.forEach((c) => categoriesSet.add(c)));
+
+  return { songs: matched, matchedCategories: [...categoriesSet] };
+};
+
 // [S6-001.1] removeSongFromPlaylist
 export const removeSongFromPlaylist = async (playlistId, songId) => {
   if (!API_URL) {
@@ -371,6 +437,63 @@ export const addSongToPlaylist = async (playlistId, song) => {
       body: JSON.stringify({ song_id: song.song_id }),
     });
     if (!response.ok) throw new Error('Lỗi khi thêm bài hát');
+    return await response.json();
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+// [S8-005.1] updateSong — sửa thông tin bài hát
+export const updateSong = async (songId, data) => {
+  if (!API_URL) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const song = mockSongs.find((s) => s.song_id === songId);
+        if (song) {
+          Object.assign(song, data);
+          resolve({ success: true, data: song });
+        } else {
+          resolve({ success: false, message: 'Không tìm thấy bài hát' });
+        }
+      }, 500);
+    });
+  }
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/songs/${encodeURIComponent(songId)}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!response.ok) throw new Error('Lỗi khi cập nhật bài hát');
+    return await response.json();
+  } catch (error) {
+    return { success: false, message: error.message };
+  }
+};
+
+// [S8-005.1] deleteSong — xoá bài hát
+export const deleteSong = async (songId) => {
+  if (!API_URL) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const idx = mockSongs.findIndex((s) => s.song_id === songId);
+        if (idx !== -1) {
+          mockSongs.splice(idx, 1);
+          resolve({ success: true });
+        } else {
+          resolve({ success: false, message: 'Không tìm thấy bài hát' });
+        }
+      }, 500);
+    });
+  }
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/songs/${encodeURIComponent(songId)}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!response.ok) throw new Error('Lỗi khi xoá bài hát');
     return await response.json();
   } catch (error) {
     return { success: false, message: error.message };

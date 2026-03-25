@@ -4,9 +4,10 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { showToast } from '../store/uiSlice';
+import { showToast, setActiveAlbum, setView } from '../store/uiSlice';
 import { getArtistById, followArtist } from '../services/ArtistService';
 import { getSongs } from '../services/SongService';
+import { getAlbumsByArtist } from '../services/AlbumService';
 import EmptyState from '../components/shared/EmptyState';
 import SkeletonCard from '../components/shared/SkeletonCard';
 
@@ -25,6 +26,7 @@ export default function ArtistProfilePage() {
 
   const [artist, setArtist] = useState(null);
   const [artistSongs, setArtistSongs] = useState([]);
+  const [artistAlbums, setArtistAlbums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -38,6 +40,7 @@ export default function ArtistProfilePage() {
       setArtist(artistData);
       if (artistData) {
         setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
+        getAlbumsByArtist(artistData.name).then((albums) => setArtistAlbums(albums));
       }
     }).finally(() => setIsLoading(false));
   }, [activeArtistId]);
@@ -187,7 +190,7 @@ export default function ArtistProfilePage() {
                     />
                     <span className="text-sm font-medium text-white truncate">{song.title}</span>
                   </div>
-                  <span className="text-sm text-neutral-400 flex items-center truncate">{song.title}</span>
+                  <span className="text-sm text-neutral-400 flex items-center truncate">{song.album_name || '—'}</span>
                   <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 </div>
               ))}
@@ -197,6 +200,34 @@ export default function ArtistProfilePage() {
           <EmptyState icon={Play} title="Chưa có bài hát" description="Nghệ sĩ này chưa có bài hát nào trên hệ thống." />
         )}
       </div>
+
+      {/* [S8-007.5] Albums section */}
+      {artistAlbums.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-white mb-3">Albums</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-neutral-700">
+            {artistAlbums.map((album) => (
+              <div
+                key={album.id}
+                className="flex-shrink-0 w-40 cursor-pointer group"
+                onClick={() => {
+                  dispatch(setActiveAlbum(album.id));
+                  dispatch(setView('album-detail'));
+                }}
+              >
+                <img
+                  src={album.image_url || IMG_FALLBACK}
+                  alt={album.title}
+                  className="w-40 h-40 rounded-lg object-cover shadow-lg group-hover:opacity-80 transition"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
+                />
+                <p className="text-sm font-medium text-white mt-2 truncate">{album.title}</p>
+                <p className="text-xs text-neutral-400">{album.release_date} • {album.songIds?.length || 0} bài</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

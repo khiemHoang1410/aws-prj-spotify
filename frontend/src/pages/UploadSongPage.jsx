@@ -3,6 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
 import { setView, showToast } from '../store/uiSlice';
 import { uploadSong } from '../services/UploadService';
+import { createNotification } from '../services/NotificationService';
+import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/shared/EmptyState';
 import ErrorMessage from '../components/shared/ErrorMessage';
@@ -99,6 +101,14 @@ export default function UploadSongPage() {
       const result = await uploadSong(formData);
       if (result.success) {
         dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
+        const notifResult = await createNotification({
+          type: 'new_song',
+          message: `${user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
+          artist_name: user.name || user.username,
+          song_title: title.trim(),
+          image_url: coverPreviews[0] || '',
+        });
+        if (notifResult.success) dispatch(addNotification(notifResult.data));
         setStep(0);
         setTitle('');
         setAudioFile(null);
