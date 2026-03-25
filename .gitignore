@@ -1,0 +1,8 @@
+/backend/node_modules
+.env
+.github
+.gitnexus
+.claude
+AGENTS.md
+CLAUDE.md
+agent_workspace.md
