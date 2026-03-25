@@ -70,6 +70,8 @@ export default function SongContextMenu({ song, position, onClose }) {
       ref={menuRef}
       style={{ position: 'fixed', top: safeY, left: safeX }}
       className="w-56 bg-[#282828] rounded-md shadow-2xl z-50 p-1 border border-[#3e3e3e]"
+      onClick={(e) => e.stopPropagation()}
+      onContextMenu={(e) => e.stopPropagation()}
     >
       {/* Like / Unlike */}
       <button

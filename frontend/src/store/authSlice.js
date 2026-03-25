@@ -9,6 +9,7 @@ const initialState = {
   likedSongs: [],
   verifyStatus: VERIFY_STATUS.IDLE,
   verifyMessage: '',
+  followedArtists: [],
 };
 
 const authSlice = createSlice({
@@ -33,6 +34,7 @@ const authSlice = createSlice({
       state.likedSongs = [];
       state.verifyStatus = VERIFY_STATUS.IDLE;
       state.verifyMessage = '';
+      state.followedArtists = [];
     },
     toggleLikeSong: (state, action) => {
       const song = action.payload;
@@ -47,8 +49,20 @@ const authSlice = createSlice({
       state.verifyStatus = action.payload.status;
       state.verifyMessage = action.payload.message || '';
     },
+    setFollowedArtists: (state, action) => {
+      state.followedArtists = action.payload;
+    },
+    toggleFollowArtist: (state, action) => {
+      const artistName = action.payload;
+      const index = state.followedArtists.indexOf(artistName);
+      if (index >= 0) {
+        state.followedArtists.splice(index, 1);
+      } else {
+        state.followedArtists.push(artistName);
+      }
+    },
   },
 });
 
-export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus } = authSlice.actions;
+export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus, setFollowedArtists, toggleFollowArtist } = authSlice.actions;
 export default authSlice.reducer;

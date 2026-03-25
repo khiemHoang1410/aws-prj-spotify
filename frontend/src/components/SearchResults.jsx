@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { useDispatch } from 'react-redux';
 import { setActiveArtist, setView } from '../store/uiSlice';
-import { searchSongs } from '../services/SongService';
+import { searchWithRelevance } from '../services/SongService';
 import { searchArtists } from '../services/ArtistService';
+import { CATEGORIES } from '../constants/enums';
 import CardArtist from './CardArtist';
 import SkeletonCard from './shared/SkeletonCard';
 
@@ -13,22 +14,27 @@ export default function SearchResults({ query, onPlaySong }) {
   const dispatch = useDispatch();
   const [results, setResults] = useState({ songs: [], artists: [], topResult: null });
   const [isLoading, setIsLoading] = useState(false);
+  const [activeCategory, setActiveCategory] = useState(null);
+  const [matchedCategories, setMatchedCategories] = useState([]);
 
   useEffect(() => {
     if (!query || query.trim().length < 1) {
       setResults({ songs: [], artists: [], topResult: null });
+      setMatchedCategories([]);
       return;
     }
 
     setIsLoading(true);
-    const songs = searchSongs(query.trim());
+    setActiveCategory(null);
+    const { songs: relevanceSongs, matchedCategories: cats } = searchWithRelevance(query.trim());
     const artists = searchArtists(query.trim());
+    setMatchedCategories(cats);
     const topResult = artists[0]
       ? { ...artists[0], resultType: 'artist' }
-      : songs[0]
-      ? { ...songs[0], resultType: 'song' }
+      : relevanceSongs[0]
+      ? { ...relevanceSongs[0], resultType: 'song' }
       : null;
-    setResults({ songs: songs.slice(0, 4), artists: artists.slice(0, 6), topResult });
+    setResults({ songs: relevanceSongs.slice(0, 4), artists: artists.slice(0, 6), topResult });
     setIsLoading(false);
   }, [query]);
 
@@ -55,6 +61,15 @@ export default function SearchResults({ query, onPlaySong }) {
   }
 
   const { topResult, songs, artists } = results;
+
+  const filteredSongs = activeCategory
+    ? songs.filter((s) => s.categories?.includes(activeCategory))
+    : songs;
+
+  const getCategoryLabel = (catId) => {
+    const found = CATEGORIES.find((c) => c.id === catId);
+    return found ? found.name : catId;
+  };
 
   return (
     <div className="flex flex-col gap-10 mt-2 pb-8">
@@ -99,8 +114,28 @@ export default function SearchResults({ query, onPlaySong }) {
           {songs.length > 0 && (
             <div className="w-full lg:w-3/5 flex flex-col">
               <h2 className="text-2xl font-bold text-white mb-4">Bài hát</h2>
+              {/* Category filter pills */}
+              {matchedCategories.length > 0 && (
+                <div className="flex gap-2 mb-3 flex-wrap">
+                  <button
+                    className={`px-3 py-1 rounded-full text-sm font-semibold transition ${!activeCategory ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'}`}
+                    onClick={() => setActiveCategory(null)}
+                  >
+                    Tất cả
+                  </button>
+                  {matchedCategories.map((cat) => (
+                    <button
+                      key={cat}
+                      className={`px-3 py-1 rounded-full text-sm font-semibold transition ${activeCategory === cat ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'}`}
+                      onClick={() => setActiveCategory(cat)}
+                    >
+                      {getCategoryLabel(cat)}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="flex flex-col gap-1">
-                {songs.map((song) => (
+                {filteredSongs.map((song) => (
                   <div
                     key={song.song_id}
                     className="flex items-center justify-between p-2 rounded-md hover:bg-[#2a2a2a] group cursor-pointer transition"

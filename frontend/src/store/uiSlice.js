@@ -17,6 +17,8 @@ const uiSlice = createSlice({
     activeArtistId: null,
     activeCategoryId: null,
     activeCategoryName: '',
+    activeEditSongId: null,
+    activeAlbumId: null,
   },
   reducers: {
     setView: (state, action) => {
@@ -74,6 +76,12 @@ const uiSlice = createSlice({
       state.activeCategoryId = action.payload.id;
       state.activeCategoryName = action.payload.name;
     },
+    setActiveEditSong: (state, action) => {
+      state.activeEditSongId = action.payload;
+    },
+    setActiveAlbum: (state, action) => {
+      state.activeAlbumId = action.payload;
+    },
   },
 });
 
@@ -81,5 +89,6 @@ export const {
   setView, setSearchQuery, toggleBrowse, submitSearch, toggleRightSidebar,
   setPiP, showToast, hideToast, openReportModal, closeReportModal,
   setActivePlaylist, setActiveArtist, setActiveCategory,
+  setActiveEditSong, setActiveAlbum,
 } = uiSlice.actions;
 export default uiSlice.reducer;
