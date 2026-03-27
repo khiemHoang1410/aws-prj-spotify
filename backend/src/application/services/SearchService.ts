@@ -2,7 +2,7 @@ import { SongRepository } from "../../infrastructure/database/SongRepository";
 import { ArtistRepository } from "../../infrastructure/database/ArtistRepository";
 import { AlbumRepository } from "../../infrastructure/database/AlbumRepository";
 import { Result, Success, Failure } from "../../shared/utils/Result";
-import { config } from "../../shared/config";
+import { config } from "../../config";
 
 export class SearchService {
     constructor(

@@ -44,9 +44,10 @@ export const getProfile = async () => {
   }
   try {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/users/me`, { method: 'GET', headers });
+    const response = await fetch(`${API_URL}/me`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải profile');
-    return await response.json();
+    const data = await response.json();
+    return adaptUser(data);
   } catch (error) {
     return null;
   }
@@ -60,7 +61,7 @@ export const updateProfile = async (data) => {
   }
   try {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/users/me`, {
+    const response = await fetch(`${API_URL}/me`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
@@ -80,7 +81,7 @@ export const requestArtistVerify = async (formData) => {
   }
   try {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/users/artist-verify`, {
+    const response = await fetch(`${API_URL}/me/artist-request`, {
       method: 'POST',
       headers,
       body: JSON.stringify(formData),

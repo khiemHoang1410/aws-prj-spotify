@@ -1,6 +1,6 @@
 import { makeHandler } from "../../middlewares/makeHandler";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { config } from "../../../../shared/config";
+import { config } from "../../../../config";
 
 const artistRepo = new ArtistRepository();
 
