@@ -153,14 +153,22 @@ export const login = async (email, password) => {
   const data = await res.json();
   if (!res.ok) throw new Error(data.error || 'Đăng nhập thất bại');
 
-  // BE trả về: { accessToken, idToken, refreshToken, expiresIn, user }
-  const user = adaptUser(data.user || { email, role: 'listener' });
+  // BE trả về: { accessToken, idToken, refreshToken }
+  // Decode idToken để lấy user info (JWT payload)
+  const idTokenPayload = JSON.parse(atob(data.idToken.split('.')[1]));
+  const user = adaptUser({
+    userId: idTokenPayload.sub,
+    email: idTokenPayload.email || email,
+    displayName: idTokenPayload.name || idTokenPayload.email || email,
+    role: (idTokenPayload['cognito:groups'] || [])[0] || 'listener',
+    avatarUrl: null,
+  });
   saveSession({
     user,
     accessToken: data.accessToken,
     idToken: data.idToken,
     refreshToken: data.refreshToken,
-    expiresAt: Date.now() + (data.expiresIn || 3600) * 1000,
+    expiresAt: Date.now() + 3600 * 1000,
   });
   return user;
 };

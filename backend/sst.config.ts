@@ -1,5 +1,4 @@
 // sst.config.ts
-import { sstEnv } from "./sst.env.js";
 
 export default $config({
   app(input) {
@@ -9,12 +8,14 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
-          region: sstEnv.region,
+          region: process.env.AWS_DEPLOY_REGION || "ap-southeast-1",
         },
       },
     };
   },
   async run() {
+    const { sstEnv } = await import("./sst.env.js");
+
     // 1. Load Routes
     const { songPublicRoutes, songProtectedRoutes } = await import("./src/infrastructure/routes/song.routes.js");
     const { artistPublicRoutes, artistProtectedRoutes } = await import("./src/infrastructure/routes/artist.routes.js");
@@ -90,10 +91,6 @@ export default $config({
 
     const api = new sst.aws.ApiGatewayV2("MyApi", {
       link: [table, bucket, userPool, userPoolClient],
-      domain: {
-        name: domain,
-        dns: sst.aws.dns({ zone: sstEnv.baseDomain }),
-      },
       cors: {
         allowOrigins: isProd ? sstEnv.prodCorsOrigins : ["*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -102,7 +99,8 @@ export default $config({
     });
 
     // 5. Cognito Authorizer
-    const authorizer = api.addAuthorizer("CognitoAuthorizer", {
+    const authorizer = api.addAuthorizer({
+      name: "CognitoAuthorizer",
       jwt: {
         issuer: $interpolate`https://cognito-idp.${aws.getRegionOutput().name}.amazonaws.com/${userPool.id}`,
         audiences: [userPoolClient.id],
@@ -141,7 +139,6 @@ export default $config({
 
     return {
       api: api.url,
-      apiDomain: `https://${domain}`,
       bucketName: bucket.name,
       tableName: table.name,
       userPoolId: userPool.id,
