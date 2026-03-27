@@ -1,7 +1,7 @@
 import React from 'react';
 import { Search, X, Library } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setSearchQuery, submitSearch } from '../store/uiSlice';
+import { setSearchQuery, submitSearch } from '../../store/uiSlice';
 
 export default function SearchBar({ onOpenBrowse }) {
   const dispatch = useDispatch();

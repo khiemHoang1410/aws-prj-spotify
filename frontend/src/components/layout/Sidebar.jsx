@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { Library, Plus, AudioLines, Heart, X, BadgeCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setView, setActivePlaylist, setActiveArtist, showToast } from '../store/uiSlice';
-import { getPlaylists, createPlaylist } from '../services/SongService';
-import { getFollowedArtists } from '../services/ArtistService';
-import SkeletonCard from './shared/SkeletonCard';
+import { setView, setActivePlaylist, setActiveArtist, showToast } from '../../store/uiSlice';
+import { getPlaylists, createPlaylist } from '../../services/api/SongService';
+import { getFollowedArtists } from '../../services/api/ArtistService';
+import SkeletonCard from '../ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 const FILTER_OPTIONS = ['Danh sách phát', 'Nghệ sĩ'];

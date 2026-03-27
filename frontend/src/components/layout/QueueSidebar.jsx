@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { X, Play } from 'lucide-react';
-import { toggleRightSidebar } from '../store/uiSlice';
-import { clearQueue, setCurrentSong } from '../store/playerSlice';
-import { getPlayHistory } from '../services/UserService';
+import { toggleRightSidebar } from '../../store/uiSlice';
+import { clearQueue, setCurrentSong } from '../../store/playerSlice';
+import { getPlayHistory } from '../../services/api/UserService';
 
 export default function QueueSidebar() {
   const dispatch = useDispatch();

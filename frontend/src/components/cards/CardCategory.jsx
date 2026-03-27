@@ -1,6 +1,6 @@
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { setActiveCategory, setView } from '../store/uiSlice';
+import { setActiveCategory, setView } from '../../store/uiSlice';
 
 export default function CardCategory({ category }) {
   const dispatch = useDispatch();

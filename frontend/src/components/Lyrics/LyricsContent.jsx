@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { getLyrics, getPlaylists, addSongToPlaylist } from '../services/SongService';
-import { setView, setPiP, openReportModal, showToast } from '../store/uiSlice';
-import { toggleLikeSong } from '../store/authSlice';
-import { addToQueue } from '../store/playerSlice';
+import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/api/SongService';
+import { setView, setPiP, openReportModal, showToast } from '../../store/uiSlice';
+import { toggleLikeSong } from '../../store/authSlice';
+import { addToQueue } from '../../store/playerSlice';
 import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, Minimize2, PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag } from 'lucide-react';
 
 const toggleFullscreen = () => {
@@ -15,8 +15,8 @@ const toggleFullscreen = () => {
 };
 
 // Import các component con vừa tạo
-import LyricsMode from './Lyrics/LyricsMode';
-import BottomInfo from './Lyrics/BottomInfo';
+import LyricsMode from './LyricsMode';
+import BottomInfo from './BottomInfo';
 
 export default function LyricsContent() {
   const dispatch = useDispatch();

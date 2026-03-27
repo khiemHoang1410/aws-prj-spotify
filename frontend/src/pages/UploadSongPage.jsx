@@ -2,12 +2,12 @@ import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
 import { setView, showToast } from '../store/uiSlice';
-import { uploadSong } from '../services/UploadService';
-import { createNotification } from '../services/NotificationService';
+import { uploadSong } from '../services/api/UploadService';
+import { createNotification } from '../services/api/NotificationService';
 import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
-import EmptyState from '../components/shared/EmptyState';
-import ErrorMessage from '../components/shared/ErrorMessage';
+import EmptyState from '../components/ui/EmptyState';
+import ErrorMessage from '../components/ui/ErrorMessage';
 
 const MAX_COVERS = 5;
 const STEPS = ['Thông tin', 'Ảnh bìa', 'Media', 'Xem lại'];

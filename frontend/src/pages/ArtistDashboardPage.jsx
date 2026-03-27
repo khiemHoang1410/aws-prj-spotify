@@ -6,9 +6,9 @@ import { setView, showToast, setActiveEditSong, setActiveAlbum } from '../store/
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats } from '../services/ArtistService';
-import { getSongs, deleteSong } from '../services/SongService';
-import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
+import { getArtistStats } from '../services/api/ArtistService';
+import { getSongs, deleteSong } from '../services/api/SongService';
+import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/api/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 

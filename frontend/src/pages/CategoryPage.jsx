@@ -4,10 +4,10 @@ import { ArrowLeft, Music, Play } from 'lucide-react';
 import { setView } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getSongsByCategory } from '../services/SongService';
-import CardSong from '../components/CardSong';
-import EmptyState from '../components/shared/EmptyState';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import { getSongsByCategory } from '../services/api/SongService';
+import CardSong from '../components/cards/CardSong';
+import EmptyState from '../components/ui/EmptyState';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 const SORT_OPTIONS = [
   { id: 'popular', label: 'Phổ biến' },

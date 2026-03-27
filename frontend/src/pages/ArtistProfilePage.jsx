@@ -5,11 +5,11 @@ import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast, setActiveAlbum, setView } from '../store/uiSlice';
-import { getArtistById, followArtist } from '../services/ArtistService';
-import { getSongs } from '../services/SongService';
-import { getAlbumsByArtist } from '../services/AlbumService';
-import EmptyState from '../components/shared/EmptyState';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import { getArtistById, followArtist } from '../services/api/ArtistService';
+import { getSongs } from '../services/api/SongService';
+import { getAlbumsByArtist } from '../services/api/AlbumService';
+import EmptyState from '../components/ui/EmptyState';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
