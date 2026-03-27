@@ -1,4 +1,5 @@
 import { getAuthHeaders } from "./AuthService";
+import { adaptSong, adaptPlaylist, adaptPaginatedResponse } from "./adapters";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -216,7 +217,7 @@ export const getSongs = async () => {
 
     if (!response.ok) throw new Error("Lỗi khi tải danh sách bài hát");
     const data = await response.json();
-    return data;
+    return adaptPaginatedResponse(data, adaptSong);
   } catch (error) {
     console.error(error);
     return []; // Trả về mảng rỗng nếu lỗi để UI không bị crash
@@ -238,7 +239,8 @@ export const getPlaylists = async () => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/playlists`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải playlists');
-    return await response.json();
+    const data = await response.json();
+    return adaptPaginatedResponse(data, adaptPlaylist);
   } catch (error) {
     return mockPlaylists;
   }
@@ -291,7 +293,8 @@ export const getPlaylistById = async (id) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/playlists/${id}`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải playlist');
-    return await response.json();
+    const data = await response.json();
+    return adaptPlaylist(data);
   } catch {
     return null;
   }

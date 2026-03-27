@@ -1,4 +1,5 @@
 import { getAuthHeaders } from './AuthService';
+import { adaptArtist, adaptPaginatedResponse } from './adapters';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -100,7 +101,8 @@ export const getArtistInfo = async (artistName) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/artists?name=${encodeURIComponent(artistName)}`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải thông tin nghệ sĩ');
-    return await response.json();
+    const data = await response.json();
+    return adaptPaginatedResponse(data, adaptArtist)[0] || null;
   } catch (error) {
     return null;
   }
@@ -119,7 +121,8 @@ export const getArtistById = async (artistId) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/artists/${artistId}`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải thông tin nghệ sĩ');
-    return await response.json();
+    const data = await response.json();
+    return adaptArtist(data);
   } catch (error) {
     return null;
   }
@@ -147,7 +150,8 @@ export const getArtists = async () => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/artists`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải danh sách nghệ sĩ');
-    return await response.json();
+    const data = await response.json();
+    return adaptPaginatedResponse(data, adaptArtist);
   } catch {
     return mockArtists;
   }
