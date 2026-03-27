@@ -61,17 +61,7 @@ const mockReports = [
 // ==========================================
 
 export const getStats = async () => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve(mockStats), 300));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/admin/stats`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải thống kê');
-    return await response.json();
-  } catch (error) {
-    return mockStats;
-  }
+  return new Promise((resolve) => setTimeout(() => resolve(mockStats), 300));
 };
 
 export const getArtistRequests = async () => {
@@ -117,43 +107,13 @@ export const rejectArtistTick = async (userId) => {
 };
 
 export const getReports = async () => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve(mockReports), 400));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/admin/reports`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải danh sách báo cáo');
-    return await response.json();
-  } catch (error) {
-    return mockReports;
-  }
+  return new Promise((resolve) => setTimeout(() => resolve(mockReports), 400));
 };
 
 export const resolveReport = async (reportId) => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 400));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/admin/reports/${reportId}/resolve`, { method: 'POST', headers });
-    if (!response.ok) throw new Error('Lỗi khi giải quyết báo cáo');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => setTimeout(() => resolve({ success: true, reportId }), 400));
 };
 
 export const removeSong = async (songId) => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 400));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/admin/songs/${songId}`, { method: 'DELETE', headers });
-    if (!response.ok) throw new Error('Lỗi khi gỡ bài hát');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => setTimeout(() => resolve({ success: true, songId }), 400));
 };

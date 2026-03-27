@@ -216,10 +216,32 @@ export const getSongs = async () => {
 
     if (!response.ok) throw new Error("Lỗi khi tải danh sách bài hát");
     const data = await response.json();
-    return data;
+    return Array.isArray(data) ? data : (data.data ?? []);
   } catch (error) {
     console.error(error);
     return []; // Trả về mảng rỗng nếu lỗi để UI không bị crash
+  }
+};
+
+export const getSongById = async (songId) => {
+  if (!API_URL) {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(mockSongs.find((s) => s.song_id === songId) || null);
+      }, 300);
+    });
+  }
+
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/songs/${encodeURIComponent(songId)}`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) throw new Error('Lỗi khi tải chi tiết bài hát');
+    return await response.json();
+  } catch {
+    return null;
   }
 };
 
@@ -238,42 +260,19 @@ export const getPlaylists = async () => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/playlists`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải playlists');
-    return await response.json();
+    const data = await response.json();
+    return Array.isArray(data) ? data : (data.data ?? []);
   } catch (error) {
     return mockPlaylists;
   }
 };
 
 export const getCategories = async () => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve(mockCategories), 300));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/categories`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải categories');
-    return await response.json();
-  } catch (error) {
-    return mockCategories;
-  }
+  return new Promise((resolve) => setTimeout(() => resolve(mockCategories), 300));
 };
 
 export const reportSong = async (songId, reason, description = '') => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 500));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/songs/${songId}/report`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ reason, description }),
-    });
-    if (!response.ok) throw new Error('Lỗi khi gửi báo cáo');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => setTimeout(() => resolve({ success: true, songId, reason, description }), 500));
 };
 
 export const getPlaylistById = async (id) => {
@@ -291,7 +290,8 @@ export const getPlaylistById = async (id) => {
     const headers = await getAuthHeaders();
     const response = await fetch(`${API_URL}/playlists/${id}`, { method: 'GET', headers });
     if (!response.ok) throw new Error('Lỗi khi tải playlist');
-    return await response.json();
+    const data = await response.json();
+    return data.data ?? data;
   } catch {
     return null;
   }
@@ -344,6 +344,23 @@ export const deletePlaylist = async (id) => {
     return await response.json();
   } catch (error) {
     return { success: false, message: error.message };
+  }
+};
+
+export const getMyPlaylists = async () => {
+  if (!API_URL) {
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(mockPlaylists.filter((p) => p.owner === 'Bạn')), 300);
+    });
+  }
+
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/playlists/me`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Lỗi khi tải playlist của tôi');
+    return await response.json();
+  } catch {
+    return [];
   }
 };
 
@@ -431,10 +448,11 @@ export const addSongToPlaylist = async (playlistId, song) => {
   }
   try {
     const headers = await getAuthHeaders();
+    const songId = song?.song_id || song?.id || song;
     const response = await fetch(`${API_URL}/playlists/${playlistId}/songs`, {
       method: 'POST',
       headers,
-      body: JSON.stringify({ song_id: song.song_id }),
+      body: JSON.stringify({ songId }),
     });
     if (!response.ok) throw new Error('Lỗi khi thêm bài hát');
     return await response.json();

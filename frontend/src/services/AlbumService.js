@@ -38,12 +38,15 @@ export const getAlbumsByArtist = async (artistName) => {
       }, 300);
     });
   }
+
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/albums?artist=${encodeURIComponent(artistName)}`, { headers });
-    if (!response.ok) throw new Error('Lỗi khi tải albums');
-    return await response.json();
-  } catch (error) {
+    const albums = await getAllAlbums();
+    const artistLower = artistName.toLowerCase();
+    return albums.filter((album) => {
+      const byName = album.artist_name?.toLowerCase() === artistLower;
+      return byName;
+    });
+  } catch {
     return [];
   }
 };
@@ -82,6 +85,31 @@ export const getAllAlbums = async () => {
     if (!response.ok) throw new Error('Lỗi khi tải albums');
     return await response.json();
   } catch (error) {
+    return [];
+  }
+};
+
+export const getAlbumSongs = async (albumId) => {
+  if (!API_URL) {
+    return new Promise(async (resolve) => {
+      setTimeout(async () => {
+        const album = mockAlbums.find((a) => a.id === albumId);
+        if (!album) {
+          resolve([]);
+          return;
+        }
+        const allSongs = await getSongs();
+        resolve(allSongs.filter((s) => album.songIds.includes(s.song_id)));
+      }, 300);
+    });
+  }
+
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/albums/${encodeURIComponent(albumId)}/songs`, { method: 'GET', headers });
+    if (!response.ok) throw new Error('Lỗi khi tải bài hát album');
+    return await response.json();
+  } catch {
     return [];
   }
 };
@@ -176,53 +204,26 @@ export const deleteAlbum = async (albumId) => {
 // [S8-006.5] SONG MANAGEMENT
 // ==========================================
 export const addSongToAlbum = async (albumId, songId) => {
-  if (!API_URL) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const album = mockAlbums.find((a) => a.id === albumId);
-        if (album && !album.songIds.includes(songId)) {
-          album.songIds.push(songId);
-        }
-        resolve({ success: true });
-      }, 300);
-    });
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/albums/${encodeURIComponent(albumId)}/songs`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({ song_id: songId }),
-    });
-    if (!response.ok) throw new Error('Lỗi khi thêm bài hát vào album');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const album = mockAlbums.find((a) => a.id === albumId);
+      if (album && !album.songIds.includes(songId)) {
+        album.songIds.push(songId);
+      }
+      resolve({ success: true });
+    }, 300);
+  });
 };
 
 export const removeSongFromAlbum = async (albumId, songId) => {
-  if (!API_URL) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const album = mockAlbums.find((a) => a.id === albumId);
-        if (album) {
-          const idx = album.songIds.indexOf(songId);
-          if (idx !== -1) album.songIds.splice(idx, 1);
-        }
-        resolve({ success: true });
-      }, 300);
-    });
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/albums/${encodeURIComponent(albumId)}/songs/${encodeURIComponent(songId)}`, {
-      method: 'DELETE',
-      headers,
-    });
-    if (!response.ok) throw new Error('Lỗi khi xoá bài hát khỏi album');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const album = mockAlbums.find((a) => a.id === albumId);
+      if (album) {
+        const idx = album.songIds.indexOf(songId);
+        if (idx !== -1) album.songIds.splice(idx, 1);
+      }
+      resolve({ success: true });
+    }, 300);
+  });
 };
