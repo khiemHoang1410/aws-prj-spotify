@@ -2,9 +2,9 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { User, Edit2, Save, X, Music, BadgeCheck } from 'lucide-react';
 import { showToast, setView } from '../store/uiSlice';
-import { updateProfile } from '../services/UserService';
+import { updateProfile } from '../services/api/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
-import CardSong from '../components/CardSong';
+import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
 
 export default function ProfilePage() {

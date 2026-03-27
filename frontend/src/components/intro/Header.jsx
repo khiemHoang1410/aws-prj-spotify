@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { FiMenu, FiX } from "react-icons/fi"; 
-import { IntroMockData } from "../../services/IntroMockData"; // Đã import mock data
+import { IntroMockData } from "../../data/IntroMockData"; // Đã import mock data
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -1,16 +1,16 @@
 import React, { useEffect } from 'react';
-import Sidebar from './components/Sidebar';
-import MainContent from './components/MainContent';
-import PlayerBar from './components/PlayerBar';
+import Sidebar from './components/layout/Sidebar';
+import MainContent from './components/layout/MainContent';
+import PlayerBar from './components/layout/PlayerBar';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from './services/AuthService';
+import { getCurrentUser } from './services/api/AuthService';
 import { loginSuccess } from './store/authSlice';
-import AuthModal from './components/AuthModal';
+import AuthModal from './components/modals/AuthModal';
 import PageIntro from './pages/PageIntro';
-import QueueSidebar from './components/QueueSidebar';
-import Toast from './components/shared/Toast';
-import MiniLyricsPanel from './components/Lyrics/MiniLyricsPanel';
-import ReportModal from './components/ReportModal';
+import QueueSidebar from './components/layout/QueueSidebar';
+import Toast from './components/ui/Toast';
+import MiniLyricsPanel from './components/lyrics/MiniLyricsPanel';
+import ReportModal from './components/modals/ReportModal';
 
 function App() {
   const dispatch = useDispatch();

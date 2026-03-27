@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { useDispatch } from 'react-redux';
-import { setActiveArtist, setView } from '../store/uiSlice';
-import { searchWithRelevance } from '../services/SongService';
-import { searchArtists } from '../services/ArtistService';
-import { CATEGORIES } from '../constants/enums';
-import CardArtist from './CardArtist';
-import SkeletonCard from './shared/SkeletonCard';
+import { setActiveArtist, setView } from '../../store/uiSlice';
+import { searchWithRelevance } from '../../services/api/SongService';
+import { searchArtists } from '../../services/api/ArtistService';
+import { CATEGORIES } from '../../constants/enums';
+import CardArtist from '../cards/CardArtist';
+import SkeletonCard from '../ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 

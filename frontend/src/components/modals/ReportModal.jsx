@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { X } from 'lucide-react';
-import { closeReportModal, showToast } from '../store/uiSlice';
-import { reportSong } from '../services/SongService';
-import { REPORT_REASON } from '../constants/enums';
+import { closeReportModal, showToast } from '../../store/uiSlice';
+import { reportSong } from '../../services/api/SongService';
+import { REPORT_REASON } from '../../constants/enums';
 
 const REASON_OPTIONS = [
   REPORT_REASON.INAPPROPRIATE,

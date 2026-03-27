@@ -1,12 +1,12 @@
 import "../styles/PageIntro/PageIntro.css";
-import HeroSection from "../components/intropage/HeroSection";
-import Stats from "../components/intropage/Stats";
-import Trending from "../components/intropage/Trending";
-import TopArtists from "../components/intropage/TopArtists";
-import PartnerLogos from "../components/intropage/PartnerLogos";
-import SubscribeSection from "../components/intropage/SubscribeSection";
-import Banner from "../components/intropage/Banner";
-import Header from "../components/intropage/Header";
+import HeroSection from "../components/intro/HeroSection";
+import Stats from "../components/intro/Stats";
+import Trending from "../components/intro/Trending";
+import TopArtists from "../components/intro/TopArtists";
+import PartnerLogos from "../components/intro/PartnerLogos";
+import SubscribeSection from "../components/intro/SubscribeSection";
+import Banner from "../components/intro/Banner";
+import Header from "../components/intro/Header";
 
 
 function PageIntro() {

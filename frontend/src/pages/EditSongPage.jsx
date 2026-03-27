@@ -3,9 +3,9 @@ import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { ArrowLeft, Save, Music } from 'lucide-react';
 import { setView, showToast } from '../store/uiSlice';
-import { getSongs, updateSong } from '../services/SongService';
+import { getSongs, updateSong } from '../services/api/SongService';
 import { ROLES, CATEGORIES } from '../constants/enums';
-import EmptyState from '../components/shared/EmptyState';
+import EmptyState from '../components/ui/EmptyState';
 
 function parseDuration(seconds) {
   const m = Math.floor(seconds / 60);

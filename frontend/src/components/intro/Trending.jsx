@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useDispatch } from "react-redux"; // Import Redux dispatch
 import { setView } from "../../store/uiSlice"; // Import action chuyển trang
-import { IntroMockData } from "../../services/IntroMockData";
+import { IntroMockData } from "../../data/IntroMockData";
 
 function Trending() {
   const [trendingImages, setTrendingImages] = useState([]);

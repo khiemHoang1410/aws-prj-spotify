@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { IntroMockData } from "../../services/IntroMockData";
+import { IntroMockData } from "../../data/IntroMockData";
 
 function TopArtists() {
   const [artists, setArtists] = useState([]);

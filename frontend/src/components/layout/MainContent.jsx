@@ -1,34 +1,34 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { setCurrentSong } from '../store/playerSlice';
-import { openModal, logout, setFollowedArtists } from '../store/authSlice';
-import { setSearchQuery, toggleBrowse, setView } from '../store/uiSlice'; 
+import { setCurrentSong } from '../../store/playerSlice';
+import { openModal, logout, setFollowedArtists } from '../../store/authSlice';
+import { setSearchQuery, toggleBrowse, setView } from '../../store/uiSlice'; 
 import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react'; // [S6-004.4]
-import { ROLES } from '../constants/enums';
+import { ROLES } from '../../constants/enums';
 
-import CardSong from './CardSong';
-import SearchContent from './SearchContent'; 
-import SearchResults from './SearchResults'; 
-import SearchBar from './SearchBar'; 
-import { getSongs } from '../services/SongService';
-import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
-import { logoutUser } from '../services/AuthService'; // <-- THÊM DÒNG NÀY
-import LyricsContent from './LyricsContent';
-import ArtistVerifyPage from '../pages/ArtistVerifyPage';
-import UploadSongPage from '../pages/UploadSongPage';
-import AdminLayout from '../pages/admin/AdminLayout';
-import PlaylistDetailPage from '../pages/PlaylistDetailPage';
-import ProfilePage from '../pages/ProfilePage';
-import SettingsPage from '../pages/SettingsPage';
-import CategoryPage from '../pages/CategoryPage';
-import LikedSongsPage from '../pages/LikedSongsPage';
-import ArtistProfilePage from '../pages/ArtistProfilePage'; // [S6-003.4]
-import ArtistDashboardPage from '../pages/ArtistDashboardPage'; // [S6-004.3]
-import EditSongPage from '../pages/EditSongPage'; // [S8-005.6]
-import AlbumDetailPage from '../pages/AlbumDetailPage'; // [S8-007.6]
-import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../services/NotificationService';
-import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../store/notificationSlice';
-import { getFollowedArtists } from '../services/ArtistService';
+import CardSong from '../cards/CardSong';
+import SearchContent from '../search/SearchContent';
+import SearchResults from '../search/SearchResults';
+import SearchBar from '../search/SearchBar';
+import { getSongs } from '../../services/api/SongService';
+import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../../services/api/RecommendationService';
+import { logoutUser } from '../../services/api/AuthService';
+import LyricsContent from '../lyrics/LyricsContent';
+import ArtistVerifyPage from '../../pages/ArtistVerifyPage';
+import UploadSongPage from '../../pages/UploadSongPage';
+import AdminLayout from '../../pages/admin/AdminLayout';
+import PlaylistDetailPage from '../../pages/PlaylistDetailPage';
+import ProfilePage from '../../pages/ProfilePage';
+import SettingsPage from '../../pages/SettingsPage';
+import CategoryPage from '../../pages/CategoryPage';
+import LikedSongsPage from '../../pages/LikedSongsPage';
+import ArtistProfilePage from '../../pages/ArtistProfilePage';
+import ArtistDashboardPage from '../../pages/ArtistDashboardPage';
+import EditSongPage from '../../pages/EditSongPage';
+import AlbumDetailPage from '../../pages/AlbumDetailPage';
+import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../../services/api/NotificationService';
+import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
+import { getFollowedArtists } from '../../services/api/ArtistService';
 
 export default function MainContent() {
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);

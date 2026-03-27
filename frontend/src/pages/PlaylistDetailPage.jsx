@@ -4,10 +4,10 @@ import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from '
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice'; // [S7-005.2]
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/SongService'; // [S6-001.1]
-import EmptyState from '../components/shared/EmptyState';
-import ErrorMessage from '../components/shared/ErrorMessage';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/api/SongService';
+import EmptyState from '../components/ui/EmptyState';
+import ErrorMessage from '../components/ui/ErrorMessage';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
