@@ -96,12 +96,14 @@ export const getArtistInfo = async (artistName) => {
       }, 300);
     });
   }
+
   try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/artists?name=${encodeURIComponent(artistName)}`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải thông tin nghệ sĩ');
-    return await response.json();
-  } catch (error) {
+    const artists = await getArtists();
+    const artistLower = artistName.toLowerCase();
+    return artists.find((a) => a.name?.toLowerCase() === artistLower)
+      || artists.find((a) => a.name?.toLowerCase().includes(artistLower))
+      || null;
+  } catch {
     return null;
   }
 };
@@ -126,17 +128,7 @@ export const getArtistById = async (artistId) => {
 };
 
 export const followArtist = async (artistId) => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 400));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/artists/${artistId}/follow`, { method: 'POST', headers });
-    if (!response.ok) throw new Error('Lỗi khi theo dõi nghệ sĩ');
-    return await response.json();
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  return new Promise((resolve) => setTimeout(() => resolve({ success: true, artistId }), 400));
 };
 
 export const getArtists = async () => {
@@ -154,17 +146,7 @@ export const getArtists = async () => {
 };
 
 export const getFollowedArtists = async () => {
-  if (!API_URL) {
-    return new Promise((resolve) => setTimeout(() => resolve(mockArtists.slice(0, 4)), 400));
-  }
-  try {
-    const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/artists/followed`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải nghệ sĩ đang theo dõi');
-    return await response.json();
-  } catch {
-    return mockArtists.slice(0, 4);
-  }
+  return new Promise((resolve) => setTimeout(() => resolve(mockArtists.slice(0, 4)), 400));
 };
 
 export const searchArtists = (query) => {
@@ -174,25 +156,51 @@ export const searchArtists = (query) => {
 
 // [S6-004.1] getArtistStats — thống kê riêng cho nghệ sĩ
 export const getArtistStats = async (artistId) => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const artist = mockArtists.find((a) => a.id === artistId);
+      resolve({
+        totalSongs: artist ? Math.floor(Math.random() * 20) + 5 : 0,
+        totalPlays: artist ? Math.floor(Math.random() * 500000) + 100000 : 0,
+        followers: artist?.followers || 0,
+        monthlyListeners: artist?.monthly_listeners || '0',
+      });
+    }, 300);
+  });
+};
+
+export const getArtistSongs = async (artistId) => {
   if (!API_URL) {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const artist = mockArtists.find((a) => a.id === artistId);
-        resolve({
-          totalSongs: artist ? Math.floor(Math.random() * 20) + 5 : 0,
-          totalPlays: artist ? Math.floor(Math.random() * 500000) + 100000 : 0,
-          followers: artist?.followers || 0,
-          monthlyListeners: artist?.monthly_listeners || '0',
-        });
-      }, 300);
-    });
+    return [];
   }
+
   try {
     const headers = await getAuthHeaders();
-    const response = await fetch(`${API_URL}/artists/${artistId}/stats`, { method: 'GET', headers });
-    if (!response.ok) throw new Error('Lỗi khi tải thống kê nghệ sĩ');
+    const response = await fetch(`${API_URL}/artists/${encodeURIComponent(artistId)}/songs`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) throw new Error('Lỗi khi tải bài hát nghệ sĩ');
     return await response.json();
-  } catch (error) {
-    return { totalSongs: 0, totalPlays: 0, followers: 0, monthlyListeners: '0' };
+  } catch {
+    return [];
+  }
+};
+
+export const getArtistAlbums = async (artistId) => {
+  if (!API_URL) {
+    return [];
+  }
+
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(`${API_URL}/artists/${encodeURIComponent(artistId)}/albums`, {
+      method: 'GET',
+      headers,
+    });
+    if (!response.ok) throw new Error('Lỗi khi tải album nghệ sĩ');
+    return await response.json();
+  } catch {
+    return [];
   }
 };
