@@ -18,7 +18,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!displayName.trim()) return;
     setIsSaving(true);
-    const result = await updateProfile({ name: displayName.trim() });
+    const result = await updateProfile({ displayName: displayName.trim() });
     if (result?.success) {
       dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
       setIsEditing(false);
