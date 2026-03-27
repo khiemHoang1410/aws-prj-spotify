@@ -2,10 +2,10 @@
 
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
-import { CONFIG } from "../../config";
+import { config } from "../../config";
 
 // Khởi tạo client cơ bản
-const client = new DynamoDBClient({ region: CONFIG.REGION });
+const client = new DynamoDBClient({ region: config.region });
 
 // Bọc client bằng DocumentClient để tự động xử lý kiểu dữ liệu (Marshalling)
 const dynamoDb = DynamoDBDocumentClient.from(client, {
