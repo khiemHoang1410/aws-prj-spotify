@@ -92,9 +92,9 @@ export default $config({
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
       name: `spotify-${$app.stage}-media`,
       cors: true,
+      access: "public",
       transform: {
         bucket: (args: any) => {
-          // Giữ bucket khi sst remove — không mất file nhạc/ảnh
           args.retainOnDelete = true;
         },
       },
