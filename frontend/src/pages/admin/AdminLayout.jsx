@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, BadgeCheck, Flag } from 'lucide-react';
-import { setView } from '../../store/uiSlice';
 import { ROLES } from '../../constants/enums';
 import AdminDashboard from './AdminDashboard';
 import AdminArtistRequests from './AdminArtistRequests';
@@ -14,15 +14,15 @@ const NAV_ITEMS = [
 ];
 
 export default function AdminLayout() {
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const [activeTab, setActiveTab] = useState('dashboard');
 
   useEffect(() => {
     if (!user || user.role !== ROLES.ADMIN) {
-      dispatch(setView('home'));
+      navigate('/');
     }
-  }, [user, dispatch]);
+  }, [user, navigate]);
 
   if (!user || user.role !== ROLES.ADMIN) return null;
 

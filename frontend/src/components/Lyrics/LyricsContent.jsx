@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/api/SongService';
-import { setView, setPiP, openReportModal, showToast } from '../../store/uiSlice';
+import { setPiP, openReportModal, showToast } from '../../store/uiSlice';
 import { toggleLikeSong } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, Minimize2, PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag } from 'lucide-react';
@@ -20,8 +21,8 @@ import BottomInfo from './BottomInfo';
 
 export default function LyricsContent() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentSong, currentTime } = useSelector((state) => state.player);
-  const { previousView } = useSelector((state) => state.ui);
   const { likedSongs } = useSelector((state) => state.auth);
   
   const [lyrics, setLyrics] = useState([]);
@@ -191,7 +192,7 @@ export default function LyricsContent() {
 
           {/* Minimize → về previousView và bật PiP (TASK-002-C) */}
           <button
-            onClick={() => { dispatch(setPiP(true)); dispatch(setView(previousView)); }}
+            onClick={() => { dispatch(setPiP(true)); navigate(-1); }}
             title="Thu nhỏ lời bài hát"
             className="hover:text-white ml-2 transition"
           >

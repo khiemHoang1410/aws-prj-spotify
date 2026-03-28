@@ -1,8 +1,8 @@
-// [S6-004.2] ArtistDashboardPage
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Music, Headphones, Users, TrendingUp, Play, Clock, Pencil, Trash2, PlusCircle, Disc3 } from 'lucide-react';
-import { setView, showToast, setActiveEditSong, setActiveAlbum } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
@@ -27,6 +27,7 @@ function formatDuration(seconds) {
 
 export default function ArtistDashboardPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
   const [stats, setStats] = useState(null);
@@ -38,7 +39,7 @@ export default function ArtistDashboardPage() {
 
   useEffect(() => {
     if (!user || user.role !== ROLES.ARTIST) {
-      dispatch(setView('home'));
+      navigate('/');
       return;
     }
     setIsLoading(true);
@@ -61,10 +62,8 @@ export default function ArtistDashboardPage() {
     dispatch(setCurrentSong(song));
   };
 
-  // [S8-005.5] Edit/Delete handlers
   const handleEditSong = (song) => {
-    dispatch(setActiveEditSong(song.song_id));
-    dispatch(setView('edit-song'));
+    navigate(`/edit-song/${song.song_id}`);
   };
 
   const handleDeleteSong = async (songId) => {
@@ -92,8 +91,7 @@ export default function ArtistDashboardPage() {
       setNewAlbumTitle('');
       setIsCreateAlbumOpen(false);
       dispatch(showToast({ message: 'Đã tạo album mới', type: 'success' }));
-      dispatch(setActiveAlbum(result.data.id));
-      dispatch(setView('album-detail'));
+      navigate(`/album/${result.data.id}`);
     }
   };
 
@@ -107,8 +105,7 @@ export default function ArtistDashboardPage() {
   };
 
   const handleEditAlbum = (album) => {
-    dispatch(setActiveAlbum(album.id));
-    dispatch(setView('album-detail'));
+    navigate(`/album/${album.id}`);
   };
 
   if (!user || user.role !== ROLES.ARTIST) return null;
@@ -141,7 +138,7 @@ export default function ArtistDashboardPage() {
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-lg font-semibold text-white">Bài hát của tôi</h2>
         <button
-          onClick={() => dispatch(setView('upload'))}
+          onClick={() => navigate('/upload')}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
         >
           <PlusCircle size={16} />
