@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
@@ -37,6 +37,18 @@ export default function UploadSongPage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [artistId, setArtistId] = useState(null);
+
+  // Lấy artistId từ BE khi mount
+  React.useEffect(() => {
+    if (!user) return;
+    const userId = user.user_id || user.id;
+    import('../services/api/ArtistService').then(({ getArtistByUserId }) => {
+      getArtistByUserId(userId).then((artist) => {
+        if (artist?.id) setArtistId(artist.id);
+      });
+    });
+  }, [user]);
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (
@@ -94,11 +106,18 @@ export default function UploadSongPage() {
     setUploadError('');
     setIsLoading(true);
     try {
+      const durationSeconds = duration
+        ? duration.split(':').reduce((acc, val, i) => acc + (i === 0 ? parseInt(val) * 60 : parseInt(val)), 0)
+        : 0;
+
       const formData = {
         title: title.trim(),
-        artistName: user.name || user.username,
+        artistId: artistId || user.user_id,
+        audioFile,
+        coverFile: coverFiles[0] || null,
         lyrics,
-        duration,
+        duration: durationSeconds,
+        categories: selectedCategories,
       };
       const result = await uploadSong(formData);
       if (result.success) {

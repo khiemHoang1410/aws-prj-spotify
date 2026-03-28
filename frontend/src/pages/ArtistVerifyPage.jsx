@@ -38,7 +38,12 @@ export default function ArtistVerifyPage() {
 
     setIsLoading(true);
     try {
-      const result = await requestArtistVerify({ ...formData, genres: selectedGenres });
+      const result = await requestArtistVerify({
+        stageName: formData.artistName,
+        bio: formData.bio,
+        photoUrl: formData.profileLink || null,
+        genres: selectedGenres,
+      });
       if (result.success) {
         dispatch(setVerifyStatus({ status: VERIFY_STATUS.PENDING }));
         dispatch(showToast({ message: 'Yêu cầu đã được gửi thành công!', type: 'success' }));
