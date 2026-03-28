@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Play } from 'lucide-react';
-import SongContextMenu from './ui/SongContextMenu';
+import SongContextMenu from '../ui/SongContextMenu';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
