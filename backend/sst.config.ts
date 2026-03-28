@@ -4,6 +4,8 @@ export default $config({
   app(input) {
     return {
       name: "spotify-backend",
+      // Lambda/API Gateway vẫn remove được khi sst remove
+      // Data resources (DynamoDB, S3) được bảo vệ riêng bằng tên cố định + deletion protection
       removal: input?.stage === "prod" ? "retain" : "remove",
       home: "aws",
       providers: {
@@ -59,8 +61,9 @@ export default $config({
       },
     });
 
-    // 3. DynamoDB
+    // 3. DynamoDB — tên cố định theo stage, không bị xóa khi sst remove
     const table = new sst.aws.Dynamo("SpotifyTable", {
+      name: `spotify-${$app.stage}-table`,
       fields: {
         pk: "string",
         sk: "string",
@@ -76,10 +79,25 @@ export default $config({
         EntityTypeIndex: { hashKey: "entityType", rangeKey: "sk" },
         UserIdIndex: { hashKey: "userId", rangeKey: "sk" },
       },
+      transform: {
+        table: (args: any) => {
+          // Bật deletion protection ở prod, dev thì tắt để dễ cleanup khi cần
+          args.deletionProtectionEnabled = $app.stage === "prod";
+          // Luôn retain table khi sst remove — không bao giờ tự xóa data
+          args.retainOnDelete = true;
+        },
+      },
     });
 
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
+      name: `spotify-${$app.stage}-media`,
       cors: true,
+      transform: {
+        bucket: (args: any) => {
+          // Giữ bucket khi sst remove — không mất file nhạc/ảnh
+          args.retainOnDelete = true;
+        },
+      },
     });
 
     // 4. API Gateway
