@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
-import { useDispatch } from 'react-redux';
-import { setActiveArtist, setView } from '../../store/uiSlice';
+import { useNavigate } from 'react-router-dom';
 import { searchWithRelevance } from '../../services/api/SongService';
 import { searchArtists } from '../../services/api/ArtistService';
 import { CATEGORIES } from '../../constants/enums';
@@ -11,7 +10,7 @@ import SkeletonCard from '../ui/SkeletonCard';
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 export default function SearchResults({ query, onPlaySong }) {
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
   const [results, setResults] = useState({ songs: [], artists: [], topResult: null });
   const [isLoading, setIsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState(null);
@@ -85,8 +84,7 @@ export default function SearchResults({ query, onPlaySong }) {
               className="bg-[#181818] hover:bg-[#282828] transition duration-300 cursor-pointer p-5 rounded-lg relative group flex-1 flex flex-col justify-center"
               onClick={() => {
                 if (topResult.resultType === 'artist') {
-                  dispatch(setActiveArtist(topResult.id));
-                  dispatch(setView('artist-profile'));
+                  navigate(`/artist/${topResult.id}`);
                 } else {
                   onPlaySong(topResult);
                 }

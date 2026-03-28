@@ -1,15 +1,13 @@
 import { useState, useEffect } from "react";
-import { useDispatch } from "react-redux"; // Import Redux dispatch
-import { setView } from "../../store/uiSlice"; // Import action chuyển trang
+import { useNavigate } from "react-router-dom";
 import { IntroMockData } from "../../data/IntroMockData";
 
 function Trending() {
   const [trendingImages, setTrendingImages] = useState([]);
-  const dispatch = useDispatch();
+  const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    // Thay vì dùng navigate của React Router, ta dùng Redux để về màn hình Home
-    dispatch(setView('home'));
+    navigate('/');
   };
 
   useEffect(() => {

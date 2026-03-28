@@ -1,20 +1,25 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { togglePlay, updateCurrentTime, clearSeekTime, playNextSong, toggleShuffle, cycleRepeat } from '../store/playerSlice';
-import { toggleLikeSong } from '../store/authSlice';
-import { setView, toggleRightSidebar, setPiP } from '../store/uiSlice';
-import Audio from './Audio'; 
+import { useNavigate, useLocation } from 'react-router-dom';
+import { togglePlay, updateCurrentTime, clearSeekTime, playNextSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
+import { toggleLikeSong } from '../../store/authSlice';
+import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
+import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
-import { REPEAT_MODE } from '../constants/enums';
+import { REPEAT_MODE } from '../../constants/enums';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 export default function PlayerBar() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const location = useLocation();
   
   const { currentSong, isPlaying, globalSeekTime, queue, isShuffle, repeatMode } = useSelector((state) => state.player);
-  const { currentView, previousView, isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
+  const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs } = useSelector((state) => state.auth);
+  
+  const isLyricsPage = location.pathname === '/lyrics';
   
   const [currentTimeLocal, setCurrentTimeLocal] = useState(0);
   const [volume, setVolume] = useState(1); 
@@ -204,15 +209,15 @@ export default function PlayerBar() {
       {/* 3. KHU VỰC BÊN PHẢI */}
       <div className="flex items-center justify-end gap-3 w-[30%] min-w-[180px] text-[#b3b3b3]">
         <button 
-           className={`hover:scale-105 transition ${currentView === 'lyrics' || isPiP ? 'text-green-500' : 'hover:text-white'}`}
+           className={`hover:scale-105 transition ${isLyricsPage || isPiP ? 'text-green-500' : 'hover:text-white'}`}
            onClick={() => {
              if (isPiP) {
                dispatch(setPiP(false));
-               dispatch(setView('lyrics'));
-             } else if (currentView === 'lyrics') {
-               dispatch(setView(previousView || 'home'));
+               navigate('/lyrics');
+             } else if (isLyricsPage) {
+               navigate(-1);
              } else {
-               dispatch(setView('lyrics'));
+               navigate('/lyrics');
              }
            }}
            title="Lời bài hát"
@@ -249,17 +254,11 @@ export default function PlayerBar() {
         
         {/* NÚt NAVIGATE TO LYRICS / THU NHỎ */}
         <button
-          onClick={() => {
-            if (currentView === 'lyrics') {
-              dispatch(setView(previousView || 'home'));
-            } else {
-              dispatch(setView('lyrics'));
-            }
-          }}
-          title={currentView === 'lyrics' ? 'Thu nhỏ' : 'Phóng to'}
+          onClick={() => { if (isLyricsPage) { navigate(-1); } else { navigate('/lyrics'); } }}
+          title={isLyricsPage ? 'Thu nhỏ' : 'Phóng to'}
           className="hover:text-white transition"
         >
-          {currentView === 'lyrics' ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          {isLyricsPage ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 

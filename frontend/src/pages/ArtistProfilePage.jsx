@@ -1,10 +1,10 @@
-// [S6-003.3] ArtistProfilePage
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { showToast, setActiveAlbum, setView } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { getArtistById, followArtist } from '../services/api/ArtistService';
 import { getSongs } from '../services/api/SongService';
 import { getAlbumsByArtist } from '../services/api/AlbumService';
@@ -21,7 +21,8 @@ function formatDuration(seconds) {
 
 export default function ArtistProfilePage() {
   const dispatch = useDispatch();
-  const { activeArtistId } = useSelector((state) => state.ui);
+  const { id: activeArtistId } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [artist, setArtist] = useState(null);
@@ -70,13 +71,7 @@ export default function ArtistProfilePage() {
     }));
   };
 
-  if (!activeArtistId) {
-    return (
-      <div className="flex items-center justify-center mt-20">
-        <EmptyState icon={Play} title="Chọn một nghệ sĩ" description="Hãy chọn nghệ sĩ từ thư viện để xem trang cá nhân." />
-      </div>
-    );
-  }
+  if (!activeArtistId) return null;
 
   if (isLoading) {
     return (
@@ -210,10 +205,7 @@ export default function ArtistProfilePage() {
               <div
                 key={album.id}
                 className="flex-shrink-0 w-40 cursor-pointer group"
-                onClick={() => {
-                  dispatch(setActiveAlbum(album.id));
-                  dispatch(setView('album-detail'));
-                }}
+                onClick={() => navigate(`/album/${album.id}`)}
               >
                 <img
                   src={album.image_url || IMG_FALLBACK}

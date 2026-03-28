@@ -1,7 +1,8 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
-import { setView, showToast } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { uploadSong } from '../services/api/UploadService';
 import { createNotification } from '../services/api/NotificationService';
 import { addNotification } from '../store/notificationSlice';
@@ -20,6 +21,7 @@ function formatDurationInput(value) {
 
 export default function UploadSongPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const coverDropRef = useRef(null);
 
@@ -44,7 +46,7 @@ export default function UploadSongPage() {
           title="Chỉ nghệ sĩ được xác minh"
           description="Bạn cần đăng ký và được xác minh là nghệ sĩ để sử dụng tính năng này."
           actionLabel="Đăng ký ngay"
-          onAction={() => dispatch(setView('artist-verify'))}
+          onAction={() => navigate('/artist-verify')}
         />
       </div>
     );
