@@ -28,7 +28,24 @@ USER_POOL_ID=ap-southeast-1_xxxxxxxx npx tsx scripts/seed-admin.ts
 | Field    | Giá trị              |
 |----------|----------------------|
 | Email    | admin@spotify.local  |
-| Password | Admin12345           |
+| Password | Admin@12345          |
 | Group    | admin                |
 
 > Đổi `ADMIN_EMAIL` và `ADMIN_PASSWORD` trong file script trước khi chạy trên môi trường thật.
+
+## seed-data.ts
+
+Seed artists và songs mẫu vào DynamoDB.
+
+### Chạy script
+
+```bash
+cd backend
+npx tsx scripts/seed-data.ts
+```
+
+Script tự đọc `tableName` từ `.sst/outputs.json` — không cần truyền env thủ công.
+
+### Output
+
+Seed 3 artists + 5 songs vào DynamoDB với audio URL từ soundhelix.com (test only).

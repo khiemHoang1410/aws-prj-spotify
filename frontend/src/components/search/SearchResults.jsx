@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { searchWithRelevance } from '../../services/api/SongService';
+import { searchSongs } from '../../services/api/SongService';
 import { searchArtists } from '../../services/api/ArtistService';
 import { CATEGORIES } from '../../constants/enums';
 import CardArtist from '../cards/CardArtist';
@@ -25,16 +25,20 @@ export default function SearchResults({ query, onPlaySong }) {
 
     setIsLoading(true);
     setActiveCategory(null);
-    const { songs: relevanceSongs, matchedCategories: cats } = searchWithRelevance(query.trim());
-    const artists = searchArtists(query.trim());
-    setMatchedCategories(cats);
-    const topResult = artists[0]
-      ? { ...artists[0], resultType: 'artist' }
-      : relevanceSongs[0]
-      ? { ...relevanceSongs[0], resultType: 'song' }
-      : null;
-    setResults({ songs: relevanceSongs.slice(0, 4), artists: artists.slice(0, 6), topResult });
-    setIsLoading(false);
+
+    Promise.all([
+      searchSongs(query.trim()),
+      searchArtists(query.trim()),
+    ]).then(([songs, artists]) => {
+      setMatchedCategories([]);
+      const topResult = artists[0]
+        ? { ...artists[0], resultType: 'artist' }
+        : songs[0]
+        ? { ...songs[0], resultType: 'song' }
+        : null;
+      setResults({ songs: songs.slice(0, 4), artists: artists.slice(0, 6), topResult });
+      setIsLoading(false);
+    });
   }, [query]);
 
   if (isLoading) {

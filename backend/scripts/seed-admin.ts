@@ -15,7 +15,7 @@ const client = new CognitoIdentityProviderClient({ region: "ap-southeast-1" });
 // Lấy từ sst dev output
 const USER_POOL_ID = process.env.USER_POOL_ID || "";
 const ADMIN_EMAIL = "admin@spotify.local";
-const ADMIN_PASSWORD = "Admin12345";
+const ADMIN_PASSWORD = "Admin@12345";
 
 async function seed() {
     console.log("🌱 Seeding admin account...");
