@@ -4,7 +4,7 @@ import { Play, Heart, Clock, Music, Search, ListPlus, PlusCircle, Check } from '
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal, toggleLikeSong } from '../store/authSlice';
 import { showToast } from '../store/uiSlice'; // [S6-002.6]
-import { getPlaylists, addSongToPlaylist, searchSongs } from '../services/api/SongService';
+import { getPlaylists, addSongToPlaylist, searchSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';

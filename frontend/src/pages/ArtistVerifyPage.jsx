@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Music, Mic2, BarChart3, BadgeCheck, Clock, CheckCircle, X } from 'lucide-react';
 import { setVerifyStatus } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { requestArtistVerify } from '../services/api/UserService';
+import { requestArtistVerify } from '../services/UserService';
 import { VERIFY_STATUS, CATEGORIES } from '../constants/enums';
 import ErrorMessage from '../components/ui/ErrorMessage';
 

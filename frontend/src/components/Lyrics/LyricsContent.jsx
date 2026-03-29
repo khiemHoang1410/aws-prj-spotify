@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/api/SongService';
+import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/SongService';
 import { setPiP, openReportModal, showToast } from '../../store/uiSlice';
 import { toggleLikeSong } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';

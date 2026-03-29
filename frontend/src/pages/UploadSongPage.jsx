@@ -3,8 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { uploadSong } from '../services/api/UploadService';
-import { createNotification } from '../services/api/NotificationService';
+import { uploadSong } from '../services/UploadService';
+import { createNotification } from '../services/NotificationService';
 import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
@@ -43,7 +43,7 @@ export default function UploadSongPage() {
   React.useEffect(() => {
     if (!user) return;
     const userId = user.user_id || user.id;
-    import('../services/api/ArtistService').then(({ getArtistByUserId }) => {
+    import('../services/ArtistService').then(({ getArtistByUserId }) => {
       getArtistByUserId(userId).then((artist) => {
         if (artist?.id) setArtistId(artist.id);
       });

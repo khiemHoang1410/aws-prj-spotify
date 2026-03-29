@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getArtistInfo } from '../../services/api/ArtistService';
+import { getArtistInfo } from '../../services/ArtistService';
 
 export default function BottomInfo({ currentSong }) {
   const [artistData, setArtistData] = useState(null);

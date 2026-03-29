@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice';
-import { getArtistRequests, approveArtistTick, rejectArtistTick } from '../../services/api/AdminService';
+import { getArtistRequests, approveArtistTick, rejectArtistTick } from '../../services/AdminService';
 import { VERIFY_STATUS } from '../../constants/enums';
 
 const STATUS_BADGE = {

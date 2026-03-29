@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { searchSongs } from '../../services/api/SongService';
-import { searchArtists } from '../../services/api/ArtistService';
+import { searchSongs } from '../../services/SongService';
+import { searchArtists } from '../../services/ArtistService';
 import { CATEGORIES } from '../../constants/enums';
 import CardArtist from '../cards/CardArtist';
 import SkeletonCard from '../ui/SkeletonCard';

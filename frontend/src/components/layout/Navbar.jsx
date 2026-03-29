@@ -5,9 +5,9 @@ import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, Shiel
 import { openModal, logout, setFollowedArtists } from '../../store/authSlice';
 import { toggleBrowse } from '../../store/uiSlice';
 import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
-import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../../services/api/NotificationService';
-import { getFollowedArtists } from '../../services/api/ArtistService';
-import { logoutUser } from '../../services/api/AuthService';
+import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../../services/NotificationService';
+import { getFollowedArtists } from '../../services/ArtistService';
+import { logoutUser } from '../../services/AuthService';
 import SearchBar from '../search/SearchBar';
 import { ROLES } from '../../constants/enums';
 

@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { updateProfile } from '../services/api/UserService';
+import { updateProfile } from '../services/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';

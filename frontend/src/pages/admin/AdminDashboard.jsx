@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Music, BadgeCheck, Flag, Users } from 'lucide-react';
-import { getStats } from '../../services/api/AdminService';
+import { getStats } from '../../services/AdminService';
 
 const STAT_CARDS = [
   { key: 'totalSongs', label: 'Tổng bài hát', icon: Music, color: 'text-blue-400' },
