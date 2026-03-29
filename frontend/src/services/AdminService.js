@@ -1,89 +1,19 @@
-import { getAuthHeaders } from './AuthService';
+import api from './apiClient';
 
-const API_URL = import.meta.env.VITE_API_URL;
+export const getStats = () => api.get('/admin/stats');
 
-export const getStats = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/stats`, { headers });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch {
-    return { totalSongs: 0, verifiedArtists: 0, pendingReports: 0, totalUsers: 0 };
-  }
-};
+export const getArtistRequests = () => api.get('/admin/artist-requests');
 
-export const getArtistRequests = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/artist-requests`, { headers });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch {
-    return [];
-  }
-};
+export const approveArtistTick = (requestId) =>
+  api.post(`/admin/artist-requests/${requestId}/approve`);
 
-// id ở đây là requestId (id của ArtistRequest), không phải userId
-export const approveArtistTick = async (requestId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/artist-requests/${requestId}/approve`, {
-      method: 'POST', headers,
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
+export const rejectArtistTick = (requestId, adminNote = '') =>
+  api.post(`/admin/artist-requests/${requestId}/reject`, { adminNote });
 
-export const rejectArtistTick = async (requestId, adminNote = '') => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/artist-requests/${requestId}/reject`, {
-      method: 'POST', headers, body: JSON.stringify({ adminNote }),
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
+export const getReports = () => api.get('/admin/reports');
 
-export const getReports = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/reports`, { headers });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch {
-    return [];
-  }
-};
+export const resolveReport = (reportId) =>
+  api.post(`/admin/reports/${reportId}/resolve`);
 
-export const resolveReport = async (reportId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/reports/${reportId}/resolve`, {
-      method: 'POST', headers,
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
-
-export const removeSong = async (songId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/admin/songs/${songId}`, {
-      method: 'DELETE', headers,
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
+export const removeSong = (songId) =>
+  api.delete(`/admin/songs/${songId}`);

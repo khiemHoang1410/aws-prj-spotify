@@ -39,14 +39,20 @@ export default function UploadSongPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [artistId, setArtistId] = useState(null);
+  const [artistLoading, setArtistLoading] = useState(true);
 
-  // Lấy artistId từ BE khi mount
+  // Lấy artistId từ BE khi mount — bắt buộc có trước khi cho upload
   React.useEffect(() => {
     if (!user) return;
     const userId = user.user_id || user.id;
-    getArtistByUserId(userId).then((artist) => {
-      if (artist?.id) setArtistId(artist.id);
-    });
+    setArtistLoading(true);
+    getArtistByUserId(userId)
+      .then((artist) => {
+        if (artist?.id) setArtistId(artist.id);
+        else setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng liên hệ hỗ trợ.');
+      })
+      .catch(() => setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.'))
+      .finally(() => setArtistLoading(false));
   }, [user]);
 
   if (!user || user.role !== ROLES.ARTIST) {
@@ -61,6 +67,10 @@ export default function UploadSongPage() {
         />
       </div>
     );
+  }
+
+  if (artistLoading) {
+    return <div className="flex items-center justify-center mt-20 text-neutral-400 text-sm">Đang tải thông tin nghệ sĩ...</div>;
   }
 
   const addCoverFiles = (files) => {
@@ -103,6 +113,13 @@ export default function UploadSongPage() {
 
   const handleSubmit = async () => {
     setUploadError('');
+
+    // Validate trước khi gọi API
+    if (!title.trim()) { setUploadError('Vui lòng nhập tên bài hát.'); return; }
+    if (!audioFile) { setUploadError('Vui lòng chọn file âm thanh.'); return; }
+    if (selectedCategories.length === 0) { setUploadError('Vui lòng chọn ít nhất một thể loại.'); return; }
+    if (!artistId) { setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng tải lại trang.'); return; }
+
     setIsLoading(true);
     try {
       const durationSeconds = duration
@@ -111,7 +128,7 @@ export default function UploadSongPage() {
 
       const formData = {
         title: title.trim(),
-        artistId: artistId || user.user_id,
+        artistId,
         audioFile,
         coverFile: coverFiles[0] || null,
         lyrics,
