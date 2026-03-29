@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { X, Play } from 'lucide-react';
 import { toggleRightSidebar } from '../../store/uiSlice';
 import { clearQueue, setCurrentSong } from '../../store/playerSlice';
-import { getPlayHistory } from '../../services/api/UserService';
+import { getPlayHistory } from '../../services/UserService';
 
 export default function QueueSidebar() {
   const dispatch = useDispatch();

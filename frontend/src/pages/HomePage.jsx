@@ -3,8 +3,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getSongs } from '../services/api/SongService';
-import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/api/RecommendationService';
+import { getSongs } from '../services/SongService';
+import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
 import CardSong from '../components/cards/CardSong';
 
 export default function HomePage() {

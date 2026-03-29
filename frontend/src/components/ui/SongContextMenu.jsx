@@ -4,7 +4,7 @@ import { Heart, HeartOff, PlusCircle, ListPlus, EyeOff, Share2, Flag, ChevronRig
 import { toggleLikeSong } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { showToast, openReportModal } from '../../store/uiSlice';
-import { getPlaylists, addSongToPlaylist } from '../../services/api/SongService';
+import { getPlaylists, addSongToPlaylist } from '../../services/SongService';
 
 const MENU_WIDTH = 224; // w-56
 const MENU_HEIGHT = 290; // approximate height

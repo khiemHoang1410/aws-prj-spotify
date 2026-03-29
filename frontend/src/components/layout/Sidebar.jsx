@@ -3,8 +3,8 @@ import { Library, Plus, AudioLines, Heart, X, BadgeCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
-import { getPlaylists, createPlaylist } from '../../services/api/SongService';
-import { getFollowedArtists } from '../../services/api/ArtistService';
+import { getPlaylists, createPlaylist } from '../../services/SongService';
+import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';

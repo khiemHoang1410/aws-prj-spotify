@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { closeModal, loginSuccess, openModal } from '../../store/authSlice';
-import { login, register, confirmRegister } from '../../services/api/AuthService';
+import { login, register, confirmRegister } from '../../services/AuthService';
 import { X } from 'lucide-react';
 
 export default function AuthModal() {

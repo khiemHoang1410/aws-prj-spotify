@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from '../../services/api/AuthService';
+import { getCurrentUser } from '../../services/AuthService';
 import { loginSuccess } from '../../store/authSlice';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';

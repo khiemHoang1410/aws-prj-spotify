@@ -5,7 +5,7 @@ import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from '
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/api/SongService';
+import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import SkeletonCard from '../components/ui/SkeletonCard';

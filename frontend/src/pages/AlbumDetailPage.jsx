@@ -5,8 +5,8 @@ import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2 } from 'luci
 import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getAlbumById, addSongToAlbum, removeSongFromAlbum } from '../services/api/AlbumService';
-import { getSongs } from '../services/api/SongService';
+import { getAlbumById, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
+import { getSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
