@@ -29,14 +29,17 @@ export default function PlayerBar() {
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [volumeBeforeMute, setVolumeBeforeMute] = useState(1);
+  const isSeeking = useRef(false); // block onTimeUpdate ngay sau seek
 
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
 
   useEffect(() => {
     if (globalSeekTime !== null) {
-      setSeekTime(globalSeekTime);
       setCurrentTimeLocal(globalSeekTime);
+      isSeeking.current = true;
+      setTimeout(() => { isSeeking.current = false; }, 300);
+      setSeekTime(globalSeekTime);
       setTimeout(() => dispatch(clearSeekTime()), 100);
     }
   }, [globalSeekTime, dispatch]);
@@ -54,6 +57,11 @@ export default function PlayerBar() {
       const handleMouseMove = (e) => updateProgress(e);
       const handleMouseUp = () => {
         setIsDraggingProgress(false);
+        // Update UI ngay lập tức về đúng vị trí B
+        setCurrentTimeLocal(dragTime);
+        // Block onTimeUpdate trong 300ms để tránh nhảy về vị trí cũ
+        isSeeking.current = true;
+        setTimeout(() => { isSeeking.current = false; }, 300);
         setSeekTime(dragTime);
         setTimeout(() => setSeekTime(null), 100); 
       };
@@ -123,9 +131,9 @@ export default function PlayerBar() {
         volume={volume}
         seekTime={seekTime}
         onTimeUpdate={(time) => {
-          if (!isDraggingProgress) {
+          if (!isDraggingProgress && !isSeeking.current) {
              setCurrentTimeLocal(time);
-             dispatch(updateCurrentTime(time)); // Bắn dữ liệu an toàn vì playerSlice đã khai báo
+             dispatch(updateCurrentTime(time));
           }
         }} 
         onEnded={() => { 
