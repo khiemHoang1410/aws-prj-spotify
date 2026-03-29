@@ -59,11 +59,12 @@ export default function PlaylistDetailPage() {
   };
 
   useEffect(() => {
-    if (searchTerm.trim().length < 1) {
-      setSearchResult([]);
-      return;
-    }
-    setSearchResult(searchSongs(searchTerm.trim()).slice(0, 8));
+    if (searchTerm.trim().length < 1) { setSearchResult([]); return; }
+    const t = setTimeout(async () => {
+      const results = await searchSongs(searchTerm.trim());
+      setSearchResult(results.slice(0, 8));
+    }, 300);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
   const handleAddSong = async (song) => {

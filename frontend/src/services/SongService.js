@@ -1,172 +1,66 @@
-import { getAuthHeaders } from "./AuthService";
-import { adaptSong, adaptPlaylist, adaptPaginatedResponse } from "./adapters";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import api from './apiClient';
+import { adaptSong, adaptPlaylist, adaptPaginatedResponse } from './adapters';
 
 export const getSongs = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/songs`, { headers });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return adaptPaginatedResponse(data, adaptSong);
-  } catch {
-    return [];
-  }
+  const data = await api.get('/songs');
+  return adaptPaginatedResponse(data, adaptSong);
 };
 
-export const getLyrics = async (_songId) => [];
+export const getTopSongs = () => getSongs();
 
-export const getPlaylists = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists`, { headers });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return adaptPaginatedResponse(data, adaptPlaylist);
-  } catch {
-    return [];
-  }
+export const getSongsByCategory = async (categoryId) => {
+  const data = await api.get(`/songs?category=${encodeURIComponent(categoryId)}`);
+  return adaptPaginatedResponse(data, adaptSong);
 };
 
-export const getCategories = async () => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/categories`, { headers });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch {
-    return [];
-  }
-};
-
-export const getPlaylistById = async (id) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists/${id}`, { headers });
-    if (!res.ok) throw new Error();
-    return adaptPlaylist(await res.json());
-  } catch {
-    return null;
-  }
-};
-
-export const createPlaylist = async (data) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists`, {
-      method: "POST", headers, body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
-
-export const deletePlaylist = async (id) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists/${id}`, { method: "DELETE", headers });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
-
-export const addSongToPlaylist = async (playlistId, song) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists/${playlistId}/songs`, {
-      method: "POST", headers, body: JSON.stringify({ song_id: song.song_id }),
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
-
-export const removeSongFromPlaylist = async (playlistId, songId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/playlists/${playlistId}/songs/${songId}`, {
-      method: "DELETE", headers,
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
-};
-
-export const updateSong = async (songId, data) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/songs/${encodeURIComponent(songId)}`, {
-      method: "PUT", headers, body: JSON.stringify(data),
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
+export const updateSong = async (songId, payload) => {
+  return api.put(`/songs/${encodeURIComponent(songId)}`, payload);
 };
 
 export const deleteSong = async (songId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/songs/${encodeURIComponent(songId)}`, {
-      method: "DELETE", headers,
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
+  return api.delete(`/songs/${encodeURIComponent(songId)}`);
 };
 
-export const reportSong = async (songId, reason, description = "") => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/songs/${songId}/report`, {
-      method: "POST", headers, body: JSON.stringify({ reason, description }),
-    });
-    if (!res.ok) throw new Error();
-    return await res.json();
-  } catch (e) {
-    return { success: false, message: e.message };
-  }
+export const reportSong = async (songId, reason, description = '') => {
+  return api.post(`/songs/${songId}/report`, { reason, description });
 };
-
-export const getTopSongs = async () => getSongs();
 
 export const searchSongs = async (query) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/search?q=${encodeURIComponent(query)}`, { headers });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return (data.songs || []).map(adaptSong);
-  } catch {
-    return [];
-  }
+  const data = await api.get(`/search?q=${encodeURIComponent(query)}`);
+  return (data?.songs || []).map(adaptSong);
 };
 
-export const getSongsByCategory = async (categoryId) => {
-  try {
-    const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/songs?category=${encodeURIComponent(categoryId)}`, { headers });
-    if (!res.ok) throw new Error();
-    const data = await res.json();
-    return adaptPaginatedResponse(data, adaptSong);
-  } catch {
-    return [];
-  }
+// Playlists
+export const getPlaylists = async () => {
+  const data = await api.get('/playlists');
+  return adaptPaginatedResponse(data, adaptPlaylist);
 };
 
-export const searchWithRelevance = (query) => {
-  // Client-side search removed — use searchSongs() for API search
-  return { songs: [], matchedCategories: [] };
+export const getPlaylistById = async (id) => {
+  const data = await api.get(`/playlists/${id}`);
+  return adaptPlaylist(data);
 };
+
+export const createPlaylist = async (payload) => {
+  return api.post('/playlists', payload);
+};
+
+export const deletePlaylist = async (id) => {
+  return api.delete(`/playlists/${id}`);
+};
+
+export const addSongToPlaylist = async (playlistId, song) => {
+  return api.post(`/playlists/${playlistId}/songs`, { song_id: song.song_id });
+};
+
+export const removeSongFromPlaylist = async (playlistId, songId) => {
+  return api.delete(`/playlists/${playlistId}/songs/${songId}`);
+};
+
+export const getLyrics = async (songId) => {
+  const data = await api.get(`/songs/${encodeURIComponent(songId)}/lyrics`);
+  return data?.lyrics ?? [];
+};
+
+/** Client-side relevance search — deprecated, dùng searchSongs() */
+export const searchWithRelevance = () => ({ songs: [], matchedCategories: [] });

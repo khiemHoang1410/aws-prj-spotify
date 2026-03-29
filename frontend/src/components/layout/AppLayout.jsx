@@ -11,6 +11,7 @@ import AuthModal from '../modals/AuthModal';
 import ReportModal from '../modals/ReportModal';
 import Toast from '../ui/Toast';
 import MiniLyricsPanel from '../lyrics/MiniLyricsPanel';
+import ErrorBoundary from '../ui/ErrorBoundary';
 
 export default function AppLayout() {
   const dispatch = useDispatch();
@@ -40,7 +41,9 @@ export default function AppLayout() {
         <main className={`flex-1 bg-[#121212] rounded-lg mt-2 mr-2 mb-2 overflow-y-auto relative ${isLyricsPage ? 'ml-2' : ''}`}>
           <div className="p-6 min-h-full bg-gradient-to-b from-[#1f1f1f] to-[#121212] relative overflow-x-hidden">
             <Navbar />
-            <Outlet />
+            <ErrorBoundary>
+              <Outlet />
+            </ErrorBoundary>
           </div>
         </main>
 

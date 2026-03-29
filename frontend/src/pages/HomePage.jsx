@@ -6,6 +6,7 @@ import { openModal } from '../store/authSlice';
 import { getSongs } from '../services/SongService';
 import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
 import CardSong from '../components/cards/CardSong';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 export default function HomePage() {
   const dispatch = useDispatch();
@@ -69,7 +70,20 @@ export default function HomePage() {
     );
   };
 
-  if (loading) return <div className="text-[#b3b3b3] text-center mt-10">Đang tải nhạc...</div>;
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {[1, 2].map((s) => (
+          <div key={s}>
+            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
+            <div className="grid grid-cols-5 gap-6">
+              {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
