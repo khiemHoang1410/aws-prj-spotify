@@ -1,6 +1,7 @@
 import { createBrowserRouter } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
+import RouteError from '../components/ui/RouteError';
 
 // Pages
 import HomePage from '../pages/HomePage';
@@ -27,6 +28,7 @@ export const router = createBrowserRouter([
   // App shell — tất cả routes bên trong dùng chung layout
   {
     element: <AppLayout />,
+    errorElement: <RouteError />,
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/search', element: <SearchPage /> },

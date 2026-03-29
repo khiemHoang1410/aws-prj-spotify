@@ -38,6 +38,21 @@ export const getArtists = async () => {
   }
 };
 
+export const getArtistByUserId = async (userId) => {
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/artists?userId=${encodeURIComponent(userId)}`, { headers });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    // BE trả về single item hoặc array
+    if (Array.isArray(data)) return data[0] ? adaptArtist(data[0]) : null;
+    if (data?.items) return data.items[0] ? adaptArtist(data.items[0]) : null;
+    return data ? adaptArtist(data) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const followArtist = async (artistId) => {
   try {
     const headers = await getAuthHeaders();
