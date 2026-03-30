@@ -1,10 +1,11 @@
-import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Maximize2, X } from 'lucide-react';
-import { setPiP, setView } from '../../store/uiSlice';
+import { setPiP } from '../../store/uiSlice';
 
 export default function MiniLyricsPanel() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { currentSong, currentTime } = useSelector((state) => state.player);
   const lyrics = useLyrics(currentSong?.song_id);
 
@@ -34,7 +35,7 @@ export default function MiniLyricsPanel() {
           <p className="text-neutral-400 text-xs truncate">{currentSong.artist_name}</p>
         </div>
         <button
-          onClick={() => { dispatch(setPiP(false)); dispatch(setView('lyrics')); }}
+          onClick={() => { dispatch(setPiP(false)); navigate('/lyrics'); }}
           className="text-neutral-400 hover:text-white transition"
           title="Mở rộng"
         >

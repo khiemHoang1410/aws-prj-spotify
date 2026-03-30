@@ -1,14 +1,14 @@
-// [S8-007.2] AlbumDetailPage
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2 } from 'lucide-react';
-import { setView, setActiveArtist, showToast } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getAlbumById, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
 import { getSongs } from '../services/SongService';
-import EmptyState from '../components/shared/EmptyState';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import EmptyState from '../components/ui/EmptyState';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
@@ -20,7 +20,8 @@ function formatDuration(seconds) {
 
 export default function AlbumDetailPage() {
   const dispatch = useDispatch();
-  const { activeAlbumId } = useSelector((state) => state.ui);
+  const { id: activeAlbumId } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const [album, setAlbum] = useState(null);
@@ -88,19 +89,10 @@ export default function AlbumDetailPage() {
   };
 
   const handleGoToArtist = () => {
-    if (album?.artist_id) {
-      dispatch(setActiveArtist(album.artist_id));
-      dispatch(setView('artist-profile'));
-    }
+    if (album?.artist_id) navigate(`/artist/${album.artist_id}`);
   };
 
-  if (!activeAlbumId) {
-    return (
-      <div className="flex items-center justify-center mt-20">
-        <EmptyState icon={Play} title="Chọn một album" description="Hãy chọn album để xem chi tiết." />
-      </div>
-    );
-  }
+  if (!activeAlbumId) return null;
 
   if (isLoading) {
     return (
@@ -124,7 +116,7 @@ export default function AlbumDetailPage() {
     <div>
       {/* Back button */}
       <button
-        onClick={() => dispatch(setView('home'))}
+        onClick={() => navigate(-1)}
         className="flex items-center gap-2 text-neutral-400 hover:text-white mb-4 transition"
       >
         <ArrowLeft size={20} />

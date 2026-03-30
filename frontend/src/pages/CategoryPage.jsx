@@ -1,13 +1,13 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Music, Play } from 'lucide-react';
-import { setView } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getSongsByCategory } from '../services/SongService';
-import CardSong from '../components/CardSong';
-import EmptyState from '../components/shared/EmptyState';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import CardSong from '../components/cards/CardSong';
+import EmptyState from '../components/ui/EmptyState';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 const SORT_OPTIONS = [
   { id: 'popular', label: 'Phổ biến' },
@@ -17,7 +17,8 @@ const SORT_OPTIONS = [
 
 export default function CategoryPage() {
   const dispatch = useDispatch();
-  const { activeCategoryId, activeCategoryName } = useSelector((state) => state.ui);
+  const { id: activeCategoryId } = useParams();
+  const navigate = useNavigate();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [songs, setSongs] = useState([]);
@@ -59,7 +60,7 @@ export default function CategoryPage() {
       {/* Gradient header */}
       <div className="flex items-end gap-4 h-56 px-2 pb-6 bg-gradient-to-b from-green-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
         <button
-          onClick={() => dispatch(setView('search'))}
+          onClick={() => navigate(-1)}
           className="p-2 rounded-full bg-black/30 hover:bg-black/50 text-white transition mb-1"
           title="Quay lại"
         >
@@ -67,7 +68,7 @@ export default function CategoryPage() {
         </button>
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white uppercase mb-1">Thể loại</p>
-          <h1 className="text-4xl font-extrabold text-white truncate">{activeCategoryName || activeCategoryId}</h1>
+          <h1 className="text-4xl font-extrabold text-white truncate">{activeCategoryId}</h1>
           <p className="text-sm text-neutral-300 mt-1">{songs.length} bài hát</p>
         </div>
       </div>

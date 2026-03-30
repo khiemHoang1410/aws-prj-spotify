@@ -1,16 +1,16 @@
 // sst.config.ts
 
-const deployRegion = process.env.AWS_DEPLOY_REGION ?? "ap-southeast-1";
-
 export default $config({
   app(input) {
     return {
       name: "spotify-backend",
+      // Lambda/API Gateway vẫn remove được khi sst remove
+      // Data resources (DynamoDB, S3) được bảo vệ riêng bằng tên cố định + deletion protection
       removal: input?.stage === "prod" ? "retain" : "remove",
       home: "aws",
       providers: {
         aws: {
-          region: deployRegion,
+          region: process.env.AWS_DEPLOY_REGION || "ap-southeast-1",
         },
       },
     };
@@ -25,6 +25,10 @@ export default $config({
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
     const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
+    const { userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
+    const { mediaProtectedRoutes } = await import("./src/infrastructure/routes/media.routes.js");
+    const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
+    const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -57,8 +61,9 @@ export default $config({
       },
     });
 
-    // 3. DynamoDB
+    // 3. DynamoDB — tên cố định theo stage, không bị xóa khi sst remove
     const table = new sst.aws.Dynamo("SpotifyTable", {
+      name: `spotify-${$app.stage}-table`,
       fields: {
         pk: "string",
         sk: "string",
@@ -74,10 +79,25 @@ export default $config({
         EntityTypeIndex: { hashKey: "entityType", rangeKey: "sk" },
         UserIdIndex: { hashKey: "userId", rangeKey: "sk" },
       },
+      transform: {
+        table: (args: any) => {
+          // Bật deletion protection ở prod, dev thì tắt để dễ cleanup khi cần
+          args.deletionProtectionEnabled = $app.stage === "prod";
+          // Luôn retain table khi sst remove — không bao giờ tự xóa data
+          args.retainOnDelete = true;
+        },
+      },
     });
 
     const bucket = new sst.aws.Bucket("SpotifyMedia", {
+      name: `spotify-${$app.stage}-media`,
       cors: true,
+      access: "public",
+      transform: {
+        bucket: (args: any) => {
+          args.retainOnDelete = true;
+        },
+      },
     });
 
     // 4. API Gateway
@@ -93,12 +113,6 @@ export default $config({
 
     const api = new sst.aws.ApiGatewayV2("MyApi", {
       link: [table, bucket, userPool, userPoolClient],
-      ...(isProd ? {
-        domain: {
-          name: domain,
-          dns: sst.aws.dns({ zone: sstEnv.baseDomain }),
-        },
-      } : {}),
       cors: {
         allowOrigins: isProd ? sstEnv.prodCorsOrigins : ["*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -117,9 +131,7 @@ export default $config({
 
     // 6. Đăng ký Routes
     const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
-    const withVpc = isProd
-      ? { transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } } }
-      : {};
+    const withVpc = { transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } } };
     const withVpcAndAuth = { ...jwtAuth, ...withVpc };
 
     // Public routes
@@ -128,6 +140,8 @@ export default $config({
     Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
     // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
@@ -135,21 +149,11 @@ export default $config({
     Object.entries(albumProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(playlistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
-
-    api.route("GET /me", "src/interfaces/http/handlers/users/me.handler", withVpcAndAuth);
-    api.route("PUT /me", "src/interfaces/http/handlers/users/updateMe.handler", withVpcAndAuth);
-    api.route("POST /me/artist-request", "src/interfaces/http/handlers/users/artistRequest.handler", withVpcAndAuth);
-    api.route("POST /media/upload-image", "src/interfaces/http/handlers/media/uploadImage.handler", withVpcAndAuth);
-
-    // System routes
-    api.route("GET /health", "src/interfaces/http/handlers/system/health.handler", withVpc);
-    api.route("GET /docs", "src/interfaces/http/handlers/system/docs.handler", withVpc);
-    api.route("GET /docs/spec", "src/interfaces/http/handlers/system/spec.handler", withVpc);
-    api.route("GET /search", "src/interfaces/http/handlers/search/search.handler", withVpc);
+    Object.entries(userProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(mediaProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
     return {
       api: api.url,
-      ...(isProd ? { apiDomain: `https://${domain}` } : {}),
       bucketName: bucket.name,
       tableName: table.name,
       userPoolId: userPool.id,

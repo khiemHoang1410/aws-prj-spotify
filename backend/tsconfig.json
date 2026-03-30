@@ -5,10 +5,12 @@
         "moduleResolution": "NodeNext",
         "strict": true,
         "skipLibCheck": true,
-        "esModuleInterop": true
+        "esModuleInterop": true,
+        "types": ["node"]
     },
     "include": [
         "src/**/*.ts",
+        "scripts/**/*.ts",
         "sst.config.ts",
         ".sst/platform/config.d.ts",
         "sst-env.d.ts"

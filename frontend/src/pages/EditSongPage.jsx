@@ -1,11 +1,11 @@
-// [S8-005.3] EditSongPage — Form chỉnh sửa bài hát
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Music } from 'lucide-react';
-import { setView, showToast } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { getSongs, updateSong } from '../services/SongService';
 import { ROLES, CATEGORIES } from '../constants/enums';
-import EmptyState from '../components/shared/EmptyState';
+import EmptyState from '../components/ui/EmptyState';
 
 function parseDuration(seconds) {
   const m = Math.floor(seconds / 60);
@@ -21,8 +21,9 @@ function durationToSeconds(str) {
 
 export default function EditSongPage() {
   const dispatch = useDispatch();
+  const { id: activeEditSongId } = useParams();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
-  const { activeEditSongId } = useSelector((state) => state.ui);
 
   const [title, setTitle] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -53,13 +54,7 @@ export default function EditSongPage() {
     );
   }
 
-  if (!activeEditSongId) {
-    return (
-      <div className="flex items-center justify-center mt-20">
-        <EmptyState icon={Music} title="Chọn bài hát" description="Không tìm thấy bài hát cần chỉnh sửa." />
-      </div>
-    );
-  }
+  if (!activeEditSongId) return null;
 
   const handleToggleCategory = (catId) => {
     setSelectedCategories((prev) =>
@@ -85,7 +80,7 @@ export default function EditSongPage() {
     setIsLoading(false);
     if (result.success) {
       dispatch(showToast({ message: 'Đã cập nhật bài hát thành công', type: 'success' }));
-      dispatch(setView('artist-dashboard'));
+      navigate('/artist-dashboard');
     } else {
       dispatch(showToast({ message: result.message || 'Lỗi khi cập nhật', type: 'error' }));
     }
@@ -100,7 +95,7 @@ export default function EditSongPage() {
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button
-          onClick={() => dispatch(setView('artist-dashboard'))}
+          onClick={() => navigate('/artist-dashboard')}
           className="text-neutral-400 hover:text-white transition"
         >
           <ArrowLeft size={24} />
@@ -176,7 +171,7 @@ export default function EditSongPage() {
         <div className="lg:col-span-2 flex gap-3">
           <button
             type="button"
-            onClick={() => dispatch(setView('artist-dashboard'))}
+            onClick={() => navigate('/artist-dashboard')}
             className="px-6 py-2.5 rounded-full border border-neutral-600 text-neutral-300 hover:border-white hover:text-white text-sm font-semibold transition"
           >
             Huỷ

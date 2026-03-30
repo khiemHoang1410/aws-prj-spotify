@@ -5,7 +5,7 @@ import { setVerifyStatus } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
 import { requestArtistVerify } from '../services/UserService';
 import { VERIFY_STATUS, CATEGORIES } from '../constants/enums';
-import ErrorMessage from '../components/shared/ErrorMessage';
+import ErrorMessage from '../components/ui/ErrorMessage';
 
 const BENEFITS = [
   { icon: Music, text: 'Upload nhạc của bạn lên nền tảng' },
@@ -38,7 +38,12 @@ export default function ArtistVerifyPage() {
 
     setIsLoading(true);
     try {
-      const result = await requestArtistVerify({ ...formData, genres: selectedGenres });
+      const result = await requestArtistVerify({
+        stageName: formData.artistName,
+        bio: formData.bio,
+        photoUrl: formData.profileLink || null,
+        genres: selectedGenres,
+      });
       if (result.success) {
         dispatch(setVerifyStatus({ status: VERIFY_STATUS.PENDING }));
         dispatch(showToast({ message: 'Yêu cầu đã được gửi thành công!', type: 'success' }));

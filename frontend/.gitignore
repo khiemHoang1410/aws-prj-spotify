@@ -55,6 +55,7 @@ packaged.yaml
 # Chặn file chứa API Key, thông tin mật (Cực kỳ quan trọng)
 .env
 .env.*
+!.env.example
 
 # File rác của Mac và Windows
 .DS_Store

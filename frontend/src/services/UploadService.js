@@ -1,131 +1,64 @@
-import { getAuthHeaders } from './AuthService';
+import api from './apiClient';
+import { getAuthToken } from './AuthService';
 
-const API_URL = import.meta.env.VITE_API_URL;
+/**
+ * Upload flow:
+ * 1. getUploadUrl()     → POST /songs/upload-url  → { uploadUrl, fileUrl }
+ * 2. uploadFileToS3()   → PUT <uploadUrl> (binary, no auth header)
+ * 3. createSongRecord() → POST /songs với metadata + fileUrl
+ */
 
-const putFileToSignedUrl = async (uploadUrl, file, contentType) => {
-  const response = await fetch(uploadUrl, {
+export const getUploadUrl = async () => {
+  const json = await api.post('/songs/upload-url');
+  return json?.uploadUrl ? json : json?.data;
+};
+
+export const uploadFileToS3 = async (uploadUrl, file) => {
+  const res = await fetch(uploadUrl, {
     method: 'PUT',
-    headers: { 'Content-Type': contentType || file.type || 'application/octet-stream' },
+    headers: { 'Content-Type': file.type || 'audio/mpeg' },
     body: file,
   });
-
-  if (!response.ok) {
-    throw new Error('Upload file trực tiếp lên storage thất bại');
-  }
+  if (!res.ok) throw new Error('Upload file lên S3 thất bại');
 };
 
-const requestSongUploadUrl = async () => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${API_URL}/songs/upload-url`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({}),
-  });
-
-  if (!response.ok) {
-    let message = 'Không thể tạo URL upload audio';
-    try {
-      const err = await response.json();
-      message = err.error || err.message || message;
-    } catch {
-      // no-op
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
+export const createSongRecord = async (songData) => {
+  return api.post('/songs', songData);
 };
 
-const requestImageUploadUrl = async (contentType) => {
-  const headers = await getAuthHeaders();
-  const response = await fetch(`${API_URL}/media/upload-image`, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify({ contentType }),
-  });
-
-  if (!response.ok) {
-    let message = 'Không thể tạo URL upload ảnh';
-    try {
-      const err = await response.json();
-      message = err.error || err.message || message;
-    } catch {
-      // no-op
-    }
-    throw new Error(message);
-  }
-
-  return response.json();
-};
-
-export const uploadSong = async (formData) => {
-  if (!API_URL) {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve({ success: true, data: { id: `SONG_${Date.now()}`, ...formData } }), 2000)
-    );
-  }
-
-  try {
-    const signed = await requestSongUploadUrl();
-    const audioFile = formData?.audioFile || formData?.file || null;
-
-    if (audioFile) {
-      await putFileToSignedUrl(signed.uploadUrl, audioFile, audioFile.type || 'audio/mpeg');
-    }
-
-    return {
-      success: true,
-      data: {
-        uploadUrl: signed.uploadUrl,
-        fileUrl: signed.fileUrl,
-        fileId: signed.fileId,
-        key: signed.key,
-      },
-    };
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
-};
-
+/**
+ * Upload ảnh bìa qua presigned URL
+ * 1. POST /media/upload-image → { uploadUrl, fileUrl }
+ * 2. PUT <uploadUrl> (binary)
+ */
 export const uploadCoverImage = async (file) => {
-  if (!API_URL) {
-    return new Promise((resolve) =>
-      setTimeout(() => resolve({
-        success: true,
-        data: {
-          uploadUrl: 'mock://upload-cover-url',
-          fileUrl: 'mock://cover.jpg',
-          fileId: `COVER_${Date.now()}`,
-          key: `images/mock_${Date.now()}.jpg`,
-        },
-      }), 1000)
-    );
-  }
+  const json = await api.post('/media/upload-image', { contentType: file.type || 'image/jpeg' });
+  const uploadData = json?.uploadUrl ? json : json?.data;
+  if (!uploadData?.uploadUrl) throw new Error('Response không có uploadUrl');
 
-  if (!file) {
-    return { success: false, message: 'Thiếu file ảnh bìa' };
-  }
-
-  try {
-    const signed = await requestImageUploadUrl(file.type || 'image/jpeg');
-    await putFileToSignedUrl(signed.uploadUrl, file, file.type || 'image/jpeg');
-
-    return {
-      success: true,
-      data: {
-        uploadUrl: signed.uploadUrl,
-        fileUrl: signed.fileUrl,
-        fileId: signed.fileId,
-        key: signed.key,
-      },
-    };
-  } catch (error) {
-    return { success: false, message: error.message };
-  }
+  const s3Res = await fetch(uploadData.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'image/jpeg' },
+    body: file,
+  });
+  if (!s3Res.ok) throw new Error('Upload ảnh bìa lên S3 thất bại');
+  return { url: uploadData.fileUrl };
 };
 
-export const uploadMV = async (file) => {
-  return new Promise((resolve) =>
-    setTimeout(() => resolve({ success: true, data: { url: 'mock://mv.mp4', file } }), 3000)
-  );
+/**
+ * Hàm tổng hợp — dùng trong UploadSongPage
+ */
+export const uploadSong = async ({ title, artistId, duration, lyrics, categories, coverFile, audioFile }) => {
+  const { uploadUrl, fileUrl } = await getUploadUrl();
+
+  if (audioFile) await uploadFileToS3(uploadUrl, audioFile);
+
+  let coverUrl = null;
+  if (coverFile) {
+    const result = await uploadCoverImage(coverFile);
+    coverUrl = result.url;
+  }
+
+  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, lyrics: lyrics || null, categories: categories || [] });
+  return { success: true, data };
 };
