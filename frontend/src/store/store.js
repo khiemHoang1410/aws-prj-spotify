@@ -7,7 +7,7 @@ import notificationReducer from './notificationSlice';
 import { logout } from './authSlice';
 import { showToast } from './uiSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
-import { addToHistory } from '../services/HistoryService';
+import { addToHistoryLocal, addToHistoryRemote } from '../services/HistoryService';
 
 const PLAYER_STATE_STORAGE_KEY = 'spotify_player_state_v1';
 
@@ -39,8 +39,10 @@ setRequestFailedCallback((message) => {
 });
 
 // ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
-let _lastHistorySongId = null;
+// Init với bài đang restore từ localStorage để tránh ghi history khi app load
+let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
 let _lastLikedSongsRef = null;
+let _debounceTimer = null;
 
 store.subscribe(() => {
   const state = store.getState();
@@ -56,7 +58,13 @@ store.subscribe(() => {
   const { currentSong } = state.player;
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
-    addToHistory(currentSong);
+
+    // localStorage: immediate (không debounce)
+    addToHistoryLocal(currentSong);
+
+    // API: debounce 1500ms để chống spam khi skip liên tục
+    clearTimeout(_debounceTimer);
+    _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
   }
 
   // 3. Persist player state (currentSong + currentTime)
