@@ -38,42 +38,38 @@ setRequestFailedCallback((message) => {
   store.dispatch(showToast({ message, type: 'error' }));
 });
 
-// Persist liked songs vào localStorage theo user_id để không mất sau reload
+// ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
+let _lastHistorySongId = null;
+let _lastLikedSongsRef = null;
+
 store.subscribe(() => {
-  const { isAuthenticated, user, likedSongs } = store.getState().auth;
-  if (isAuthenticated && user?.user_id) {
+  const state = store.getState();
+
+  // 1. Persist liked songs theo user
+  const { isAuthenticated, user, likedSongs } = state.auth;
+  if (isAuthenticated && user?.user_id && likedSongs !== _lastLikedSongsRef) {
+    _lastLikedSongsRef = likedSongs;
     localStorage.setItem(`spotify_liked_${user.user_id}`, JSON.stringify(likedSongs));
   }
-});
 
-// Ghi lịch sử nghe nhạc khi currentSong thay đổi
-let _lastHistorySongId = null;
-store.subscribe(() => {
-  const { currentSong } = store.getState().player;
+  // 2. Track play history khi song thay đổi
+  const { currentSong } = state.player;
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
     addToHistory(currentSong);
   }
-});
 
-const persistPlayerState = () => {
-  if (typeof window === 'undefined') return;
-  try {
-    const { currentSong, currentTime, isPlaying } = store.getState().player;
-    const safeTime = Number.isFinite(currentTime) ? currentTime : 0;
-    localStorage.setItem(PLAYER_STATE_STORAGE_KEY, JSON.stringify({
-      currentSong: currentSong || null,
-      currentTime: safeTime,
-      isPlaying: !!isPlaying,
-    }));
-  } catch {
-    // Ignore localStorage errors to avoid breaking app flow
+  // 3. Persist player state (currentSong + currentTime)
+  if (typeof window !== 'undefined') {
+    try {
+      const { currentTime, isPlaying } = state.player;
+      localStorage.setItem(PLAYER_STATE_STORAGE_KEY, JSON.stringify({
+        currentSong: currentSong || null,
+        currentTime: Number.isFinite(currentTime) ? currentTime : 0,
+        isPlaying: !!isPlaying,
+      }));
+    } catch { }
   }
-};
-
-// Persist current song + current time liên tục để reload vào lại đúng trạng thái
-store.subscribe(() => {
-  persistPlayerState();
 });
 
 if (typeof window !== 'undefined') {
