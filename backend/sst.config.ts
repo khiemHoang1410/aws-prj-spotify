@@ -26,7 +26,8 @@ export default $config({
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
     const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
-    const { userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
+    const { userPublicRoutes, userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
+    const { categoryPublicRoutes } = await import("./src/infrastructure/routes/category.routes.js");
     const { mediaProtectedRoutes } = await import("./src/infrastructure/routes/media.routes.js");
     const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
     const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
@@ -145,6 +146,8 @@ export default $config({
     Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(categoryPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
     // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));

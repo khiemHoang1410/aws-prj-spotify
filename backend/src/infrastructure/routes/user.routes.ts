@@ -1,7 +1,13 @@
+// Public routes — không cần JWT
+export const userPublicRoutes = {
+    "GET /users/{id}": "src/interfaces/http/handlers/users/getUser.handler",
+};
+
 // Protected routes — cần JWT
 export const userProtectedRoutes = {
     "GET /me": "src/interfaces/http/handlers/users/me.handler",
     "PUT /me": "src/interfaces/http/handlers/users/updateMe.handler",
     "POST /me/artist-request": "src/interfaces/http/handlers/users/artistRequest.handler",
     "GET /me/artist-request": "src/interfaces/http/handlers/users/myArtistRequest.handler",
+    "GET /users/{id}/play-history": "src/interfaces/http/handlers/users/playHistory.handler",
 };
