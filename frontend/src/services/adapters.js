@@ -84,6 +84,7 @@ export const adaptUser = (user) => {
     avatar_url: user.avatarUrl || user.avatar_url || null,
     role: user.role || 'listener',
     isVerified: user.isVerified || false,
+    artist_id: user.artistId || user.artist_id || null, // Artist profile UUID (khác với user_id)
   };
 };
 
