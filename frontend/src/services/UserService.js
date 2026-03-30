@@ -48,6 +48,7 @@ export const getPlayHistory = async (userId, { limit = 20, cursor } = {}) => {
 
 export const recordPlay = async (song) => {
   if (!API_URL) return;
+  console.log('[recordPlay] calling POST /me/play-history', { songId: song.song_id, songTitle: song.title });
   return api.post('/me/play-history', {
     songId: song.song_id,
     songTitle: song.title,
@@ -61,4 +62,9 @@ export const recordPlay = async (song) => {
 export const clearPlayHistory = async () => {
   if (!API_URL) return;
   return api.delete('/me/play-history');
+};
+
+export const streamSong = async (songId) => {
+  if (!API_URL) return;
+  return api.post(`/songs/${songId}/stream`, {}).catch(() => { /* fire-and-forget */ });
 };

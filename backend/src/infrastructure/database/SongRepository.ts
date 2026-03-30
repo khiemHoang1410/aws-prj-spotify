@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Song } from "../../domain/entities/Song";
@@ -42,6 +42,28 @@ export class SongRepository extends BaseRepository<Song> {
             return Success((response.Items as Song[]) || []);
         } catch (error: any) {
             return Failure(`Lỗi lấy bài hát theo thể loại: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Atomic increment playCount by 1.
+     * Dùng ADD expression để tránh race condition khi nhiều user nghe cùng lúc.
+     */
+    async incrementPlayCount(songId: string): Promise<Result<void>> {
+        try {
+            await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${songId}`, sk: "METADATA" },
+                UpdateExpression: "ADD playCount :one",
+                ExpressionAttributeValues: { ":one": 1 },
+                ConditionExpression: "attribute_exists(pk)",
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            if (error.name === "ConditionalCheckFailedException") {
+                return Failure("Song không tồn tại", 404);
+            }
+            return Failure(`Lỗi tăng playCount: ${error.message}`, 500);
         }
     }
 }

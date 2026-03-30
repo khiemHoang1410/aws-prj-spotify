@@ -1,7 +1,7 @@
 /**
  * HistoryService — Lịch sử nghe nhạc.
- * - localStorage: cache local, dùng khi offline hoặc chưa login
- * - API: sync lên BE khi đã login (POST /me/play-history)
+ * - localStorage: update ngay lập tức (không debounce)
+ * - API: chỉ gọi khi isAuthenticated = true (debounce xử lý ở store.js)
  */
 import { recordPlay, getPlayHistory, clearPlayHistory } from './UserService';
 
@@ -30,26 +30,35 @@ const loadLocal = () => {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
-export const addToHistory = (song) => {
+/** Cập nhật localStorage ngay lập tức — không debounce, không cần auth */
+export const addToHistoryLocal = (song) => {
   if (!song?.song_id) return;
-
-  // 1. Cập nhật localStorage ngay lập tức (không block UI)
   let history = loadLocal().filter((s) => s.song_id !== song.song_id);
   history.unshift({ ...song, played_at: new Date().toISOString() });
   if (history.length > MAX_LOCAL_HISTORY) history = history.slice(0, MAX_LOCAL_HISTORY);
   saveLocal(history);
+};
 
-  // 2. Sync lên BE nếu đã login (fire-and-forget)
+/** Gọi API ghi history — chỉ khi isAuthenticated = true */
+export const addToHistoryRemote = (song) => {
+  if (!song?.song_id) return;
+  if (!import.meta.env.VITE_API_URL) return;
+
   const { isAuthenticated } = getStore().getState().auth;
-  if (isAuthenticated) {
-    recordPlay(song).catch(() => { /* ignore — không block UX */ });
-  }
+  if (!isAuthenticated) return;
+
+  recordPlay(song).catch((err) => { console.warn('[HistoryService] recordPlay failed:', err); });
+};
+
+/** Backward compat — gọi cả local + remote (không debounce) */
+export const addToHistory = (song) => {
+  addToHistoryLocal(song);
+  addToHistoryRemote(song);
 };
 
 export const getHistory = async () => {
   const { isAuthenticated, user } = getStore().getState().auth;
 
-  // Nếu đã login → lấy từ BE (source of truth)
   if (isAuthenticated && user?.user_id) {
     try {
       const result = await getPlayHistory(user.user_id);
@@ -73,7 +82,6 @@ export const getHistory = async () => {
 
 export const clearHistory = async () => {
   saveLocal([]);
-
   const { isAuthenticated } = getStore().getState().auth;
   if (isAuthenticated) {
     await clearPlayHistory().catch(() => { });
