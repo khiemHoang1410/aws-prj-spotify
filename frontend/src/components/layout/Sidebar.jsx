@@ -56,15 +56,24 @@ export default function Sidebar() {
     if (!trimmedName) return;
     const normalizedName = normalizeText(trimmedName);
 
-    const existed = playlists.some((pl) => normalizeText(pl.name) === normalizedName);
+    // Re-fetch từ server để tránh stale state gây duplicate
+    setIsCreating(true);
+    let latestPlaylists = playlists;
+    try {
+      const fresh = await getMyPlaylists();
+      latestPlaylists = (fresh || []).filter((pl) => !isLikedPlaylistName(pl.name));
+      setPlaylists(latestPlaylists);
+    } catch { /* dùng local state nếu fetch fail */ }
+
+    const existed = latestPlaylists.some((pl) => normalizeText(pl.name) === normalizedName);
     if (existed) {
       dispatch(showToast({ message: 'Playlist này đã tồn tại', type: 'warning' }));
+      setIsCreating(false);
       setIsCreateModalOpen(false);
       setNewPlaylistName('');
       return;
     }
 
-    setIsCreating(true);
     const result = await createPlaylist({ name: trimmedName, owner: 'Bạn' });
     if (result.success) {
       setPlaylists((prev) => {
