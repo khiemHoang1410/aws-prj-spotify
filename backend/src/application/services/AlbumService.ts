@@ -46,12 +46,27 @@ export class AlbumService {
         return await this.albumRepo.findAll();
     }
 
-    async getSongsByAlbum(albumId: string): Promise<Result<Song[]>> {
-        // Lấy tất cả songs rồi filter theo albumId
-        // (Nếu cần tối ưu sau này thì thêm GSI AlbumIdIndex)
+    async getSongsByAlbum(albumId: string): Promise<Result<any[]>> {
         const result = await this.songRepo.findAll();
         if (!result.success) return result;
-        return { success: true, data: result.data.filter(s => s.albumId === albumId) };
+
+        const albumSongs = result.data.filter(s => s.albumId === albumId);
+        if (!albumSongs.length) return { success: true, data: [] };
+
+        // Enrich với artistName — batch lookup tránh N+1
+        const artistIds = [...new Set(albumSongs.map(s => s.artistId).filter(Boolean))];
+        const artistMap = new Map<string, string>();
+        await Promise.all(
+            artistIds.map(async (id) => {
+                const r = await this.artistRepo.findById(id);
+                if (r.success && r.data) artistMap.set(id, r.data.name);
+            })
+        );
+
+        return {
+            success: true,
+            data: albumSongs.map(s => ({ ...s, artistName: artistMap.get(s.artistId) ?? null })),
+        };
     }
 
     /**

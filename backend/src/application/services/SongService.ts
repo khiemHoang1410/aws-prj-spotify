@@ -44,6 +44,10 @@ export class SongService {
         return await this.songRepo.findById(id);
     }
 
+    async getSongById(id: string): Promise<Result<any | null>> {
+        return this.getEnrichedSong(id);
+    }
+
     async getEnrichedSong(id: string): Promise<Result<any | null>> {
         const songResult = await this.songRepo.findById(id);
         if (!songResult.success || !songResult.data) return songResult as any;

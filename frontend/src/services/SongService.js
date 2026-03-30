@@ -6,6 +6,11 @@ export const getSongs = async () => {
   return adaptPaginatedResponse(data, adaptSong);
 };
 
+export const getSongById = async (songId) => {
+  const data = await api.get(`/songs/${encodeURIComponent(songId)}`);
+  return adaptSong(data);
+};
+
 export const getTopSongs = () => getSongs();
 
 export const getSongsByCategory = async (categoryId) => {
