@@ -3,7 +3,8 @@
 // ==========================================
 
 export const ROLES = {
-  USER: 'user',
+  USER: 'listener',
+  LISTENER: 'listener',
   ARTIST: 'artist',
   ADMIN: 'admin',
 };
