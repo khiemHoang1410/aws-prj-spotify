@@ -5,8 +5,12 @@ import { PlayHistory } from "../../domain/entities/PlayHistory";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const TABLE = () => Resource.SpotifyTable.name;
+<<<<<<< HEAD
 const SK_PREFIX = "SONG#";
 const TTL_90_DAYS = 90 * 24 * 3600;
+=======
+const PREFIX = "HISTORY";
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
 
 export class PlayHistoryRepository {
     /**
@@ -17,6 +21,7 @@ export class PlayHistoryRepository {
      */
     async record(entry: Omit<PlayHistory, "playedAt"> & { playedAt?: string }): Promise<Result<PlayHistory>> {
         try {
+<<<<<<< HEAD
             const now = new Date().toISOString();
             const ttl = Math.floor(Date.now() / 1000) + TTL_90_DAYS;
             const item: PlayHistory & Record<string, any> = {
@@ -30,6 +35,20 @@ export class PlayHistoryRepository {
             await dynamoDb.send(new PutCommand({ TableName: TABLE(), Item: item }));
             const { pk, sk, entityType, ...clean } = item;
             return Success(clean as PlayHistory);
+=======
+            const now = entry.playedAt || new Date().toISOString();
+            await dynamoDb.send(new PutCommand({
+                TableName: TABLE(),
+                Item: {
+                    ...entry,
+                    pk: `USER#${entry.userId}`,
+                    sk: `${PREFIX}#${now}#${entry.songId}`,
+                    entityType: PREFIX,
+                    playedAt: now,
+                },
+            }));
+            return Success({ ...entry, playedAt: now });
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
         } catch (error: any) {
             return Failure(`Lỗi lưu play history: ${error.message}`, 500);
         }
@@ -49,7 +68,11 @@ export class PlayHistoryRepository {
                 KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
                 ExpressionAttributeValues: {
                     ":pk": `USER#${userId}`,
+<<<<<<< HEAD
                     ":prefix": SK_PREFIX,
+=======
+                    ":prefix": `${PREFIX}#`,
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
                 },
                 Limit: limit,
             };
@@ -71,7 +94,12 @@ export class PlayHistoryRepository {
     }
 
     /**
+<<<<<<< HEAD
      * Xóa toàn bộ history của user với pagination (>25 records).
+=======
+     * Xóa toàn bộ history của user.
+     * Dùng pagination để handle trường hợp user có nhiều records (>1MB).
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
      */
     async clearByUserId(userId: string): Promise<Result<void>> {
         try {
@@ -83,10 +111,17 @@ export class PlayHistoryRepository {
                     KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
                     ExpressionAttributeValues: {
                         ":pk": `USER#${userId}`,
+<<<<<<< HEAD
                         ":prefix": SK_PREFIX,
                     },
                     ProjectionExpression: "pk, sk",
                     Limit: 25,
+=======
+                        ":prefix": `${PREFIX}#`,
+                    },
+                    ProjectionExpression: "pk, sk",
+                    Limit: 25, // DynamoDB BatchWrite max 25 items
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
                 };
                 if (lastKey) params.ExclusiveStartKey = lastKey;
 

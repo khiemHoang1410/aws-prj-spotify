@@ -39,10 +39,15 @@ setRequestFailedCallback((message) => {
 });
 
 // ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
+<<<<<<< HEAD
 // Init với bài đang restore từ localStorage để tránh ghi history khi app load
 let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
 let _lastLikedSongsRef = null;
 let _debounceTimer = null;
+=======
+let _lastHistorySongId = null;
+let _lastLikedSongsRef = null;
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
 
 store.subscribe(() => {
   const state = store.getState();
@@ -58,6 +63,7 @@ store.subscribe(() => {
   const { currentSong } = state.player;
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
+<<<<<<< HEAD
 
     // localStorage: immediate (không debounce)
     addToHistoryLocal(currentSong);
@@ -67,6 +73,11 @@ store.subscribe(() => {
     _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
   }
 
+=======
+    addToHistory(currentSong);
+  }
+
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
   // 3. Persist player state (currentSong + currentTime)
   if (typeof window !== 'undefined') {
     try {
