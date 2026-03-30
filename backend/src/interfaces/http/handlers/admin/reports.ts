@@ -1,15 +1,20 @@
 import { makeAuthHandler } from "../../middlewares/withAuth";
-import { Success } from "../../../../shared/utils/Result";
+import { ReportRepository } from "../../../../infrastructure/database/ReportRepository";
+import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { Failure } from "../../../../shared/utils/Result";
+import { validateUUID } from "../../../../shared/utils/validate";
 
-// Report system chưa có trong DB schema — trả empty list để FE không crash
-// TODO: implement khi có Report entity + repository
+const reportRepo = new ReportRepository();
+const songRepo = new SongRepository();
 
+// GET /admin/reports
 export const listHandler = makeAuthHandler(async () => {
-    return Success([]);
+    return reportRepo.findAllPending();
 }, "admin");
 
+// POST /admin/reports/{id}/resolve
 export const resolveHandler = makeAuthHandler(async (_body, params) => {
-    if (!params.id) return Success({ success: true });
-    // TODO: update report status khi có Report entity
-    return Success({ success: true });
+    const idResult = validateUUID(params.id, "report ID");
+    if (!idResult.success) return idResult;
+    return reportRepo.resolve(idResult.data);
 }, "admin");

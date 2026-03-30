@@ -19,26 +19,26 @@ export default function AdminArtistRequests() {
   }, []);
 
   const handleApprove = async (req) => {
-    const result = await approveArtistTick(req.id);
-    if (result.success !== false) {
+    try {
+      await approveArtistTick(req.id);
       setRequests((prev) =>
         prev.map((r) => (r.id === req.id ? { ...r, status: VERIFY_STATUS.APPROVED } : r))
       );
       dispatch(showToast({ message: `Đã duyệt nghệ sĩ ${req.stageName || req.name}`, type: 'success' }));
-    } else {
-      dispatch(showToast({ message: result.message || 'Lỗi khi duyệt', type: 'error' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi duyệt', type: 'error' }));
     }
   };
 
   const handleReject = async (req) => {
-    const result = await rejectArtistTick(req.id);
-    if (result.success !== false) {
+    try {
+      await rejectArtistTick(req.id);
       setRequests((prev) =>
         prev.map((r) => (r.id === req.id ? { ...r, status: VERIFY_STATUS.REJECTED } : r))
       );
       dispatch(showToast({ message: `Đã từ chối yêu cầu của ${req.stageName || req.name}`, type: 'warning' }));
-    } else {
-      dispatch(showToast({ message: result.message || 'Lỗi khi từ chối', type: 'error' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi từ chối', type: 'error' }));
     }
   };
 

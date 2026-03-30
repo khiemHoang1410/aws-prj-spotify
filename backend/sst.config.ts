@@ -10,6 +10,7 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
+          version: "7.20.0",
           region: process.env.AWS_DEPLOY_REGION || "ap-southeast-1",
         },
       },
@@ -25,10 +26,12 @@ export default $config({
     const { authRoutes } = await import("./src/infrastructure/routes/auth.routes.js");
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
     const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
-    const { userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
+    const { userPublicRoutes, userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
+    const { categoryPublicRoutes } = await import("./src/infrastructure/routes/category.routes.js");
     const { mediaProtectedRoutes } = await import("./src/infrastructure/routes/media.routes.js");
     const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
     const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
+    const { notificationRoutes } = await import("./src/infrastructure/routes/notification.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -105,6 +108,7 @@ export default $config({
     const domain = isProd ? sstEnv.prodApiDomain : sstEnv.devApiDomain;
 
     // VPC config cho Lambda (chạy trong private subnet)
+    // Yêu cầu VPC Endpoints: S3, DynamoDB, cognito-idp
     const lambdaVpcConfig = {
         vpc: sstEnv.vpcId,
         vpcSubnets: [sstEnv.privateSubnetId],
@@ -142,6 +146,8 @@ export default $config({
     Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(categoryPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
     // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
@@ -150,6 +156,7 @@ export default $config({
     Object.entries(playlistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(userProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(notificationRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(mediaProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
     return {

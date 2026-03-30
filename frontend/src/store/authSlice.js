@@ -29,6 +29,10 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.user = action.payload;
       state.isModalOpen = false;
+      // Restore verifyStatus từ user data nếu có
+      if (action.payload?.verifyStatus) {
+        state.verifyStatus = action.payload.verifyStatus;
+      }
     },
     logout: (state) => {
       state.isAuthenticated = false;

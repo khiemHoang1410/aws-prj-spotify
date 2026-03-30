@@ -8,8 +8,12 @@ import { validate, validateUUID } from "../../../../shared/utils/validate";
 const playlistService = new PlaylistService(new PlaylistRepository(), new SongRepository());
 
 const AddSongSchema = z.object({
-    songId: z.uuid({ message: "songId phải là UUID hợp lệ" }),
-});
+    // FE gửi snake_case, BE accept cả hai
+    songId: z.uuid({ message: "songId phải là UUID hợp lệ" }).optional(),
+    song_id: z.uuid({ message: "song_id phải là UUID hợp lệ" }).optional(),
+}).transform((data) => ({
+    songId: data.songId ?? data.song_id,
+})).refine((data) => !!data.songId, { message: "songId là bắt buộc" });
 
 // GET /playlists/{id}/songs
 export const listHandler = makeAuthHandler(async (_body, params) => {

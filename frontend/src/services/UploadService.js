@@ -60,5 +60,5 @@ export const uploadSong = async ({ title, artistId, duration, lyrics, categories
   }
 
   const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, lyrics: lyrics || null, categories: categories || [] });
-  return { success: true, data };
+  return data;
 };

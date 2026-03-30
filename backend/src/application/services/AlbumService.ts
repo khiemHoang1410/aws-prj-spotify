@@ -46,11 +46,53 @@ export class AlbumService {
         return await this.albumRepo.findAll();
     }
 
-    async getSongsByAlbum(albumId: string): Promise<Result<Song[]>> {
-        // Lấy tất cả songs rồi filter theo albumId
-        // (Nếu cần tối ưu sau này thì thêm GSI AlbumIdIndex)
+    async getSongsByAlbum(albumId: string): Promise<Result<any[]>> {
         const result = await this.songRepo.findAll();
         if (!result.success) return result;
-        return { success: true, data: result.data.filter(s => s.albumId === albumId) };
+
+        const albumSongs = result.data.filter(s => s.albumId === albumId);
+        if (!albumSongs.length) return { success: true, data: [] };
+
+        // Enrich với artistName — batch lookup tránh N+1
+        const artistIds = [...new Set(albumSongs.map(s => s.artistId).filter(Boolean))];
+        const artistMap = new Map<string, string>();
+        await Promise.all(
+            artistIds.map(async (id) => {
+                const r = await this.artistRepo.findById(id);
+                if (r.success && r.data) artistMap.set(id, r.data.name);
+            })
+        );
+
+        return {
+            success: true,
+            data: albumSongs.map(s => ({ ...s, artistName: artistMap.get(s.artistId) ?? null })),
+        };
+    }
+
+    /**
+     * Lấy albums theo artistId — dùng ArtistIdIndex GSI.
+     */
+    async getByArtistId(artistId: string): Promise<Result<Album[]>> {
+        return await this.albumRepo.findByArtistId(artistId);
+    }
+
+    /**
+     * Lấy albums theo tên artist — resolve artistId trước rồi query.
+     */
+    async getByArtistName(artistName: string): Promise<Result<Album[]>> {
+        const artists = await this.artistRepo.findByName(artistName);
+        if (!artists.success) return artists;
+        if (!artists.data.length) return { success: true, data: [] };
+
+        // Lấy albums của tất cả artists match (thường chỉ 1)
+        const results = await Promise.all(
+            artists.data.map(a => this.albumRepo.findByArtistId(a.id))
+        );
+
+        const albums: Album[] = [];
+        for (const r of results) {
+            if (r.success) albums.push(...r.data);
+        }
+        return { success: true, data: albums };
     }
 }
