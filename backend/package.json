@@ -1,7 +1,6 @@
 {
   "name": "spotify-backend-sst-ion",
   "version": "1.0.0",
-  "type": "module",
   "description": "Spotify Backend using Clean Architecture and SST Ion",
   "scripts": {
     "dev": "sst dev",
@@ -20,7 +19,7 @@
     "@aws-sdk/client-s3": "^3.1014.0",
     "@aws-sdk/lib-dynamodb": "^3.1013.0",
     "@aws-sdk/s3-request-presigner": "^3.1014.0",
-    "sst": "^4.5.1",
+    "sst": "4.5.12",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },

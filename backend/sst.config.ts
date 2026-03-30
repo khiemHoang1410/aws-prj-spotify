@@ -10,6 +10,7 @@ export default $config({
       home: "aws",
       providers: {
         aws: {
+          version: "7.20.0",
           region: process.env.AWS_DEPLOY_REGION || "ap-southeast-1",
         },
       },
