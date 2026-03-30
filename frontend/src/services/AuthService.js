@@ -2,7 +2,7 @@
  * AuthService — Cognito auth qua BE API.
  * Fallback về mock khi không có VITE_API_URL.
  */
-import { ROLES } from '../../constants/enums';
+import { ROLES } from '../constants/enums';
 import { adaptUser } from './adapters';
 
 const API_URL = import.meta.env.VITE_API_URL;

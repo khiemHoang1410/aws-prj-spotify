@@ -1,6 +1,7 @@
 {
   "name": "spotify-backend-sst-ion",
   "version": "1.0.0",
+  "type": "module",
   "description": "Spotify Backend using Clean Architecture and SST Ion",
   "scripts": {
     "dev": "sst dev",
