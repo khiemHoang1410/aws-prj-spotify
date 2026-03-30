@@ -1,6 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { VERIFY_STATUS } from '../constants/enums';
 import { likeSong, unlikeSong } from '../services/SongService';
+import { showToast } from './uiSlice';
 
 const initialState = {
   isAuthenticated: false,
@@ -72,15 +73,46 @@ export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setV
 export default authSlice.reducer;
 
 // Thunk: optimistic update + persist to backend playlist "Yêu thích"
+// Includes: error handling, rollback, and user notification
 export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
   const { likedSongs } = getState().auth;
   const isLiked = likedSongs.some((s) => s.song_id === song.song_id);
-  // Cập nhật Redux ngay (optimistic)
+  
+  // Optimistic update
   dispatch(toggleLikeSong(song));
-  // Gọi API async (fire-and-forget, lỗi không rollback vì UX tốt hơn)
-  if (isLiked) {
-    await unlikeSong(song.song_id);
-  } else {
-    await likeSong(song);
+  
+  try {
+    if (isLiked) {
+      // Remove from liked
+      const result = await unlikeSong(song.song_id);
+      if (!result?.success) {
+        // Rollback: re-add to liked
+        dispatch(toggleLikeSong(song));
+        // Notify error via uiSlice (import at top of file)
+        dispatch(showToast({
+          message: `Lỗi bỏ thích: ${result?.error || 'Vui lòng thử lại'}`,
+          type: 'error',
+        }));
+      }
+    } else {
+      // Add to liked
+      const result = await likeSong(song);
+      if (!result?.success) {
+        // Rollback: remove from liked
+        dispatch(toggleLikeSong(song));
+        dispatch(showToast({
+          message: `Lỗi thích bài hát: ${result?.error || 'Vui lòng thử lại'}`,
+          type: 'error',
+        }));
+      }
+    }
+  } catch (error) {
+    console.error('[toggleLikeSongThunk] Unexpected error:', error);
+    // Rollback on exception
+    dispatch(toggleLikeSong(song));
+    dispatch(showToast({
+      message: 'Lỗi cập nhật yêu thích, vui lòng thử lại',
+      type: 'error',
+    }));
   }
 };

@@ -203,22 +203,46 @@ export const getLikedSongs = async () => {
 
 export const likeSong = async (song) => {
   try {
+    if (!song?.song_id) {
+      console.error('[likeSong] Invalid song object:', song);
+      return { success: false, error: 'Invalid song data' };
+    }
     const playlistId = await getLikedPlaylistId();
-    if (!playlistId) return { success: false };
-    await api.post(`/playlists/${playlistId}/songs`, { song_id: song.song_id });
+    if (!playlistId) {
+      console.error('[likeSong] No liked playlist found');
+      return { success: false, error: 'No liked playlist found' };
+    }
+    const response = await api.post(`/playlists/${playlistId}/songs`, { song_id: song.song_id });
+    if (response?.success === false) {
+      console.error('[likeSong] API returned failure:', response);
+      return { success: false, error: response?.message || 'Failed to like song' };
+    }
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (error) {
+    console.error('[likeSong] Error:', error?.message || error);
+    return { success: false, error: error?.message || 'Failed to like song' };
   }
 };
 
 export const unlikeSong = async (songId) => {
   try {
+    if (!songId || typeof songId !== 'string' || songId.trim() === '') {
+      console.error('[unlikeSong] Invalid song ID:', songId);
+      return { success: false, error: 'Invalid song ID format' };
+    }
     const playlistId = await getLikedPlaylistId();
-    if (!playlistId) return { success: false };
-    await api.delete(`/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`);
+    if (!playlistId) {
+      console.error('[unlikeSong] No liked playlist found');
+      return { success: false, error: 'No liked playlist found' };
+    }
+    const response = await api.delete(`/playlists/${playlistId}/songs/${encodeURIComponent(songId)}`);
+    if (response?.success === false) {
+      console.error('[unlikeSong] API returned failure:', response);
+      return { success: false, error: response?.message || 'Failed to unlike song' };
+    }
     return { success: true };
-  } catch {
-    return { success: false };
+  } catch (error) {
+    console.error('[unlikeSong] Error:', error?.message || error);
+    return { success: false, error: error?.message || 'Failed to unlike song' };
   }
 };
