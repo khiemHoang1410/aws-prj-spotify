@@ -1,20 +1,13 @@
 import { Resource } from "sst";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-    DynamoDBDocumentClient,
-    PutCommand,
-    QueryCommand,
-    DeleteCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { PutCommand, QueryCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { dynamoDb } from "./dynamoClient";
 import { PlayHistory } from "../../domain/entities/PlayHistory";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
+const TABLE = () => Resource.SpotifyTable.name;
+const PREFIX = "HISTORY";
 
 export class PlayHistoryRepository {
-    private get tableName() { return Resource.SpotifyTable.name; }
-    private readonly prefix = "HISTORY";
-
     /**
      * Record một lượt nghe.
      * pk = USER#{userId}, sk = HISTORY#{playedAt}#{songId}
@@ -23,16 +16,17 @@ export class PlayHistoryRepository {
     async record(entry: PlayHistory): Promise<Result<PlayHistory>> {
         try {
             const now = entry.playedAt || new Date().toISOString();
-            const item = {
-                ...entry,
-                pk: `USER#${entry.userId}`,
-                sk: `${this.prefix}#${now}#${entry.songId}`,
-                entityType: this.prefix,
-                userId: entry.userId,
-                playedAt: now,
-            };
-            await docClient.send(new PutCommand({ TableName: this.tableName, Item: item }));
-            return Success(entry);
+            await dynamoDb.send(new PutCommand({
+                TableName: TABLE(),
+                Item: {
+                    ...entry,
+                    pk: `USER#${entry.userId}`,
+                    sk: `${PREFIX}#${now}#${entry.songId}`,
+                    entityType: PREFIX,
+                    playedAt: now,
+                },
+            }));
+            return Success({ ...entry, playedAt: now });
         } catch (error: any) {
             return Failure(`Lỗi lưu play history: ${error.message}`, 500);
         }
@@ -48,11 +42,11 @@ export class PlayHistoryRepository {
     ): Promise<Result<{ items: PlayHistory[]; nextCursor?: string }>> {
         try {
             const params: any = {
-                TableName: this.tableName,
+                TableName: TABLE(),
                 KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
                 ExpressionAttributeValues: {
                     ":pk": `USER#${userId}`,
-                    ":prefix": `${this.prefix}#`,
+                    ":prefix": `${PREFIX}#`,
                 },
                 Limit: limit,
                 ScanIndexForward: false, // mới nhất trước
@@ -60,7 +54,7 @@ export class PlayHistoryRepository {
             if (cursor) {
                 params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
             }
-            const response = await docClient.send(new QueryCommand(params));
+            const response = await dynamoDb.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
                 ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
                 : undefined;
@@ -72,29 +66,40 @@ export class PlayHistoryRepository {
 
     /**
      * Xóa toàn bộ history của user.
+     * Dùng pagination để handle trường hợp user có nhiều records (>1MB).
      */
     async clearByUserId(userId: string): Promise<Result<void>> {
         try {
-            // Query tất cả sk trước rồi batch delete
-            const response = await docClient.send(new QueryCommand({
-                TableName: this.tableName,
-                KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
-                ExpressionAttributeValues: {
-                    ":pk": `USER#${userId}`,
-                    ":prefix": `${this.prefix}#`,
-                },
-                ProjectionExpression: "pk, sk",
-            }));
+            let lastKey: Record<string, any> | undefined;
 
-            const items = response.Items || [];
-            await Promise.all(
-                items.map(item =>
-                    docClient.send(new DeleteCommand({
-                        TableName: this.tableName,
-                        Key: { pk: item.pk, sk: item.sk },
-                    }))
-                )
-            );
+            do {
+                const params: any = {
+                    TableName: TABLE(),
+                    KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+                    ExpressionAttributeValues: {
+                        ":pk": `USER#${userId}`,
+                        ":prefix": `${PREFIX}#`,
+                    },
+                    ProjectionExpression: "pk, sk",
+                    Limit: 25, // DynamoDB BatchWrite max 25 items
+                };
+                if (lastKey) params.ExclusiveStartKey = lastKey;
+
+                const response = await dynamoDb.send(new QueryCommand(params));
+                lastKey = response.LastEvaluatedKey;
+
+                if (response.Items?.length) {
+                    await Promise.all(
+                        response.Items.map(item =>
+                            dynamoDb.send(new DeleteCommand({
+                                TableName: TABLE(),
+                                Key: { pk: item.pk, sk: item.sk },
+                            }))
+                        )
+                    );
+                }
+            } while (lastKey);
+
             return Success(undefined);
         } catch (error: any) {
             return Failure(`Lỗi xóa play history: ${error.message}`, 500);
