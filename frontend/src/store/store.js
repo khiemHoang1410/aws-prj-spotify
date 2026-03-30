@@ -40,6 +40,7 @@ setRequestFailedCallback((message) => {
 
 // ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
 <<<<<<< HEAD
+<<<<<<< HEAD
 // Init với bài đang restore từ localStorage để tránh ghi history khi app load
 let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
 let _lastLikedSongsRef = null;
@@ -48,6 +49,12 @@ let _debounceTimer = null;
 let _lastHistorySongId = null;
 let _lastLikedSongsRef = null;
 >>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
+=======
+// Init với bài đang restore từ localStorage để tránh ghi history khi app load
+let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
+let _lastLikedSongsRef = null;
+let _debounceTimer = null;
+>>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
 
 store.subscribe(() => {
   const state = store.getState();
@@ -64,6 +71,9 @@ store.subscribe(() => {
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
 
     // localStorage: immediate (không debounce)
     addToHistoryLocal(currentSong);
@@ -71,10 +81,13 @@ store.subscribe(() => {
     // API: debounce 1500ms để chống spam khi skip liên tục
     clearTimeout(_debounceTimer);
     _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
+<<<<<<< HEAD
   }
 
 =======
     addToHistory(currentSong);
+=======
+>>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
   }
 
 >>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
