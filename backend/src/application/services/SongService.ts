@@ -67,4 +67,52 @@ export class SongService {
     async getSongsByArtist(artistId: string): Promise<Result<Song[]>> {
         return await this.songRepo.findByArtistId(artistId);
     }
+
+    /**
+     * Lấy danh sách songs có kèm artistName — dùng cho list endpoint.
+     * Build artist lookup map để tránh N+1 queries.
+     */
+    async getEnrichedList(limit: number, cursor?: string): Promise<Result<{ items: any[]; nextCursor?: string }>> {
+        const result = await this.songRepo.findAllPaginated(limit, cursor);
+        if (!result.success) return result;
+
+        const artistIds = [...new Set(result.data.items.map(s => s.artistId).filter(Boolean))];
+        const artistMap = await this._buildArtistMap(artistIds);
+
+        const items = result.data.items.map(s => ({
+            ...s,
+            artistName: artistMap.get(s.artistId) ?? null,
+        }));
+
+        return { success: true, data: { items, nextCursor: result.data.nextCursor } };
+    }
+
+    /**
+     * Lấy songs theo category có kèm artistName.
+     */
+    async getByCategoryEnriched(category: string): Promise<Result<any[]>> {
+        const result = await this.songRepo.findByCategory(category);
+        if (!result.success) return result;
+
+        const artistIds = [...new Set(result.data.map(s => s.artistId).filter(Boolean))];
+        const artistMap = await this._buildArtistMap(artistIds);
+
+        const items = result.data.map(s => ({
+            ...s,
+            artistName: artistMap.get(s.artistId) ?? null,
+        }));
+
+        return { success: true, data: items };
+    }
+
+    private async _buildArtistMap(artistIds: string[]): Promise<Map<string, string>> {
+        const map = new Map<string, string>();
+        await Promise.all(
+            artistIds.map(async (id) => {
+                const r = await this.artistRepo.findById(id);
+                if (r.success && r.data) map.set(id, r.data.name);
+            })
+        );
+        return map;
+    }
 }
