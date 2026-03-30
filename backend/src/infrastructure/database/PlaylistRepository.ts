@@ -54,7 +54,8 @@ export class PlaylistRepository {
                 TableName: this.tableName,
                 IndexName: "UserIdIndex",
                 KeyConditionExpression: "userId = :userId AND sk = :sk",
-                ExpressionAttributeValues: { ":userId": userId, ":sk": "METADATA" },
+                FilterExpression: "entityType = :entityType",
+                ExpressionAttributeValues: { ":userId": userId, ":sk": "METADATA", ":entityType": this.prefix },
             }));
             return Success((response.Items as Playlist[]) || []);
         } catch (error: any) {

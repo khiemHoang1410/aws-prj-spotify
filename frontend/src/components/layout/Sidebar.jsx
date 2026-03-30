@@ -1,13 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
-import { getPlaylists, createPlaylist, isLikedPlaylistName } from '../../services/SongService';
+import { getMyPlaylists, createPlaylist, deletePlaylist, isLikedPlaylistName } from '../../services/PlaylistService';
 import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const PLAYLIST_DEFAULT_IMG = '/pictures/playlistDefault.jpg';
 const FILTER_OPTIONS = ['Danh sách phát', 'Nghệ sĩ'];
 const normalizeText = (text = '') => text.trim().toLowerCase();
 
@@ -25,11 +26,22 @@ export default function Sidebar() {
   const [isCreating, setIsCreating] = useState(false);
   const [artists, setArtists] = useState([]);
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
+  const [contextMenu, setContextMenu] = useState(null); // { playlistId, playlistName, x, y }
+  const contextMenuRef = useRef(null);
+
+  // Click outside đóng context menu
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [contextMenu]);
 
   useEffect(() => {
     setIsLoading(true);
-    getPlaylists()
+    getMyPlaylists()
       .then((data) => setPlaylists((data || []).filter((pl) => !isLikedPlaylistName(pl.name))))
+      .catch(() => setPlaylists([]))
       .finally(() => setIsLoading(false));
   }, []);
 
@@ -68,6 +80,30 @@ export default function Sidebar() {
     setIsCreating(false);
     setNewPlaylistName('');
     setIsCreateModalOpen(false);
+  };
+
+  const handleContextMenu = (e, playlist) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setContextMenu({
+      playlistId: playlist.id,
+      playlistName: playlist.name,
+      x: e.clientX,
+      y: e.clientY,
+    });
+  };
+
+  const handleDeletePlaylist = async (playlistId, playlistName) => {
+    setContextMenu(null);
+    if (!window.confirm(`Bạn có chắc muốn xoá playlist "${playlistName}"?`)) return;
+    try {
+      await deletePlaylist(playlistId);
+      setPlaylists((prev) => prev.filter((pl) => pl.id !== playlistId));
+      dispatch(showToast({ message: `Đã xoá "${playlistName}"`, type: 'success' }));
+      if (location.pathname === `/playlist/${playlistId}`) navigate('/');
+    } catch {
+      dispatch(showToast({ message: 'Không thể xoá playlist', type: 'error' }));
+    }
   };
 
   return (
@@ -159,11 +195,12 @@ export default function Sidebar() {
                   return (
                     <div key={playlist.id}
                       className={`relative flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer transition overflow-hidden ${isActive ? 'bg-white/10' : 'hover:bg-white/5'}`}
-                      onClick={() => navigate(`/playlist/${playlist.id}`)}>
+                      onClick={() => navigate(`/playlist/${playlist.id}`)}
+                      onContextMenu={(e) => handleContextMenu(e, playlist)}>
                       {isActive && <div className="absolute left-0 top-0 w-1 h-full bg-green-400 rounded-l" />}
-                      <img src={playlist.image_url} alt={playlist.name}
+                      <img src={playlist.image_url || PLAYLIST_DEFAULT_IMG} alt={playlist.name}
                         className="w-11 h-11 rounded object-cover flex-shrink-0"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }} />
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = PLAYLIST_DEFAULT_IMG; }} />
                       <div className="min-w-0">
                         <p className={`text-sm font-medium truncate ${isActive ? 'text-green-400' : 'text-white'}`}>{playlist.name}</p>
                         <p className="text-xs text-neutral-400 truncate">Danh sách phát • {playlist.owner}</p>
@@ -176,6 +213,41 @@ export default function Sidebar() {
           )}
         </div>
       </div>
+
+      {/* Context menu cho playlist (chuột phải) */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          className="fixed z-[100] bg-[#282828] rounded-md shadow-2xl border border-[#3e3e3e] py-1 w-48 text-sm"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+        >
+          <button
+            className="w-full text-left px-3 py-2 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] flex items-center gap-2 transition"
+            onClick={() => {
+              setContextMenu(null);
+              navigate(`/playlist/${contextMenu.playlistId}`);
+            }}
+          >
+            <ListPlus size={14} /> Thêm bài hát
+          </button>
+          <button
+            className="w-full text-left px-3 py-2 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] flex items-center gap-2 transition"
+            onClick={() => {
+              setContextMenu(null);
+              navigate(`/playlist/${contextMenu.playlistId}`);
+            }}
+          >
+            <Edit3 size={14} /> Chi tiết playlist
+          </button>
+          <div className="h-[1px] bg-[#3e3e3e] my-1" />
+          <button
+            className="w-full text-left px-3 py-2 text-red-400 hover:text-red-300 hover:bg-[#3e3e3e] flex items-center gap-2 transition"
+            onClick={() => handleDeletePlaylist(contextMenu.playlistId, contextMenu.playlistName)}
+          >
+            <Trash2 size={14} /> Xoá playlist
+          </button>
+        </div>
+      )}
 
       {/* Modal tạo playlist */}
       {isCreateModalOpen && (

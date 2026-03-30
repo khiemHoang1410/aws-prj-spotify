@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/SongService';
+import { getLyrics } from '../../services/SongService';
+import { getMyPlaylists, addSongToPlaylist } from '../../services/PlaylistService';
 import { setPiP, openReportModal, showToast } from '../../store/uiSlice';
 import { toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
@@ -104,7 +105,7 @@ export default function LyricsContent() {
   }, [showDropdown]);
 
   const handleOpenPlaylistSubmenu = async () => {
-    const data = await getPlaylists();
+    const data = await getMyPlaylists();
     setPlaylists(data);
     setShowPlaylistSubmenu(true);
   };
