@@ -2,7 +2,7 @@ import { makeHandler } from "../../middlewares/makeHandler";
 import { PlaylistService } from "../../../../application/services/PlaylistService";
 import { PlaylistRepository } from "../../../../infrastructure/database/PlaylistRepository";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
-import { config } from "../../../../shared/config";
+import { config } from "../../../../config";
 
 const playlistService = new PlaylistService(new PlaylistRepository(), new SongRepository());
 

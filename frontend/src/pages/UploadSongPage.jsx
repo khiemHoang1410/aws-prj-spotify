@@ -1,13 +1,15 @@
 import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
-import { setView, showToast } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { uploadSong } from '../services/UploadService';
 import { createNotification } from '../services/NotificationService';
+import { getArtistByUserId } from '../services/ArtistService';
 import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
-import EmptyState from '../components/shared/EmptyState';
-import ErrorMessage from '../components/shared/ErrorMessage';
+import EmptyState from '../components/ui/EmptyState';
+import ErrorMessage from '../components/ui/ErrorMessage';
 
 const MAX_COVERS = 5;
 const STEPS = ['Thông tin', 'Ảnh bìa', 'Media', 'Xem lại'];
@@ -20,6 +22,7 @@ function formatDurationInput(value) {
 
 export default function UploadSongPage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user } = useSelector((state) => state.auth);
   const coverDropRef = useRef(null);
 
@@ -35,6 +38,22 @@ export default function UploadSongPage() {
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [artistId, setArtistId] = useState(null);
+  const [artistLoading, setArtistLoading] = useState(true);
+
+  // Lấy artistId từ BE khi mount — bắt buộc có trước khi cho upload
+  React.useEffect(() => {
+    if (!user) return;
+    const userId = user.user_id || user.id;
+    setArtistLoading(true);
+    getArtistByUserId(userId)
+      .then((artist) => {
+        if (artist?.id) setArtistId(artist.id);
+        else setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng liên hệ hỗ trợ.');
+      })
+      .catch(() => setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.'))
+      .finally(() => setArtistLoading(false));
+  }, [user]);
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (
@@ -44,10 +63,14 @@ export default function UploadSongPage() {
           title="Chỉ nghệ sĩ được xác minh"
           description="Bạn cần đăng ký và được xác minh là nghệ sĩ để sử dụng tính năng này."
           actionLabel="Đăng ký ngay"
-          onAction={() => dispatch(setView('artist-verify'))}
+          onAction={() => navigate('/artist-verify')}
         />
       </div>
     );
+  }
+
+  if (artistLoading) {
+    return <div className="flex items-center justify-center mt-20 text-neutral-400 text-sm">Đang tải thông tin nghệ sĩ...</div>;
   }
 
   const addCoverFiles = (files) => {
@@ -90,13 +113,27 @@ export default function UploadSongPage() {
 
   const handleSubmit = async () => {
     setUploadError('');
+
+    // Validate trước khi gọi API
+    if (!title.trim()) { setUploadError('Vui lòng nhập tên bài hát.'); return; }
+    if (!audioFile) { setUploadError('Vui lòng chọn file âm thanh.'); return; }
+    if (selectedCategories.length === 0) { setUploadError('Vui lòng chọn ít nhất một thể loại.'); return; }
+    if (!artistId) { setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng tải lại trang.'); return; }
+
     setIsLoading(true);
     try {
+      const durationSeconds = duration
+        ? duration.split(':').reduce((acc, val, i) => acc + (i === 0 ? parseInt(val) * 60 : parseInt(val)), 0)
+        : 0;
+
       const formData = {
         title: title.trim(),
-        artistName: user.name || user.username,
+        artistId,
+        audioFile,
+        coverFile: coverFiles[0] || null,
         lyrics,
-        duration,
+        duration: durationSeconds,
+        categories: selectedCategories,
       };
       const result = await uploadSong(formData);
       if (result.success) {

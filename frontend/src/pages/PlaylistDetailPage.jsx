@@ -1,13 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from 'lucide-react'; // [S6-001.2]
-import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice'; // [S7-005.2]
+import { useParams } from 'react-router-dom';
+import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from 'lucide-react';
+import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/SongService'; // [S6-001.1]
-import EmptyState from '../components/shared/EmptyState';
-import ErrorMessage from '../components/shared/ErrorMessage';
-import SkeletonCard from '../components/shared/SkeletonCard';
+import { getPlaylistById, searchSongs, addSongToPlaylist, removeSongFromPlaylist } from '../services/SongService';
+import EmptyState from '../components/ui/EmptyState';
+import ErrorMessage from '../components/ui/ErrorMessage';
+import SkeletonCard from '../components/ui/SkeletonCard';
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
@@ -17,7 +18,7 @@ function formatDuration(seconds) {
 
 export default function PlaylistDetailPage() {
   const dispatch = useDispatch();
-  const { activePlaylistId } = useSelector((state) => state.ui);
+  const { id: activePlaylistId } = useParams();
   const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [playlist, setPlaylist] = useState(null);
@@ -58,11 +59,12 @@ export default function PlaylistDetailPage() {
   };
 
   useEffect(() => {
-    if (searchTerm.trim().length < 1) {
-      setSearchResult([]);
-      return;
-    }
-    setSearchResult(searchSongs(searchTerm.trim()).slice(0, 8));
+    if (searchTerm.trim().length < 1) { setSearchResult([]); return; }
+    const t = setTimeout(async () => {
+      const results = await searchSongs(searchTerm.trim());
+      setSearchResult(results.slice(0, 8));
+    }, 300);
+    return () => clearTimeout(t);
   }, [searchTerm]);
 
   const handleAddSong = async (song) => {
@@ -106,13 +108,7 @@ export default function PlaylistDetailPage() {
     }
   };
 
-  if (!activePlaylistId) {
-    return (
-      <div className="flex items-center justify-center mt-20">
-        <EmptyState icon={Music} title="Chọn một playlist" description="Hãy chọn playlist từ thư viện để xem chi tiết." />
-      </div>
-    );
-  }
+  if (!activePlaylistId) return null;
 
   if (isLoading) {
     return (

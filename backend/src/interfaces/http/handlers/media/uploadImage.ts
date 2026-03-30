@@ -4,7 +4,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { v4 as uuidv4 } from "uuid";
 import { makeAuthHandler } from "../../middlewares/withAuth";
 import { Failure } from "../../../../shared/utils/Result";
-import { config } from "../../../../shared/config";
+import { config } from "../../../../config";
 
 const s3Client = new S3Client({});
 

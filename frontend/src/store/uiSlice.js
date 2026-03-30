@@ -3,39 +3,27 @@ import { createSlice } from '@reduxjs/toolkit';
 const uiSlice = createSlice({
   name: 'ui',
   initialState: {
-    currentView: 'home',
-    previousView: 'home',
+    // Search state (vẫn cần vì search UX phức tạp hơn URL đơn thuần)
     searchQuery: '',
     isBrowsing: false,
     isSearchSubmitted: false,
+
+    // Layout
     isRightSidebarOpen: false,
     isPiP: false,
+
+    // Toast
     toast: { message: '', type: 'info', visible: false },
+
+    // Report modal
     isReportModalOpen: false,
     reportTargetSong: null,
-    activePlaylistId: null,
-    activeArtistId: null,
-    activeCategoryId: null,
-    activeCategoryName: '',
-    activeEditSongId: null,
-    activeAlbumId: null,
   },
   reducers: {
-    setView: (state, action) => {
-      state.previousView = state.currentView;
-      state.currentView = action.payload;
-      if (action.payload !== 'search') {
-        state.searchQuery = '';
-        state.isBrowsing = false;
-        state.isSearchSubmitted = false;
-      }
-    },
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
       state.isSearchSubmitted = false;
-      if (action.payload.length > 0) {
-        state.isBrowsing = false;
-      }
+      if (action.payload.length > 0) state.isBrowsing = false;
     },
     toggleBrowse: (state) => {
       state.isBrowsing = true;
@@ -45,6 +33,11 @@ const uiSlice = createSlice({
     submitSearch: (state) => {
       state.isSearchSubmitted = true;
       state.isBrowsing = false;
+    },
+    clearSearch: (state) => {
+      state.searchQuery = '';
+      state.isBrowsing = false;
+      state.isSearchSubmitted = false;
     },
     toggleRightSidebar: (state) => {
       state.isRightSidebarOpen = !state.isRightSidebarOpen;
@@ -66,29 +59,13 @@ const uiSlice = createSlice({
       state.isReportModalOpen = false;
       state.reportTargetSong = null;
     },
-    setActivePlaylist: (state, action) => {
-      state.activePlaylistId = action.payload;
-    },
-    setActiveArtist: (state, action) => {
-      state.activeArtistId = action.payload;
-    },
-    setActiveCategory: (state, action) => {
-      state.activeCategoryId = action.payload.id;
-      state.activeCategoryName = action.payload.name;
-    },
-    setActiveEditSong: (state, action) => {
-      state.activeEditSongId = action.payload;
-    },
-    setActiveAlbum: (state, action) => {
-      state.activeAlbumId = action.payload;
-    },
   },
 });
 
 export const {
-  setView, setSearchQuery, toggleBrowse, submitSearch, toggleRightSidebar,
-  setPiP, showToast, hideToast, openReportModal, closeReportModal,
-  setActivePlaylist, setActiveArtist, setActiveCategory,
-  setActiveEditSong, setActiveAlbum,
+  setSearchQuery, toggleBrowse, submitSearch, clearSearch,
+  toggleRightSidebar, setPiP,
+  showToast, hideToast,
+  openReportModal, closeReportModal,
 } = uiSlice.actions;
 export default uiSlice.reducer;

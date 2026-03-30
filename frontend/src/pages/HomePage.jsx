@@ -1,0 +1,97 @@
+import { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { setCurrentSong } from '../store/playerSlice';
+import { openModal } from '../store/authSlice';
+import { getSongs } from '../services/SongService';
+import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
+import CardSong from '../components/cards/CardSong';
+import SkeletonCard from '../components/ui/SkeletonCard';
+
+export default function HomePage() {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isAuthenticated, likedSongs } = useSelector((state) => state.auth);
+
+  const [songs, setSongs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [trendingSongs, setTrendingSongs] = useState([]);
+  const [newReleases, setNewReleases] = useState([]);
+  const [personalizedSongs, setPersonalizedSongs] = useState([]);
+  const [discoverSongs, setDiscoverSongs] = useState([]);
+  const [expandedSections, setExpandedSections] = useState({});
+
+  useEffect(() => {
+    const fetchMusic = async () => {
+      try {
+        setLoading(true);
+        const data = await getSongs();
+        setSongs(data);
+      } catch (error) {
+        console.error('Lỗi khi tải dữ liệu bài hát:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchMusic();
+  }, []);
+
+  useEffect(() => {
+    if (songs.length === 0) return;
+    setTrendingSongs(getTrendingSongs(songs));
+    setNewReleases(getNewReleases(songs));
+    setPersonalizedSongs(getPersonalizedSongs(likedSongs || [], songs));
+    setDiscoverSongs(getDiscoverMix(likedSongs || [], songs));
+  }, [songs, likedSongs]);
+
+  const handlePlaySong = (song) => {
+    if (!isAuthenticated) { dispatch(openModal('login')); return; }
+    dispatch(setCurrentSong(song));
+  };
+
+  const toggleSection = (key) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  const Section = ({ title, sectionKey, items }) => {
+    if (!items?.length) return null;
+    return (
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-2xl font-bold text-white">{title}</h2>
+          <button onClick={() => toggleSection(sectionKey)} className="text-sm font-bold text-[#b3b3b3] hover:text-white transition">
+            {expandedSections[sectionKey] ? 'Thu gọn' : 'Hiện tất cả'}
+          </button>
+        </div>
+        <div className="grid grid-cols-5 gap-6">
+          {(expandedSections[sectionKey] ? items : items.slice(0, 5)).map((song) => (
+            <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-8">
+        {[1, 2].map((s) => (
+          <div key={s}>
+            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
+            <div className="grid grid-cols-5 gap-6">
+              {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      {isAuthenticated && <Section title="Dành cho bạn" sectionKey="personalized" items={personalizedSongs} />}
+      <Section title="Thịnh hành" sectionKey="trending" items={trendingSongs} />
+      <Section title="Mới phát hành" sectionKey="newReleases" items={newReleases} />
+      {isAuthenticated && <Section title="Khám phá" sectionKey="discover" items={discoverSongs} />}
+      {songs.length === 0 && <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>}
+    </>
+  );
+}

@@ -1,14 +1,16 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck } from 'lucide-react';
-import { showToast, setView } from '../store/uiSlice';
+import { showToast } from '../store/uiSlice';
 import { updateProfile } from '../services/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
-import CardSong from '../components/CardSong';
+import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
 
   const [isEditing, setIsEditing] = useState(false);
@@ -18,7 +20,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!displayName.trim()) return;
     setIsSaving(true);
-    const result = await updateProfile({ name: displayName.trim() });
+    const result = await updateProfile({ displayName: displayName.trim() });
     if (result?.success) {
       dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
       setIsEditing(false);
@@ -128,7 +130,7 @@ export default function ProfilePage() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <button
-              onClick={() => dispatch(setView('upload'))}
+              onClick={() => navigate('/upload')}
               className="bg-neutral-800 hover:bg-neutral-700 rounded-xl p-4 flex items-center gap-4 transition text-left"
             >
               <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center">

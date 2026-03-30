@@ -1,22 +1,36 @@
 /// <reference path="../../sst-env.d.ts" />
 import { Resource } from "sst";
 
-export const CONFIG = {
-    // SST/AWS SDK sẽ tự hiểu Region, nhưng mình cứ để fallback cho chắc
-    REGION: process.env.AWS_REGION || 'ap-southeast-1',
-    
-    // Lấy trực tiếp từ Resource đã được "link" - Typesafe 100%
-    TABLE_NAME: Resource.SpotifyTable.name,
-    
-    S3: {
-        BUCKET_NAME: Resource.SpotifyMedia.name,
-        URL_EXPIRATION: 300, // 5 phút cho Pre-signed URL
+/**
+ * Runtime config cho Lambda functions.
+ * - Infra resources (DynamoDB, S3, Cognito) lấy từ SST Resource (typesafe).
+ * - App-level tunables (pagination, upload limits...) lấy từ process.env với fallback.
+ *
+ * Không dùng src/shared/config.ts nữa — tất cả tập trung ở đây.
+ */
+export const config = {
+    // --- AWS / Infra (SST Resource) ---
+    region: process.env.AWS_REGION || "ap-southeast-1",
+    tableName: Resource.SpotifyTable.name,
+    s3: {
+        bucketName: Resource.SpotifyMedia.name,
+        uploadUrlExpiresIn: Number(process.env.UPLOAD_URL_EXPIRES_IN) || 300, // giây
     },
-    
-    // Trong SST v3, Stage thường được quản lý ở cấp độ cao hơn, 
-    // nhưng nếu cần in ra để debug thì có thể lấy qua logic của app
-    STAGE: process.env.SST_STAGE || 'dev',
-} as const;
+    stage: process.env.SST_STAGE || "dev",
 
-// Với Resource, ông không cần check Fail-fast bằng tay nữa 
-// vì nếu Resource không tồn tại, TypeScript sẽ báo đỏ ngay lúc ông gõ code!
+    // --- Pagination ---
+    defaultPageSize: Number(process.env.DEFAULT_PAGE_SIZE) || 20,
+    maxPageSize: Number(process.env.MAX_PAGE_SIZE) || 100,
+
+    // --- Upload ---
+    allowedAudioTypes: (process.env.ALLOWED_AUDIO_TYPES || "audio/mpeg,audio/mp4,audio/wav").split(","),
+    allowedImageTypes: (process.env.ALLOWED_IMAGE_TYPES || "image/jpeg,image/png,image/webp").split(","),
+    maxFileSizeMb: Number(process.env.MAX_FILE_SIZE_MB) || 50,
+
+    // --- Search ---
+    searchMinLength: Number(process.env.SEARCH_MIN_LENGTH) || 1,
+    searchMaxResults: Number(process.env.SEARCH_MAX_RESULTS) || 50,
+
+    // --- App ---
+    appName: process.env.APP_NAME || "Spotify Clone",
+} as const;
