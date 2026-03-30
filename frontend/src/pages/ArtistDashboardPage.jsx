@@ -43,26 +43,20 @@ export default function ArtistDashboardPage() {
       return;
     }
     
-    // Guard: Check artist_id exists
-    if (!user.artist_id) {
-      dispatch(showToast({ 
-        message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
-        type: 'warning' 
-      }));
-      navigate('/artist-verify');
-      return;
-    }
-    
     setIsLoading(true);
 
-    // Ưu tiên artist_id đã có trong user profile,
-    // nếu chưa có thì resolve từ userId → artist profile
+    // Resolve artistId: ưu tiên từ user profile, fallback lấy từ BE
     const resolveArtistId = user.artist_id
       ? Promise.resolve(user.artist_id)
-      : getArtistByUserId(user.user_id).then((a) => a?.id ?? null);
+      : getArtistByUserId(user.user_id || user.id).then((a) => a?.id ?? null);
 
     resolveArtistId.then((artistId) => {
       if (!artistId) {
+        dispatch(showToast({ 
+          message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
+          type: 'warning' 
+        }));
+        navigate('/artist-verify');
         setIsLoading(false);
         return;
       }
