@@ -30,6 +30,7 @@ export default $config({
     const { mediaProtectedRoutes } = await import("./src/infrastructure/routes/media.routes.js");
     const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
     const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
+    const { notificationRoutes } = await import("./src/infrastructure/routes/notification.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -106,6 +107,7 @@ export default $config({
     const domain = isProd ? sstEnv.prodApiDomain : sstEnv.devApiDomain;
 
     // VPC config cho Lambda (chạy trong private subnet)
+    // Yêu cầu VPC Endpoints: S3, DynamoDB, cognito-idp
     const lambdaVpcConfig = {
         vpc: sstEnv.vpcId,
         vpcSubnets: [sstEnv.privateSubnetId],
@@ -151,6 +153,7 @@ export default $config({
     Object.entries(playlistProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(adminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(userProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(notificationRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(mediaProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
     return {

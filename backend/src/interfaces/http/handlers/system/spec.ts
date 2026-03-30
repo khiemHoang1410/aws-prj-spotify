@@ -25,6 +25,7 @@ export const handler = async () => {
             { name: "Playlists", description: "Quản lý playlist" },
             { name: "Search", description: "Tìm kiếm" },
             { name: "Admin", description: "Quản trị viên" },
+            { name: "Notifications", description: "Thông báo" },
         ],
         components: {
             securitySchemes: { bearerAuth: { type: "http", scheme: "bearer", bearerFormat: "JWT" } },
@@ -197,6 +198,14 @@ export const handler = async () => {
             "/admin/reports": { get: { tags: ["Admin"], summary: "Lấy danh sách báo cáo pending", security: [{ bearerAuth: [] }], responses: { "200": { description: "OK", content: { "application/json": { schema: { type: "array", items: { type: "object", properties: { id: { type: "string" }, songId: { type: "string", format: "uuid" }, userId: { type: "string" }, reason: { type: "string" }, description: { type: "string", nullable: true }, status: { type: "string", enum: ["pending", "resolved"] }, createdAt: { type: "string", format: "date-time" } } } } } } } } } },
             "/admin/reports/{id}/resolve": { post: { tags: ["Admin"], summary: "Đánh dấu báo cáo đã giải quyết", security: [{ bearerAuth: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "OK" }, "404": { description: "Không tìm thấy" } } } },
             "/admin/songs/{id}": { delete: { tags: ["Admin"], summary: "Gỡ bài hát vi phạm", security: [{ bearerAuth: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "OK" }, "404": { description: "Không tìm thấy" } } } },
+
+            // ─── NOTIFICATIONS ────────────────────────────────────
+            "/notifications": {
+                get: { tags: ["Notifications"], summary: "Lấy danh sách thông báo của user", security: [{ bearerAuth: [] }], responses: { "200": { description: "OK", content: { "application/json": { example: [{ id: "uuid", type: "new_song", message: "...", is_read: false, createdAt: "..." }] } } } } },
+                post: { tags: ["Notifications"], summary: "Tạo thông báo mới", security: [{ bearerAuth: [] }], requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["type", "message"], properties: { type: { type: "string", example: "new_song" }, message: { type: "string" }, artistName: { type: "string", nullable: true }, songTitle: { type: "string", nullable: true }, imageUrl: { type: "string", nullable: true } } } } } }, responses: { "200": { description: "Tạo thành công" } } },
+            },
+            "/notifications/read-all": { put: { tags: ["Notifications"], summary: "Đánh dấu tất cả đã đọc", security: [{ bearerAuth: [] }], responses: { "200": { description: "OK" } } } },
+            "/notifications/{id}/read": { put: { tags: ["Notifications"], summary: "Đánh dấu một thông báo đã đọc", security: [{ bearerAuth: [] }], parameters: [{ name: "id", in: "path", required: true, schema: { type: "string", format: "uuid" } }], responses: { "200": { description: "OK" }, "404": { description: "Không tìm thấy" } } } },
         },
     };
 
