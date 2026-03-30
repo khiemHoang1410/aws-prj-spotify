@@ -44,6 +44,7 @@ export const getPlayHistory = async (userId, { limit = 20, cursor } = {}) => {
 
 export const recordPlay = async (song) => {
   if (!API_URL) return;
+  console.log('[recordPlay] calling POST /me/play-history', { songId: song.song_id, songTitle: song.title });
   return api.post('/me/play-history', {
     songId: song.song_id,
     songTitle: song.title,
