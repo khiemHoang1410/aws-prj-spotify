@@ -37,14 +37,30 @@ export default function EditSongPage() {
     setIsFetching(true);
     getSongs().then((allSongs) => {
       const song = allSongs.find((s) => s.song_id === activeEditSongId);
-      if (song) {
-        setTitle(song.title);
-        setSelectedCategories(song.categories || []);
-        setLyrics('');
-        setDuration(parseDuration(song.duration));
+      if (!song) {
+        dispatch(showToast({ message: 'Bài hát không tồn tại', type: 'error' }));
+        navigate('/artist-dashboard');
+        setIsFetching(false);
+        return;
       }
+      
+      // Permission check: Only owner artist can edit
+      if (song.artist_id && song.artist_id !== user?.artist_id) {
+        dispatch(showToast({ 
+          message: 'Bạn không có quyền chỉnh sửa bài hát này', 
+          type: 'error' 
+        }));
+        navigate('/artist-dashboard');
+        setIsFetching(false);
+        return;
+      }
+      
+      setTitle(song.title);
+      setSelectedCategories(song.categories || []);
+      setLyrics('');
+      setDuration(parseDuration(song.duration));
     }).finally(() => setIsFetching(false));
-  }, [activeEditSongId]);
+  }, [activeEditSongId, user, dispatch, navigate]);
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (

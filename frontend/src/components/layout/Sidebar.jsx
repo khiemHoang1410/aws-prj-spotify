@@ -3,12 +3,13 @@ import { Library, Plus, AudioLines, Heart, X, BadgeCheck } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
-import { getPlaylists, createPlaylist } from '../../services/SongService';
+import { getPlaylists, createPlaylist, isLikedPlaylistName } from '../../services/SongService';
 import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 const FILTER_OPTIONS = ['Danh sách phát', 'Nghệ sĩ'];
+const normalizeText = (text = '') => text.trim().toLowerCase();
 
 export default function Sidebar() {
   const dispatch = useDispatch();
@@ -27,7 +28,9 @@ export default function Sidebar() {
 
   useEffect(() => {
     setIsLoading(true);
-    getPlaylists().then(setPlaylists).finally(() => setIsLoading(false));
+    getPlaylists()
+      .then((data) => setPlaylists((data || []).filter((pl) => !isLikedPlaylistName(pl.name))))
+      .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -37,11 +40,27 @@ export default function Sidebar() {
   }, [filter]);
 
   const handleCreatePlaylist = async () => {
-    if (!newPlaylistName.trim()) return;
+    const trimmedName = newPlaylistName.trim();
+    if (!trimmedName) return;
+    const normalizedName = normalizeText(trimmedName);
+
+    const existed = playlists.some((pl) => normalizeText(pl.name) === normalizedName);
+    if (existed) {
+      dispatch(showToast({ message: 'Playlist này đã tồn tại', type: 'warning' }));
+      setIsCreateModalOpen(false);
+      setNewPlaylistName('');
+      return;
+    }
+
     setIsCreating(true);
-    const result = await createPlaylist({ name: newPlaylistName.trim(), owner: 'Bạn' });
+    const result = await createPlaylist({ name: trimmedName, owner: 'Bạn' });
     if (result.success) {
-      setPlaylists((prev) => [...prev, result.data]);
+      setPlaylists((prev) => {
+        if (!result.data || isLikedPlaylistName(result.data.name)) return prev;
+        const hasId = prev.some((pl) => pl.id === result.data.id);
+        if (hasId) return prev;
+        return [...prev, result.data];
+      });
       dispatch(showToast({ message: `Đã tạo "${result.data.name}"`, type: 'success' }));
     } else {
       dispatch(showToast({ message: 'Không thể tạo playlist', type: 'error' }));

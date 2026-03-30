@@ -8,6 +8,7 @@ import { createNotification } from '../services/NotificationService';
 import { getArtistByUserId } from '../services/ArtistService';
 import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
+import { parseMp3Duration } from '../utils/audioMetadata';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
 
@@ -99,6 +100,26 @@ export default function UploadSongPage() {
     if (!file) return;
     setMvFile(file);
     setMvPreview(URL.createObjectURL(file));
+  };
+
+  const handleAudioFileChange = async (files) => {
+    const file = files?.[0];
+    if (!file) return;
+    setAudioFile(file);
+    setUploadError('');
+    
+    // Auto-detect duration from audio file
+    try {
+      const seconds = await parseMp3Duration(file);
+      if (seconds && seconds > 0) {
+        const minutes = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        const formattedDuration = `${minutes}:${String(secs).padStart(2, '0')}`;
+        setDuration(formattedDuration);
+      }
+    } catch (err) {
+      console.warn('Audio duration parsing skipped, user must input manually', err);
+    }
   };
 
   const handleDurationKeyDown = (e) => {
@@ -220,13 +241,13 @@ export default function UploadSongPage() {
               <input
                 type="file"
                 accept="audio/*"
-                onChange={(e) => setAudioFile(e.target.files?.[0] || null)}
+                onChange={(e) => handleAudioFileChange(e.target.files)}
                 className="w-full bg-neutral-800 text-neutral-300 rounded-lg px-3 py-2 text-sm file:mr-4 file:py-1 file:px-3 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-green-500 file:text-black hover:file:bg-green-400"
               />
               {audioFile && <p className="text-xs text-neutral-400 mt-1">{audioFile.name}</p>}
             </div>
             <div>
-              <label className="block text-sm text-neutral-300 mb-1">Thời lượng (MM:SS)</label>
+              <label className="block text-sm text-neutral-300 mb-1">Thời lượng (MM:SS) - tự động phát hiện, có thể chỉnh sửa</label>
               <input
                 type="text"
                 value={duration}
