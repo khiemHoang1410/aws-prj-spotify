@@ -1,13 +1,9 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser, updateSessionUser, checkAndSaveArtistProfile } from '../../services/AuthService';
-import { adaptUser } from '../../services/adapters';
-import { loginSuccess, setVerifyStatus, setLikedSongs } from '../../store/authSlice';
+import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
+import { loginSuccess } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
-import { getLikedSongs } from '../../services/PlaylistService';
-import api from '../../services/apiClient';
-import { VERIFY_STATUS } from '../../constants/enums';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -56,27 +52,19 @@ export default function AppLayout() {
   const dispatch = useDispatch();
   const { isPiP, isReportModalOpen } = useSelector((state) => state.ui);
   const { currentSong } = useSelector((state) => state.player);
-  const { user: authUser, likedSongs: authLikedSongs } = useSelector((state) => state.auth);
+  const { user: authUser } = useSelector((state) => state.auth);
   const location = useLocation();
 
   const isLyricsPage = location.pathname === '/lyrics';
 
-  const syncUserFromBackend = async (cachedUser, { syncLikedSongs = false } = {}) => {
+  const syncUserFromBackend = async (cachedUser) => {
     if (!import.meta.env.VITE_API_URL || !cachedUser) return;
     try {
       const freshUser = await getProfile();
-      if (freshUser?.user_id || cachedUser?.user_id) {
+      if (freshUser) {
         const mergedUser = mergeUserRoleSafely(cachedUser, freshUser);
         if (!isSameUserSnapshot(cachedUser, mergedUser)) {
-          updateSessionUser(mergedUser);
           dispatch(loginSuccess(mergedUser));
-        }
-
-        if (syncLikedSongs) {
-          const likedSongs = await getLikedSongs();
-          if (Array.isArray(likedSongs) && !isSameLikedSongs(authLikedSongs, likedSongs)) {
-            dispatch(setLikedSongs(likedSongs));
-          }
         }
       }
     } catch { /* Backend không khả dụng — giữ data cache */ }
@@ -116,12 +104,12 @@ export default function AppLayout() {
         const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
         if (raw) {
           const liked = JSON.parse(raw);
-          if (Array.isArray(liked)) dispatch(setLikedSongs(liked));
+          if (Array.isArray(liked)) dispatch({ type: 'auth/setLikedSongs', payload: liked });
         }
       } catch { /* ignore */ }
 
-      // Refresh user profile từ backend để cập nhật role mới nhất (ví dụ: artist vừa được duyệt)
-      await syncUserFromBackend(user, { syncLikedSongs: true });
+      // Refresh user profile từ backend để cập nhật role + artistId mới nhất
+      await syncUserFromBackend(user);
     };
     restoreSession();
   }, [dispatch]);
@@ -136,7 +124,7 @@ export default function AppLayout() {
     }, 15000);
 
     return () => clearInterval(interval);
-  }, [authUser, authLikedSongs]);
+  }, [authUser]);
 
   return (
     <div className="h-screen w-full flex flex-col bg-black text-white overflow-hidden font-sans">

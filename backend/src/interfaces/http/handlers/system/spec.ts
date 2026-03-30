@@ -25,6 +25,7 @@ export const handler = async () => {
             { name: "Playlists", description: "Quản lý playlist" },
             { name: "Search", description: "Tìm kiếm" },
             { name: "Admin", description: "Quản trị viên" },
+            { name: "Users", description: "Người dùng & lịch sử nghe" },
             { name: "Notifications", description: "Thông báo" },
         ],
         components: {
@@ -81,12 +82,12 @@ export const handler = async () => {
             },
             "/me": {
                 get: {
-                    tags: ["Auth"], summary: "Lấy thông tin user hiện tại",
+                    tags: ["Users"], summary: "Lấy thông tin user hiện tại",
                     security: [{ bearerAuth: [] }],
                     responses: { "200": { description: "Thông tin user", content: { "application/json": { schema: { "$ref": "#/components/schemas/User" } } } } },
                 },
                 put: {
-                    tags: ["Auth"], summary: "Cập nhật thông tin cá nhân",
+                    tags: ["Users"], summary: "Cập nhật thông tin cá nhân",
                     security: [{ bearerAuth: [] }],
                     requestBody: { content: { "application/json": { schema: { type: "object", properties: { displayName: { type: "string" }, avatarUrl: { type: "string", format: "uri", nullable: true } } } } } },
                     responses: { "200": { description: "Cập nhật thành công" } },
@@ -94,15 +95,45 @@ export const handler = async () => {
             },
             "/me/artist-request": {
                 get: {
-                    tags: ["Auth"], summary: "Lấy trạng thái artist request của user hiện tại",
+                    tags: ["Users"], summary: "Lấy trạng thái artist request của user hiện tại",
                     security: [{ bearerAuth: [] }],
                     responses: { "200": { description: "OK", content: { "application/json": { schema: { "$ref": "#/components/schemas/ArtistRequest" }, nullable: true } } } },
                 },
                 post: {
-                    tags: ["Auth"], summary: "Gửi request trở thành nghệ sĩ",
+                    tags: ["Users"], summary: "Gửi request trở thành nghệ sĩ",
                     security: [{ bearerAuth: [] }],
                     requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["stageName"], properties: { stageName: { type: "string", example: "Sơn Tùng MTP" }, bio: { type: "string", nullable: true }, photoUrl: { type: "string", format: "uri", nullable: true } } } } } },
                     responses: { "200": { description: "Gửi request thành công" }, "409": { description: "Đã có request pending hoặc đã là nghệ sĩ" } },
+                },
+            },
+
+            // ─── PLAY HISTORY ─────────────────────────────────────
+            "/users/{id}/play-history": {
+                get: {
+                    tags: ["Users"], summary: "Lấy lịch sử nghe của user",
+                    security: [{ bearerAuth: [] }],
+                    parameters: [
+                        { name: "id", in: "path", required: true, schema: { type: "string" }, description: "User ID" },
+                        { name: "limit", in: "query", schema: { type: "integer", default: 50, maximum: 100 }, description: "Số lượng kết quả" },
+                        { name: "cursor", in: "query", schema: { type: "string" }, description: "Con trỏ phân trang" },
+                    ],
+                    responses: {
+                        "200": { description: "OK", content: { "application/json": { schema: paginatedResponse({ type: "object", properties: { userId: { type: "string" }, songId: { type: "string", format: "uuid" }, playedAt: { type: "string", format: "date-time" } } }) } } },
+                        "403": { description: "Không có quyền" },
+                    },
+                },
+            },
+            "/me/play-history": {
+                post: {
+                    tags: ["Users"], summary: "Ghi lại lượt nghe bài hát",
+                    security: [{ bearerAuth: [] }],
+                    requestBody: { required: true, content: { "application/json": { schema: { type: "object", required: ["songId"], properties: { songId: { type: "string", format: "uuid" }, playedAt: { type: "string", format: "date-time", nullable: true } } } } } },
+                    responses: { "200": { description: "Ghi thành công" } },
+                },
+                delete: {
+                    tags: ["Users"], summary: "Xóa toàn bộ lịch sử nghe",
+                    security: [{ bearerAuth: [] }],
+                    responses: { "200": { description: "Đã xóa" } },
                 },
             },
 

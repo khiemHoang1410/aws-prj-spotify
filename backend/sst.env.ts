@@ -13,10 +13,7 @@ export const sstEnv = {
     publicSubnetId: process.env.PUBLIC_SUBNET_ID || "subnet-0019b6c4b78790035",    // 10.0.2.0/24
     lambdaSecurityGroupId: process.env.LAMBDA_SG_ID || "sg-025f66f667f5365b2",
 
-    // Domain
-    baseDomain: process.env.BASE_DOMAIN || "hskhiem.io.vn",
-    prodApiDomain: process.env.PROD_API_DOMAIN || "api.hskhiem.io.vn",
-    devApiDomain: process.env.DEV_API_DOMAIN || "api-dev.hskhiem.io.vn",
+
 
     // CORS (prod)
     prodCorsOrigins: (process.env.PROD_CORS_ORIGINS || "https://hskhiem.io.vn,https://www.hskhiem.io.vn").split(","),

@@ -88,6 +88,8 @@ export default $config({
           args.deletionProtectionEnabled = $app.stage === "prod";
           // Luôn retain table khi sst remove — không bao giờ tự xóa data
           args.retainOnDelete = true;
+          // Enable TTL — tự động xóa play history sau 90 ngày
+          args.timeToLiveSpecification = { attributeName: "ttl", enabled: true };
         },
       },
     });
@@ -105,7 +107,6 @@ export default $config({
 
     // 4. API Gateway
     const isProd = $app.stage === "prod";
-    const domain = isProd ? sstEnv.prodApiDomain : sstEnv.devApiDomain;
 
     // VPC config cho Lambda (chạy trong private subnet)
     // Yêu cầu VPC Endpoints: S3, DynamoDB, cognito-idp

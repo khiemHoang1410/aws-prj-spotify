@@ -10,4 +10,6 @@ export const userProtectedRoutes = {
     "POST /me/artist-request": "src/interfaces/http/handlers/users/artistRequest.handler",
     "GET /me/artist-request": "src/interfaces/http/handlers/users/myArtistRequest.handler",
     "GET /users/{id}/play-history": "src/interfaces/http/handlers/users/playHistory.handler",
+    "POST /me/play-history": "src/interfaces/http/handlers/users/recordPlay.handler",
+    "DELETE /me/play-history": "src/interfaces/http/handlers/users/clearPlayHistory.handler",
 };

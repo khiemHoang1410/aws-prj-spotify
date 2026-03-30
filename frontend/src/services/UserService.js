@@ -39,7 +39,32 @@ export const requestArtistVerify = async (formData) => {
   return api.post('/me/artist-request', formData);
 };
 
-export const getPlayHistory = async (userId) => {
-  if (!API_URL) return mockDelay([]);
-  return api.get(`/users/${userId}/play-history`);
+export const getPlayHistory = async (userId, { limit = 20, cursor } = {}) => {
+  if (!API_URL) return { items: [], nextCursor: undefined };
+  const params = new URLSearchParams({ limit });
+  if (cursor) params.set('cursor', cursor);
+  return api.get(`/users/${userId}/play-history?${params}`);
+};
+
+export const recordPlay = async (song) => {
+  if (!API_URL) return;
+  console.log('[recordPlay] calling POST /me/play-history', { songId: song.song_id, songTitle: song.title });
+  return api.post('/me/play-history', {
+    songId: song.song_id,
+    songTitle: song.title,
+    artistId: song.artist_id || null,
+    artistName: song.artist_name || null,
+    coverUrl: song.image_url || null,
+    duration: song.duration || null,
+  });
+};
+
+export const clearPlayHistory = async () => {
+  if (!API_URL) return;
+  return api.delete('/me/play-history');
+};
+
+export const streamSong = async (songId) => {
+  if (!API_URL) return;
+  return api.post(`/songs/${songId}/stream`, {}).catch(() => { /* fire-and-forget */ });
 };
