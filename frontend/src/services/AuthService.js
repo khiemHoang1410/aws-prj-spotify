@@ -48,6 +48,7 @@ export const fetchAuthSession = async () => {
     const updated = {
       ...session,
       accessToken: data.accessToken,
+      idToken: data.idToken || session.idToken,
       expiresAt: Date.now() + (data.expiresIn || 3600) * 1000,
     };
     saveSession(updated);
