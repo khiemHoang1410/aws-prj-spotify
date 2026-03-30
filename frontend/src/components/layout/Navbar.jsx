@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react';
-import { openModal, logout, setFollowedArtists } from '../../store/authSlice';
+import { openModal, logout, setFollowedArtists, loginSuccess } from '../../store/authSlice';
 import { toggleBrowse } from '../../store/uiSlice';
 import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
 import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../../services/NotificationService';
 import { getFollowedArtists } from '../../services/ArtistService';
-import { logoutUser } from '../../services/AuthService';
+import { logoutUser, checkAndSaveArtistProfile } from '../../services/AuthService';
+import { adaptUser } from '../../services/adapters';
 import SearchBar from '../search/SearchBar';
+import api from '../../services/apiClient';
 import { ROLES } from '../../constants/enums';
 
 export default function Navbar() {
@@ -17,6 +19,7 @@ export default function Navbar() {
   const location = useLocation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const notifRef = useRef(null);
+  const userMenuRef = useRef(null);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
@@ -30,6 +33,32 @@ export default function Navbar() {
     });
   }, [isAuthenticated, dispatch]);
 
+  // Fetch profile từ /me + kiểm tra artist-request để cập nhật role mới nhất
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+    (async () => {
+      try {
+        // 1. Fetch profile cơ bản từ /me
+        const profile = await api.get('/me');
+        const adaptedUser = profile ? adaptUser(profile) : null;
+
+        // 2. Kiểm tra có phải artist không qua /me/artist-request
+        const artistData = await checkAndSaveArtistProfile(user.user_id);
+
+        // 3. Merge role: nếu có artist profile → role = artist + gắn artistId
+        const finalUser = adaptedUser || { ...user };
+        if (artistData?.id) {
+          finalUser.role = 'artist';
+          finalUser.artist_id = artistData.id;
+        }
+
+        dispatch(loginSuccess(finalUser));
+      } catch {
+        // Ignore: token hết hạn hoặc lỗi mạng
+      }
+    })();
+  }, [isAuthenticated, dispatch]);
+
   useEffect(() => {
     if (!isDropdownOpen) return;
     const handleClickOutside = (e) => {
@@ -40,6 +69,18 @@ export default function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isDropdownOpen, dispatch]);
+
+  // Click outside đóng user menu
+  useEffect(() => {
+    if (!isUserMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isUserMenuOpen]);
 
   return (
     <div className="flex items-center justify-between mb-8 sticky top-0 bg-[#121212]/95 backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md">
@@ -134,6 +175,7 @@ export default function Navbar() {
             </div>
 
             {/* User avatar + dropdown */}
+            <div ref={userMenuRef} className="relative">
             <div className="flex items-center justify-center cursor-pointer bg-black/50 hover:bg-[#282828] p-1 rounded-full transition border-[3px] border-transparent hover:border-[#282828]"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} title={user.username}>
               <img src={user.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
@@ -186,6 +228,7 @@ export default function Navbar() {
                 </button>
               </div>
             )}
+            </div>
           </div>
         )}
       </div>

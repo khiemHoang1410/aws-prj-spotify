@@ -4,7 +4,7 @@ import { Heart, HeartOff, PlusCircle, ListPlus, EyeOff, Share2, Flag, ChevronRig
 import { toggleLikeSong, toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { showToast, openReportModal } from '../../store/uiSlice';
-import { getPlaylists, addSongToPlaylist } from '../../services/SongService';
+import { getMyPlaylists, addSongToPlaylist } from '../../services/PlaylistService';
 
 const MENU_WIDTH = 224; // w-56
 const MENU_HEIGHT = 290; // approximate height
@@ -42,7 +42,7 @@ export default function SongContextMenu({ song, position, onClose }) {
   }, [onClose]);
 
   const handleOpenPlaylistSubmenu = async () => {
-    const data = await getPlaylists();
+    const data = await getMyPlaylists();
     setPlaylists(data);
     setShowPlaylistSubmenu(true);
   };

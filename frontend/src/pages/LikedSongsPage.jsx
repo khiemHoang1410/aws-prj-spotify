@@ -4,7 +4,8 @@ import { Play, Heart, Clock, Music, Search, ListPlus, PlusCircle, Check } from '
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal, toggleLikeSong, toggleLikeSongThunk } from '../store/authSlice';
 import { showToast } from '../store/uiSlice'; // [S6-002.6]
-import { getPlaylists, addSongToPlaylist, searchSongs } from '../services/SongService';
+import { getMyPlaylists, addSongToPlaylist } from '../services/PlaylistService';
+import { searchSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
@@ -42,7 +43,7 @@ export default function LikedSongsPage() {
 
   // [S6-002.4] Load playlists for add-to-playlist dropdown
   useEffect(() => {
-    getPlaylists().then(setPlaylists);
+    getMyPlaylists().then(setPlaylists);
   }, []);
 
   // [S7-002.3] Search all songs khi addSearchTerm thay đổi

@@ -161,6 +161,78 @@ export const updateSessionUser = (newUser) => {
   } catch { /* ignore */ }
 };
 
+/**
+ * Kiểm tra user đăng nhập có phải là artist không
+ * Gọi endpoint /me/artist-request để lấy artist profile
+ * Nếu có => lưu artist data vào localStorage + cập nhật session user role thành artist
+ * Return: artistData nếu là artist, null nếu không
+ */
+export const checkAndSaveArtistProfile = async (userId) => {
+  if (!API_URL || !userId) return null;
+
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch(`${API_URL}/me/artist-request`, { headers });
+    
+    if (!res.ok) {
+      localStorage.removeItem(`spotify_artist_${userId}`);
+      return null;
+    }
+
+    const artistData = await res.json();
+    if (!artistData || !artistData.id) {
+      localStorage.removeItem(`spotify_artist_${userId}`);
+      return null;
+    }
+
+    // Lưu artist profile vào localStorage
+    localStorage.setItem(
+      `spotify_artist_${userId}`,
+      JSON.stringify({
+        id: artistData.id,
+        userId: artistData.userId,
+        name: artistData.name,
+        bio: artistData.bio || '',
+        photoUrl: artistData.photoUrl || null,
+        createdAt: artistData.createdAt,
+        updatedAt: artistData.updatedAt,
+      })
+    );
+
+    // Cập nhật session user: role → artist, artistId → artist profile id
+    const raw = localStorage.getItem(TOKEN_KEY);
+    if (raw) {
+      try {
+        const session = JSON.parse(raw);
+        session.user = {
+          ...session.user,
+          role: ROLES.ARTIST,
+          artist_id: artistData.id,
+        };
+        saveSession(session);
+      } catch { /* ignore */ }
+    }
+
+    return artistData;
+  } catch {
+    localStorage.removeItem(`spotify_artist_${userId}`);
+    return null;
+  }
+};
+
+/**
+ * Lấy artist profile từ localStorage
+ */
+export const getArtistProfileFromStorage = (userId) => {
+  if (!userId) return null;
+  try {
+    const raw = localStorage.getItem(`spotify_artist_${userId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const logoutUser = async () => {
   if (API_URL) {
     try {

@@ -1,9 +1,11 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from '../../services/AuthService';
+import { getCurrentUser, updateSessionUser, checkAndSaveArtistProfile } from '../../services/AuthService';
 import { adaptUser } from '../../services/adapters';
-import { loginSuccess, setVerifyStatus } from '../../store/authSlice';
+import { loginSuccess, setVerifyStatus, setLikedSongs } from '../../store/authSlice';
+import { getProfile } from '../../services/UserService';
+import { getLikedSongs } from '../../services/PlaylistService';
 import api from '../../services/apiClient';
 import { VERIFY_STATUS } from '../../constants/enums';
 import Sidebar from './Sidebar';
@@ -88,33 +90,28 @@ export default function AppLayout() {
       // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
       dispatch(loginSuccess(user));
 
-<<<<<<< HEAD
-<<<<<<< HEAD
+      // Fetch full profile từ BE để lấy artistId và các field DB khác
+      // (localStorage chỉ có data từ idToken, không có artistId)
+      let adaptedProfile = null;
+      try {
+        const profile = await api.get('/me');
+        if (profile) {
+          adaptedProfile = adaptUser(profile);
+        }
+      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+      // Kiểm tra user có phải artist không qua /me/artist-request
+      const artistData = await checkAndSaveArtistProfile(user.user_id);
+
+      // Merge: nếu có artist profile → cập nhật role + artistId
+      const finalUser = adaptedProfile || { ...user };
+      if (artistData?.id) {
+        finalUser.role = 'artist';
+        finalUser.artist_id = artistData.id;
+      }
+      dispatch(loginSuccess(finalUser));
+
       // Restore liked songs từ localStorage theo từng user
-=======
-      // Fetch full profile từ BE để lấy artistId và các field DB khác
-      // (localStorage chỉ có data từ idToken, không có artistId)
-=======
-      // Fetch full profile từ BE để lấy artistId và các field DB khác
-      // (localStorage chỉ có data từ idToken, không có artistId)
-      try {
-        const profile = await api.get('/me');
-        if (profile) {
-          dispatch(loginSuccess(adaptUser(profile)));
-        }
-      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
-
-      // Restore artist request status
->>>>>>> 7121db8 (fix(auth): fetch /me on session restore to populate artistId from DB)
-      try {
-        const profile = await api.get('/me');
-        if (profile) {
-          dispatch(loginSuccess(adaptUser(profile)));
-        }
-      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
-
-      // Restore artist request status
->>>>>>> 7121db8 (fix(auth): fetch /me on session restore to populate artistId from DB)
       try {
         const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
         if (raw) {

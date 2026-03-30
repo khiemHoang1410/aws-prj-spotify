@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { VERIFY_STATUS } from '../constants/enums';
-import { likeSong, unlikeSong } from '../services/SongService';
+import { likeSong, unlikeSong } from '../services/PlaylistService';
 import { showToast } from './uiSlice';
 
 const initialState = {
