@@ -6,3 +6,36 @@ body {
   background-color: #121212;
   color: #ffffff;
 }
+
+::-webkit-scrollbar {
+    width: 8px; /* Độ rộng thanh cuộn */
+}
+
+::-webkit-scrollbar-track {
+    background: transparent; /* Nền track trong suốt */
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.4); /* Màu thanh cuộn (có thể chỉnh alpha để trong suốt hơn) */
+    border-radius: 4px;
+    border: 2px solid transparent; /* Tạo khoảng cách giữa thumb và track */
+    background-clip: content-box; /* Giữ border trong suốt */
+}
+
+/* ----- Dành cho Firefox ----- */
+html {
+    scrollbar-width: thin; /* mỏng hơn */
+    scrollbar-color: rgba(0, 0, 0, 0.4) transparent; /* thumb màu, track trong suốt */
+}
+
+/* WebKit */
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Firefox */
+html {
+    scrollbar-width: none;
+}
+
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, HeartOff, PlusCircle, ListPlus, EyeOff, Share2, Flag, ChevronRight } from 'lucide-react';
-import { toggleLikeSong } from '../../store/authSlice';
+import { toggleLikeSong, toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { showToast, openReportModal } from '../../store/uiSlice';
 import { getPlaylists, addSongToPlaylist } from '../../services/SongService';
@@ -76,7 +76,7 @@ export default function SongContextMenu({ song, position, onClose }) {
       {/* Like / Unlike */}
       <button
         className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
-        onClick={() => { dispatch(toggleLikeSong(song)); onClose(); }}
+        onClick={() => { dispatch(toggleLikeSongThunk(song)); onClose(); }}
       >
         {isLiked ? <HeartOff size={18} /> : <Heart size={18} />}
         {isLiked ? 'Đã thêm vào Bài hát yêu thích' : 'Lưu vào Bài hát yêu thích'}

@@ -19,6 +19,10 @@ const MAX_RETRIES = 2;
 let _onAuthExpired = null;
 export const setAuthExpiredCallback = (cb) => { _onAuthExpired = cb; };
 
+// ─── Request failure callback (toast/message toàn cục) ────────────────────────
+let _onRequestFailed = null;
+export const setRequestFailedCallback = (cb) => { _onRequestFailed = cb; };
+
 // ─── Typed Errors ────────────────────────────────────────────────────────────
 
 export class ApiError extends Error {
@@ -72,6 +76,11 @@ const parseResponse = async (res) => {
   return res.text();
 };
 
+const notifyRequestFailed = (message) => {
+  if (!message) return;
+  _onRequestFailed?.(message);
+};
+
 const request = async (method, path, { body, headers: extraHeaders = {}, timeout = DEFAULT_TIMEOUT_MS, _retry = 0 } = {}) => {
   if (!API_URL) throw new NetworkError('VITE_API_URL chưa được cấu hình');
 
@@ -96,7 +105,9 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
       await delay(300 * (_retry + 1));
       return request(method, path, { body, headers: extraHeaders, timeout, _retry: _retry + 1 });
     }
-    throw new NetworkError(err.message || 'Network error');
+    const networkError = new NetworkError(err.message || 'Network error');
+    notifyRequestFailed(networkError.message);
+    throw networkError;
   }
   clearTimeout(timer);
 
@@ -114,11 +125,13 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
   if (!res.ok) {
     let errBody = {};
     try { errBody = await res.json(); } catch { /* ignore */ }
-    throw new ApiError(
+    const apiError = new ApiError(
       errBody.error || errBody.message || `HTTP ${res.status}`,
       res.status,
       errBody.code,
     );
+    notifyRequestFailed(apiError.message);
+    throw apiError;
   }
 
   // 204 No Content

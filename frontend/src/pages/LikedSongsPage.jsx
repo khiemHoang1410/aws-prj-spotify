@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react'; // [S6-002.1]
 import { useSelector, useDispatch } from 'react-redux';
 import { Play, Heart, Clock, Music, Search, ListPlus, PlusCircle, Check } from 'lucide-react'; // [S6-002.4] [S7-002.1]
 import { setCurrentSong } from '../store/playerSlice';
-import { openModal, toggleLikeSong } from '../store/authSlice';
+import { openModal, toggleLikeSong, toggleLikeSongThunk } from '../store/authSlice';
 import { showToast } from '../store/uiSlice'; // [S6-002.6]
 import { getPlaylists, addSongToPlaylist, searchSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
@@ -176,7 +176,7 @@ export default function LikedSongsPage() {
               <span className="text-sm text-neutral-400 flex items-center truncate">{song.artist_name}</span>
               <div className="flex items-center justify-center gap-2 relative">
                 <button
-                  onClick={(e) => { e.stopPropagation(); dispatch(toggleLikeSong(song)); }}
+                  onClick={(e) => { e.stopPropagation(); dispatch(toggleLikeSongThunk(song)); }}
                   className="text-green-500 hover:text-green-400 opacity-0 group-hover:opacity-100 transition"
                   title="Bỏ thích"
                 >
@@ -259,7 +259,7 @@ export default function LikedSongsPage() {
                       </div>
                     </div>
                     <button
-                      onClick={() => dispatch(toggleLikeSong(song))}
+                      onClick={() => dispatch(toggleLikeSongThunk(song))}
                       disabled={isAlreadyLiked}
                       className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition flex-shrink-0 ${
                         isAlreadyLiked
