@@ -68,39 +68,45 @@ export default function ArtistDashboardPage() {
 
   const handleDeleteSong = async (songId) => {
     if (!window.confirm('Bạn có chắc muốn xoá bài hát này?')) return;
-    const result = await deleteSong(songId);
-    if (result.success) {
+    try {
+      await deleteSong(songId);
       setMySongs((prev) => prev.filter((s) => s.song_id !== songId));
       dispatch(showToast({ message: 'Đã xoá bài hát', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi xoá bài hát', type: 'error' }));
     }
   };
 
   // [S8-007.4] Album CRUD handlers
   const handleCreateAlbum = async () => {
     if (!newAlbumTitle.trim()) return;
-    const result = await createAlbum({
-      title: newAlbumTitle.trim(),
-      artist_id: user.artist_id || user.user_id,
-      artist_name: user.username,
-      image_url: IMG_FALLBACK,
-      release_date: new Date().toISOString().slice(0, 10),
-      songIds: [],
-    });
-    if (result.success) {
-      setMyAlbums((prev) => [...prev, result.data]);
+    try {
+      const album = await createAlbum({
+        title: newAlbumTitle.trim(),
+        artist_id: user.artist_id || user.user_id,
+        artist_name: user.username,
+        image_url: IMG_FALLBACK,
+        release_date: new Date().toISOString().slice(0, 10),
+        songIds: [],
+      });
+      setMyAlbums((prev) => [...prev, album]);
       setNewAlbumTitle('');
       setIsCreateAlbumOpen(false);
       dispatch(showToast({ message: 'Đã tạo album mới', type: 'success' }));
-      navigate(`/album/${result.data.id}`);
+      navigate(`/album/${album.id}`);
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi tạo album', type: 'error' }));
     }
   };
 
   const handleDeleteAlbum = async (albumId) => {
     if (!window.confirm('Bạn có chắc muốn xoá album này?')) return;
-    const result = await deleteAlbum(albumId);
-    if (result.success) {
+    try {
+      await deleteAlbum(albumId);
       setMyAlbums((prev) => prev.filter((a) => a.id !== albumId));
       dispatch(showToast({ message: 'Đã xoá album', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi xoá album', type: 'error' }));
     }
   };
 

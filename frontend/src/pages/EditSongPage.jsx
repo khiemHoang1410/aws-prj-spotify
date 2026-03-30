@@ -76,13 +76,15 @@ export default function EditSongPage() {
     };
     if (lyrics.trim()) formData.lyrics = lyrics.trim();
 
-    const result = await updateSong(activeEditSongId, formData);
-    setIsLoading(false);
-    if (result.success) {
+    setIsLoading(true);
+    try {
+      await updateSong(activeEditSongId, formData);
       dispatch(showToast({ message: 'Đã cập nhật bài hát thành công', type: 'success' }));
       navigate('/artist-dashboard');
-    } else {
-      dispatch(showToast({ message: result.message || 'Lỗi khi cập nhật', type: 'error' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi cập nhật', type: 'error' }));
+    } finally {
+      setIsLoading(false);
     }
   };
 
