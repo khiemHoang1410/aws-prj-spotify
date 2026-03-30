@@ -1,34 +1,52 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { togglePlay, updateCurrentTime, clearSeekTime, playNextSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
-import { toggleLikeSong } from '../../store/authSlice';
+import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
+import { toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
+import { getSongs } from '../../services/SongService';
+import { getTrendingSongs } from '../../services/RecommendationService';
+import { getHistory } from '../../services/HistoryService';
 import Audio from './Audio';
-import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Minimize2 } from 'lucide-react';
+import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
 import { REPEAT_MODE } from '../../constants/enums';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const PLAYER_VOLUME_STORAGE_KEY = 'spotify_player_volume_v1';
+
+const readInitialVolume = () => {
+  if (typeof window === 'undefined') return 1;
+  try {
+    const rawVolume = localStorage.getItem(PLAYER_VOLUME_STORAGE_KEY);
+    const parsedVolume = Number(rawVolume);
+    if (!Number.isFinite(parsedVolume)) return 1;
+    return Math.max(0, Math.min(1, parsedVolume));
+  } catch {
+    return 1;
+  }
+};
 
 export default function PlayerBar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
   
-  const { currentSong, isPlaying, globalSeekTime, queue, isShuffle, repeatMode } = useSelector((state) => state.player);
+  const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs } = useSelector((state) => state.auth);
+
+  const initialVolumeRef = useRef(readInitialVolume());
   
   const isLyricsPage = location.pathname === '/lyrics';
   
-  const [currentTimeLocal, setCurrentTimeLocal] = useState(0);
-  const [volume, setVolume] = useState(1); 
+  const [currentTimeLocal, setCurrentTimeLocal] = useState(currentTime || 0);
+  const [volume, setVolume] = useState(initialVolumeRef.current);
   const [seekTime, setSeekTime] = useState(null); 
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [dragTime, setDragTime] = useState(0);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const [isMuted, setIsMuted] = useState(false);
-  const [volumeBeforeMute, setVolumeBeforeMute] = useState(1);
+  const [isMuted, setIsMuted] = useState(initialVolumeRef.current === 0);
+  const [volumeBeforeMute, setVolumeBeforeMute] = useState(initialVolumeRef.current === 0 ? 1 : initialVolumeRef.current);
   const isSeeking = useRef(false); // block onTimeUpdate ngay sau seek
 
   const progressBarRef = useRef(null);
@@ -43,6 +61,27 @@ export default function PlayerBar() {
       setTimeout(() => dispatch(clearSeekTime()), 100);
     }
   }, [globalSeekTime, dispatch]);
+
+  useEffect(() => {
+    if (!currentSong) return;
+    const restoredTime = Number.isFinite(currentTime) ? currentTime : 0;
+    setCurrentTimeLocal(restoredTime);
+    if (restoredTime <= 0) return;
+
+    isSeeking.current = true;
+    setTimeout(() => { isSeeking.current = false; }, 300);
+    setSeekTime(restoredTime);
+    setTimeout(() => setSeekTime(null), 100);
+  }, [currentSong?.song_id]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem(PLAYER_VOLUME_STORAGE_KEY, String(volume));
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [volume]);
 
   const updateProgress = (e) => {
     if (!progressBarRef.current || !currentSong?.duration) return;
@@ -111,6 +150,91 @@ export default function PlayerBar() {
     }
   };
 
+  const handleSkipBack = () => {
+    if (currentTimeLocal > 3 || history.length === 0) {
+      // Restart bài hiện tại
+      setCurrentTimeLocal(0);
+      isSeeking.current = true;
+      setTimeout(() => { isSeeking.current = false; }, 300);
+      setSeekTime(0);
+      setTimeout(() => setSeekTime(null), 100);
+    } else {
+      dispatch(playPreviousSong());
+    }
+  };
+
+  const restartCurrentSong = () => {
+    setCurrentTimeLocal(0);
+    dispatch(updateCurrentTime(0));
+    isSeeking.current = true;
+    setTimeout(() => { isSeeking.current = false; }, 300);
+    setSeekTime(0);
+    setTimeout(() => setSeekTime(null), 100);
+  };
+
+  const getTrendingFallbackSong = async () => {
+    const allSongs = await getSongs();
+    const historyIds = new Set(getHistory().map((song) => song.song_id));
+    if (currentSong?.song_id) historyIds.add(currentSong.song_id);
+
+    const trendingSongs = getTrendingSongs(allSongs);
+    return trendingSongs.find((song) => !historyIds.has(song.song_id)) || null;
+  };
+
+  const handleSongEnded = async () => {
+    if (repeatMode === REPEAT_MODE.ONE || repeatMode === REPEAT_MODE.ALL) {
+      restartCurrentSong();
+      return;
+    }
+
+    if (queue && queue.length > 0) {
+      dispatch(playNextSong());
+      return;
+    }
+
+    const fallbackSong = await getTrendingFallbackSong();
+    if (fallbackSong) {
+      dispatch(setCurrentSong(fallbackSong));
+      return;
+    }
+
+    dispatch(togglePlay());
+    setCurrentTimeLocal(0);
+    dispatch(updateCurrentTime(0));
+  };
+
+  const handleNavigateLyrics = async () => {
+    if (isLyricsPage && document.fullscreenElement) {
+      try {
+        await document.exitFullscreen();
+        // Chờ fullscreen exit hoàn toàn
+        await new Promise((resolve) => {
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            document.removeEventListener('fullscreenchange', onFullscreenChange);
+            resolve();
+          };
+          const onFullscreenChange = () => {
+            if (!document.fullscreenElement) finish();
+          };
+          document.addEventListener('fullscreenchange', onFullscreenChange);
+          // Fallback timeout nếu event không fire
+          setTimeout(finish, 400);
+        });
+      } catch {
+        // Ignore lỗi exit fullscreen
+      }
+    }
+    // Navigate sau khi exit fullscreen
+    if (isLyricsPage) {
+      navigate(-1);
+    } else {
+      navigate('/lyrics');
+    }
+  };
+
   if (!currentSong) return <div className="h-full px-4 flex items-center justify-center text-[#b3b3b3] text-sm font-semibold">Chọn một bài hát để bắt đầu phát</div>;
 
   const formatTime = (t) => {
@@ -136,20 +260,7 @@ export default function PlayerBar() {
              dispatch(updateCurrentTime(time));
           }
         }} 
-        onEnded={() => { 
-           if (repeatMode === REPEAT_MODE.ONE) {
-              setSeekTime(0);
-              setTimeout(() => setSeekTime(null), 100);
-           } else if (queue && queue.length > 0) {
-              dispatch(playNextSong());
-           } else if (repeatMode === REPEAT_MODE.ALL) {
-              setSeekTime(0);
-              setTimeout(() => setSeekTime(null), 100);
-           } else {
-              dispatch(togglePlay()); 
-              setCurrentTimeLocal(0); 
-           }
-        }}
+          onEnded={() => { void handleSongEnded(); }}
       />
 
       {/* 1. KHU VỰC BÊN TRÁI */}
@@ -166,7 +277,7 @@ export default function PlayerBar() {
         </div>
         <button
           className={`ml-2 transition hover:scale-110 ${likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
-          onClick={() => dispatch(toggleLikeSong(currentSong))}
+          onClick={() => dispatch(toggleLikeSongThunk(currentSong))}
           title="Yêu thích"
         >
           <Heart size={16} fill={likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'currentColor' : 'none'} />
@@ -183,13 +294,13 @@ export default function PlayerBar() {
           >
             <Shuffle size={16} />
           </button>
-          <button className="text-[#b3b3b3] hover:text-white"><SkipBack size={20} fill="currentColor" /></button>
+          <button className="text-[#b3b3b3] hover:text-white" onClick={handleSkipBack} title="Trước"><SkipBack size={20} fill="currentColor" /></button>
           
           <button className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition" onClick={() => dispatch(togglePlay())}>
             {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
           </button>
           
-          <button className="text-[#b3b3b3] hover:text-white"><SkipForward size={20} fill="currentColor" /></button>
+          <button className="text-[#b3b3b3] hover:text-white" onClick={() => dispatch(playNextSong())} title="Tiếp theo"><SkipForward size={20} fill="currentColor" /></button>
           <button
             className={`transition hover:scale-105 ${repeatMode !== REPEAT_MODE.OFF ? 'text-green-400' : 'text-[#b3b3b3] hover:text-white'}`}
             onClick={() => dispatch(cycleRepeat())}
@@ -262,11 +373,11 @@ export default function PlayerBar() {
         
         {/* NÚt NAVIGATE TO LYRICS / THU NHỎ */}
         <button
-          onClick={() => { if (isLyricsPage) { navigate(-1); } else { navigate('/lyrics'); } }}
+          onClick={handleNavigateLyrics}
           title={isLyricsPage ? 'Thu nhỏ' : 'Phóng to'}
           className="hover:text-white transition"
         >
-          {isLyricsPage ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+          {isLyricsPage ? <Shrink size={16} /> : <Maximize2 size={16} />}
         </button>
       </div>
 

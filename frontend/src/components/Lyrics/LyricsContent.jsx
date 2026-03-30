@@ -3,9 +3,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { getLyrics, getPlaylists, addSongToPlaylist } from '../../services/SongService';
 import { setPiP, openReportModal, showToast } from '../../store/uiSlice';
-import { toggleLikeSong } from '../../store/authSlice';
+import { toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
-import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, Minimize2, PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag } from 'lucide-react';
+import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, PictureInPicture2,  PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag, Minimize } from 'lucide-react';
 
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
@@ -18,6 +18,41 @@ const toggleFullscreen = () => {
 // Import các component con vừa tạo
 import LyricsMode from './LyricsMode';
 import BottomInfo from './BottomInfo';
+
+const waitForFullscreenExit = () => new Promise((resolve) => {
+  if (!document.fullscreenElement) {
+    resolve();
+    return;
+  }
+
+  let settled = false;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    document.removeEventListener('fullscreenchange', onFullscreenChange);
+    resolve();
+  };
+
+  const onFullscreenChange = () => {
+    if (!document.fullscreenElement) finish();
+  };
+
+  document.addEventListener('fullscreenchange', onFullscreenChange);
+  setTimeout(finish, 400);
+});
+
+const minimizeToPiP = async (dispatch, navigate) => {
+  if (document.fullscreenElement) {
+    try {
+      await document.exitFullscreen();
+      await waitForFullscreenExit();
+    } catch {
+      // Ignore lỗi thoát fullscreen để không chặn luồng PiP
+    }
+  }
+  dispatch(setPiP(true));
+  navigate(-1);
+};
 
 export default function LyricsContent() {
   const dispatch = useDispatch();
@@ -35,6 +70,12 @@ export default function LyricsContent() {
   const dropdownRef = useRef(null);
 
   const isLiked = likedSongs.some((s) => s.song_id === currentSong?.song_id);
+
+  useEffect(() => {
+    if (!currentSong) {
+      navigate('/', { replace: true });
+    }
+  }, [currentSong, navigate]);
 
   useEffect(() => {
     if (currentSong?.song_id) {
@@ -122,7 +163,7 @@ export default function LyricsContent() {
                 {/* Save to Liked Songs (TASK-006-A) */}
                 <button
                   className="flex items-center gap-3 w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
-                  onClick={() => { dispatch(toggleLikeSong(currentSong)); setShowDropdown(false); }}
+                  onClick={() => { dispatch(toggleLikeSongThunk(currentSong)); setShowDropdown(false); }}
                 >
                   {isLiked ? <HeartOff size={18} /> : <Heart size={18} />}
                   {isLiked ? 'Đã thêm vào Bài hát yêu thích' : 'Lưu vào Bài hát yêu thích'}
@@ -192,18 +233,18 @@ export default function LyricsContent() {
 
           {/* Minimize → về previousView và bật PiP (TASK-002-C) */}
           <button
-            onClick={() => { dispatch(setPiP(true)); navigate(-1); }}
+            onClick={() => minimizeToPiP(dispatch, navigate)}
             title="Thu nhỏ lời bài hát"
             className="hover:text-white ml-2 transition"
           >
-            <Minimize2 size={20} />
+            <PictureInPicture2 size={20} />
           </button>
           <button
             onClick={toggleFullscreen}
             title={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}
             className="hover:text-white ml-2 transition"
           >
-            {isFullscreen ? <Minimize2 size={20} /> : <Maximize size={20} />}
+            {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
           </button>
         </div>
       </div>

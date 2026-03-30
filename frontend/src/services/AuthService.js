@@ -152,6 +152,15 @@ export const login = async (email, password) => {
   return user;
 };
 
+export const updateSessionUser = (newUser) => {
+  const raw = localStorage.getItem(TOKEN_KEY);
+  if (!raw) return;
+  try {
+    const session = JSON.parse(raw);
+    localStorage.setItem(TOKEN_KEY, JSON.stringify({ ...session, user: newUser }));
+  } catch { /* ignore */ }
+};
+
 export const logoutUser = async () => {
   if (API_URL) {
     try {

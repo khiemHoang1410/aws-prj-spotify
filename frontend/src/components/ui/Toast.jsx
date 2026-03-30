@@ -29,7 +29,7 @@ export default function Toast() {
 
   useEffect(() => {
     if (!visible) return;
-    const duration = type === TOAST_TYPE.ERROR ? 5000 : 3000;
+    const duration = 3000;
     const timer = setTimeout(() => dispatch(hideToast()), duration);
     return () => clearTimeout(timer);
   }, [visible, message, type, dispatch]);
@@ -41,10 +41,10 @@ export default function Toast() {
 
   return (
     <div
-      className={`fixed bottom-28 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3 rounded-lg border shadow-xl transition-all ${config.className}`}
+      className={`fixed top-4 right-4 z-50 flex items-center gap-3 px-5 py-3 rounded-lg border shadow-xl transition-all max-w-[420px] ${config.className}`}
     >
       <Icon size={18} className="flex-shrink-0" />
-      <span className="text-sm font-medium whitespace-nowrap">{message}</span>
+      <span className="text-sm font-medium">{message}</span>
     </div>
   );
 }

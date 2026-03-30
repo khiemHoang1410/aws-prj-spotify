@@ -7,7 +7,7 @@ import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
 import { getArtistStats } from '../services/ArtistService';
-import { getSongs, deleteSong } from '../services/SongService';
+import { getSongs, getSongsByArtist, deleteSong } from '../services/SongService';
 import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
@@ -42,17 +42,42 @@ export default function ArtistDashboardPage() {
       navigate('/');
       return;
     }
+    
+    // Guard: Check artist_id exists
+    if (!user.artist_id) {
+      dispatch(showToast({ 
+        message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
+        type: 'warning' 
+      }));
+      navigate('/artist-verify');
+      return;
+    }
+    
     setIsLoading(true);
     Promise.all([
-      getArtistStats(user.artist_id || user.user_id),
-      getSongs(),
+      getArtistStats(user.artist_id || user.user_id).catch(() => ({
+        totalSongs: 0,
+        totalPlays: 0,
+        followers: 0,
+        monthlyListeners: 0,
+      })),
+      getSongsByArtist(user.artist_id || user.user_id),
       getAlbumsByArtist(user.username),
-    ]).then(([statsData, allSongs, albums]) => {
-      setStats(statsData);
-      setMySongs(allSongs.filter((s) => s.artist_name === user.username));
-      setMyAlbums(albums);
-    }).finally(() => setIsLoading(false));
-  }, [user, dispatch]);
+    ])
+      .then(([statsData, mySongsData, albums]) => {
+        setStats(statsData);
+        setMySongs(mySongsData);
+        setMyAlbums(albums);
+      })
+      .catch((err) => {
+        console.warn('Dashboard load error:', err);
+        dispatch(showToast({ 
+          message: 'Có lỗi khi tải dữ liệu. Vui lòng tải lại trang.', 
+          type: 'error' 
+        }));
+      })
+      .finally(() => setIsLoading(false));
+  }, [user, dispatch, navigate]);
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {
@@ -86,12 +111,14 @@ export default function ArtistDashboardPage() {
       release_date: new Date().toISOString().slice(0, 10),
       songIds: [],
     });
-    if (result.success) {
+    if (result.success && result.data?.id) {
       setMyAlbums((prev) => [...prev, result.data]);
       setNewAlbumTitle('');
       setIsCreateAlbumOpen(false);
       dispatch(showToast({ message: 'Đã tạo album mới', type: 'success' }));
       navigate(`/album/${result.data.id}`);
+    } else if (result.success) {
+      dispatch(showToast({ message: 'Đã tạo album nhưng không thể navigate. Vào Dashboard để xem.', type: 'warning' }));
     }
   };
 

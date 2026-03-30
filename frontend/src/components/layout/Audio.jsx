@@ -19,8 +19,11 @@ export default function Audio({ currentSong, isPlaying, volume, seekTime, onTime
   useEffect(() => {
     if (audioRef.current && seekTime !== null) {
       audioRef.current.currentTime = seekTime;
+      if (isPlaying) {
+        audioRef.current.play().catch(() => {});
+      }
     }
-  }, [seekTime]);
+  }, [seekTime, isPlaying]);
 
   return (
     <audio

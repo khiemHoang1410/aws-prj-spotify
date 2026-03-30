@@ -2,36 +2,71 @@ import api from './apiClient';
 import { adaptAlbum, adaptPaginatedResponse } from './adapters';
 
 export const getAllAlbums = async () => {
-  const data = await api.get('/albums');
-  return adaptPaginatedResponse(data, adaptAlbum);
+  try {
+    const data = await api.get('/albums');
+    return adaptPaginatedResponse(data, adaptAlbum);
+  } catch {
+    return [];
+  }
 };
 
 export const getAlbumById = async (albumId) => {
-  const data = await api.get(`/albums/${encodeURIComponent(albumId)}`);
-  return adaptAlbum(data);
+  try {
+    const data = await api.get(`/albums/${encodeURIComponent(albumId)}`);
+    return adaptAlbum(data);
+  } catch {
+    return null;
+  }
 };
 
 export const getAlbumsByArtist = async (artistName) => {
-  const data = await api.get(`/albums?artist=${encodeURIComponent(artistName)}`);
-  return adaptPaginatedResponse(data, adaptAlbum);
+  try {
+    const data = await api.get(`/albums?artist=${encodeURIComponent(artistName)}`);
+    return adaptPaginatedResponse(data, adaptAlbum);
+  } catch {
+    return [];
+  }
 };
 
 export const createAlbum = async (payload) => {
-  return api.post('/albums', payload);
+  try {
+    const rawData = await api.post('/albums', payload);
+    return { success: true, data: adaptAlbum(rawData) };
+  } catch {
+    return { success: false, data: null };
+  }
 };
 
 export const updateAlbum = async (albumId, payload) => {
-  return api.put(`/albums/${encodeURIComponent(albumId)}`, payload);
+  try {
+    return await api.put(`/albums/${encodeURIComponent(albumId)}`, payload);
+  } catch {
+    return { success: false };
+  }
 };
 
 export const deleteAlbum = async (albumId) => {
-  return api.delete(`/albums/${encodeURIComponent(albumId)}`);
+  try {
+    return await api.delete(`/albums/${encodeURIComponent(albumId)}`);
+  } catch {
+    return { success: false };
+  }
 };
 
 export const addSongToAlbum = async (albumId, songId) => {
-  return api.post(`/albums/${encodeURIComponent(albumId)}/songs`, { song_id: songId });
+  try {
+    await api.post(`/albums/${encodeURIComponent(albumId)}/songs`, { song_id: songId });
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
 };
 
 export const removeSongFromAlbum = async (albumId, songId) => {
-  return api.delete(`/albums/${encodeURIComponent(albumId)}/songs/${encodeURIComponent(songId)}`);
+  try {
+    await api.delete(`/albums/${encodeURIComponent(albumId)}/songs/${encodeURIComponent(songId)}`);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
 };
