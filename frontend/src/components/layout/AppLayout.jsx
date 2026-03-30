@@ -2,7 +2,9 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../services/AuthService';
-import { loginSuccess } from '../../store/authSlice';
+import { loginSuccess, setVerifyStatus } from '../../store/authSlice';
+import api from '../../services/apiClient';
+import { VERIFY_STATUS } from '../../constants/enums';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -24,7 +26,15 @@ export default function AppLayout() {
   useEffect(() => {
     const restoreSession = async () => {
       const user = await getCurrentUser();
-      if (user) dispatch(loginSuccess(user));
+      if (!user) return;
+      dispatch(loginSuccess(user));
+      // Restore artist request status
+      try {
+        const request = await api.get('/me/artist-request');
+        if (request?.status) {
+          dispatch(setVerifyStatus({ status: request.status }));
+        }
+      } catch { /* ignore — user chưa đăng nhập hoặc chưa có request */ }
     };
     restoreSession();
   }, [dispatch]);
