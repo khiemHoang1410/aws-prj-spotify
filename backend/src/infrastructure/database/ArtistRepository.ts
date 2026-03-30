@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, QueryCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Artist } from "../../domain/entities/Artist";
@@ -28,6 +28,29 @@ export class ArtistRepository extends BaseRepository<Artist> {
             return Success(item || null);
         } catch (error: any) {
             return Failure(`Lỗi tìm artist theo userId: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Tìm artist theo tên (case-insensitive, partial match).
+     * Dùng Scan + FilterExpression vì name không phải GSI hash key.
+     */
+    async findByName(name: string): Promise<Result<Artist[]>> {
+        try {
+            const keyword = name.toLowerCase();
+            const response = await docClient.send(new ScanCommand({
+                TableName: this.tableName,
+                FilterExpression: "entityType = :type AND sk = :sk AND attribute_not_exists(deletedAt)",
+                ExpressionAttributeValues: {
+                    ":type": this.entityPrefix,
+                    ":sk": "METADATA",
+                },
+            }));
+            const items = (response.Items as Artist[]) || [];
+            const filtered = items.filter(a => a.name?.toLowerCase().includes(keyword));
+            return Success(filtered);
+        } catch (error: any) {
+            return Failure(`Lỗi tìm artist theo tên: ${error.message}`, 500);
         }
     }
 }

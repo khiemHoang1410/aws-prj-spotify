@@ -18,22 +18,26 @@ export default function AdminReports() {
   }, []);
 
   const handleResolve = async (report) => {
-    const result = await resolveReport(report.id);
-    if (result.success) {
+    try {
+      await resolveReport(report.id);
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, status: REPORT_STATUS.RESOLVED } : r))
       );
       dispatch(showToast({ message: 'Báo cáo đã được giải quyết', type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi giải quyết báo cáo', type: 'error' }));
     }
   };
 
   const handleRemove = async (report) => {
-    const result = await removeSong(report.songId);
-    if (result.success) {
+    try {
+      await removeSong(report.songId);
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, status: REPORT_STATUS.RESOLVED } : r))
       );
       dispatch(showToast({ message: `Đã gỡ bài hát "${report.songTitle}"`, type: 'warning' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi gỡ bài hát', type: 'error' }));
     }
   };
 

@@ -66,25 +66,25 @@ export default function AlbumDetailPage() {
   };
 
   const handleAddSong = async (songId) => {
-    const result = await addSongToAlbum(activeAlbumId, songId);
-    if (result.success) {
+    try {
+      await addSongToAlbum(activeAlbumId, songId);
       dispatch(showToast({ message: 'Đã thêm bài hát vào album', type: 'success' }));
       const updated = await getAlbumById(activeAlbumId);
       setAlbum(updated);
       setAvailableSongs((prev) => prev.filter((s) => s.song_id !== songId));
-    } else {
-      dispatch(showToast({ message: result.message || 'Lỗi khi thêm bài hát', type: 'error' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi thêm bài hát', type: 'error' }));
     }
   };
 
   const handleRemoveSong = async (songId) => {
-    const result = await removeSongFromAlbum(activeAlbumId, songId);
-    if (result.success) {
+    try {
+      await removeSongFromAlbum(activeAlbumId, songId);
       dispatch(showToast({ message: 'Đã xóa bài hát khỏi album', type: 'success' }));
       const updated = await getAlbumById(activeAlbumId);
       setAlbum(updated);
-    } else {
-      dispatch(showToast({ message: result.message || 'Lỗi khi xóa bài hát', type: 'error' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Lỗi khi xóa bài hát', type: 'error' }));
     }
   };
 

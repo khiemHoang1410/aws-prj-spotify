@@ -6,8 +6,8 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats } from '../services/ArtistService';
-import { getSongs, getSongsByArtist, deleteSong } from '../services/SongService';
+import { getArtistStats, getArtistByUserId } from '../services/ArtistService';
+import { getSongs, deleteSong } from '../services/SongService';
 import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
@@ -54,30 +54,29 @@ export default function ArtistDashboardPage() {
     }
     
     setIsLoading(true);
-    Promise.all([
-      getArtistStats(user.artist_id || user.user_id).catch(() => ({
-        totalSongs: 0,
-        totalPlays: 0,
-        followers: 0,
-        monthlyListeners: 0,
-      })),
-      getSongsByArtist(user.artist_id || user.user_id),
-      getAlbumsByArtist(user.username),
-    ])
-      .then(([statsData, mySongsData, albums]) => {
+
+    // Ưu tiên artist_id đã có trong user profile,
+    // nếu chưa có thì resolve từ userId → artist profile
+    const resolveArtistId = user.artist_id
+      ? Promise.resolve(user.artist_id)
+      : getArtistByUserId(user.user_id).then((a) => a?.id ?? null);
+
+    resolveArtistId.then((artistId) => {
+      if (!artistId) {
+        setIsLoading(false);
+        return;
+      }
+      Promise.all([
+        getArtistStats(artistId),
+        getSongs(),
+        getAlbumsByArtist(user.username),
+      ]).then(([statsData, allSongs, albums]) => {
         setStats(statsData);
-        setMySongs(mySongsData);
+        setMySongs(allSongs.filter((s) => s.artist_id === artistId));
         setMyAlbums(albums);
-      })
-      .catch((err) => {
-        console.warn('Dashboard load error:', err);
-        dispatch(showToast({ 
-          message: 'Có lỗi khi tải dữ liệu. Vui lòng tải lại trang.', 
-          type: 'error' 
-        }));
-      })
-      .finally(() => setIsLoading(false));
-  }, [user, dispatch, navigate]);
+      }).finally(() => setIsLoading(false));
+    });
+  }, [user, dispatch]);
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {

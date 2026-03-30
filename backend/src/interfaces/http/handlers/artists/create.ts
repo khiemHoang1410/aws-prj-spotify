@@ -1,12 +1,9 @@
-import { makeHandler } from "../../middlewares/makeHandler";
+import { makeAuthHandler } from "../../middlewares/withAuth";
 import { ArtistService } from "../../../../application/services/ArtistService";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
 
-// Tiêm phụ thuộc (Dependency Injection)
-const artistRepo = new ArtistRepository();
-const artistService = new ArtistService(artistRepo);
+const artistService = new ArtistService(new ArtistRepository());
 
-// Logic cực kỳ đơn giản vì Service đã lo hết phần khó
-export const handler = makeHandler(async (body: any) => {
-    return await artistService.createArtist(body);
+export const handler = makeAuthHandler(async (body, _params, auth) => {
+    return await artistService.createArtist(body, auth.userId);
 });
