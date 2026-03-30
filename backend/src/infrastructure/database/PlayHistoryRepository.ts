@@ -6,7 +6,7 @@ import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const TABLE = () => Resource.SpotifyTable.name;
 const SK_PREFIX = "SONG#";
-const TTL_30_DAYS = 30 * 24 * 3600;
+const TTL_90_DAYS = 90 * 24 * 3600;
 
 export class PlayHistoryRepository {
     /**
@@ -18,13 +18,13 @@ export class PlayHistoryRepository {
     async record(entry: Omit<PlayHistory, "playedAt"> & { playedAt?: string }): Promise<Result<PlayHistory>> {
         try {
             const now = new Date().toISOString();
-            const ttl = Math.floor(Date.now() / 1000) + TTL_30_DAYS;
+            const ttl = Math.floor(Date.now() / 1000) + TTL_90_DAYS;
             const item: PlayHistory & Record<string, any> = {
                 ...entry,
                 pk: `USER#${entry.userId}`,
                 sk: `${SK_PREFIX}${entry.songId}`,
                 entityType: "HISTORY",
-                playedAt: now, // server-side timestamp, ignore client value
+                playedAt: now,
                 ttl,
             };
             await dynamoDb.send(new PutCommand({ TableName: TABLE(), Item: item }));
@@ -37,7 +37,6 @@ export class PlayHistoryRepository {
 
     /**
      * Lấy history của user, sort mới nhất trước ở app layer.
-     * Query pk = USER#{userId}, sk begins_with SONG#
      */
     async findByUserId(
         userId: string,
@@ -62,7 +61,6 @@ export class PlayHistoryRepository {
                 ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
                 : undefined;
 
-            // Sort by playedAt descending at app layer
             const items = ((response.Items as PlayHistory[]) || [])
                 .sort((a, b) => (b.playedAt ?? "").localeCompare(a.playedAt ?? ""));
 
@@ -73,8 +71,7 @@ export class PlayHistoryRepository {
     }
 
     /**
-     * Xóa toàn bộ history của user.
-     * Dùng pagination để handle trường hợp user có nhiều records (>25 DynamoDB BatchWrite limit).
+     * Xóa toàn bộ history của user với pagination (>25 records).
      */
     async clearByUserId(userId: string): Promise<Result<void>> {
         try {

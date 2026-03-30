@@ -1,8 +1,6 @@
 import api from './apiClient';
 import { adaptUser } from './adapters';
 
-// ─── Mock (chỉ dùng khi không có VITE_API_URL) ────────────────────────────────
-
 const API_URL = import.meta.env.VITE_API_URL;
 
 const MOCK_PROFILE = {
@@ -14,8 +12,6 @@ const MOCK_PROFILE = {
 
 const mockDelay = (data, ms = 300) =>
   new Promise((resolve) => setTimeout(() => resolve(data), ms));
-
-// ─── API ──────────────────────────────────────────────────────────────────────
 
 export const getUserProfile = async (userId) => {
   if (!API_URL) return mockDelay(MOCK_PROFILE);
@@ -48,7 +44,6 @@ export const getPlayHistory = async (userId, { limit = 20, cursor } = {}) => {
 
 export const recordPlay = async (song) => {
   if (!API_URL) return;
-  console.log('[recordPlay] calling POST /me/play-history', { songId: song.song_id, songTitle: song.title });
   return api.post('/me/play-history', {
     songId: song.song_id,
     songTitle: song.title,
