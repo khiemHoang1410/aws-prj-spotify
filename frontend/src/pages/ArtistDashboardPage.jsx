@@ -6,7 +6,7 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats } from '../services/ArtistService';
+import { getArtistStats, getArtistByUserId } from '../services/ArtistService';
 import { getSongs, deleteSong } from '../services/SongService';
 import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
 
