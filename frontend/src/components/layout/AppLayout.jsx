@@ -78,7 +78,6 @@ export default function AppLayout() {
       // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
       dispatch(loginSuccess(user));
 
-<<<<<<< HEAD
       // Fetch full profile từ BE để lấy artistId và các field DB khác
       // (localStorage chỉ có data từ idToken, không có artistId)
       let adaptedProfile = null;
@@ -100,8 +99,6 @@ export default function AppLayout() {
       }
       dispatch(loginSuccess(finalUser));
 
-=======
->>>>>>> aa1c82b (fix(merge): resolve conflict in AppLayout, clean up unused imports)
       // Restore liked songs từ localStorage theo từng user
       try {
         const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
