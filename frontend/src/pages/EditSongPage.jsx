@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Music } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { getSongs, updateSong } from '../services/SongService';
+import { getSongById, updateSong } from '../services/SongService';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -35,8 +35,7 @@ export default function EditSongPage() {
   useEffect(() => {
     if (!activeEditSongId) return;
     setIsFetching(true);
-    getSongs().then((allSongs) => {
-      const song = allSongs.find((s) => s.song_id === activeEditSongId);
+    getSongById(activeEditSongId).then((song) => {
       if (song) {
         setTitle(song.title);
         setSelectedCategories(song.categories || []);
