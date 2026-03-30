@@ -79,7 +79,10 @@ export class ArtistRequestService {
             // 3. Cập nhật request status
             await this.requestRepo.updateStatus(requestId, "approved", adminNote);
 
-            // 4. Thêm user vào Cognito group "artist"
+            // 4. Update User record với artistId
+            await this.userRepo.update(request.userId, { artistId: artist.id } as any);
+
+            // 5. Thêm user vào Cognito group "artist"
             // Lấy email từ Cognito bằng userId (sub)
             const cognitoUser = await cognitoClient.send(new AdminGetUserCommand({
                 UserPoolId: Resource.SpotifyUserPool.id,
