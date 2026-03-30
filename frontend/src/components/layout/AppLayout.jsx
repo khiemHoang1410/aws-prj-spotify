@@ -89,10 +89,23 @@ export default function AppLayout() {
       dispatch(loginSuccess(user));
 
 <<<<<<< HEAD
+<<<<<<< HEAD
       // Restore liked songs từ localStorage theo từng user
 =======
       // Fetch full profile từ BE để lấy artistId và các field DB khác
       // (localStorage chỉ có data từ idToken, không có artistId)
+=======
+      // Fetch full profile từ BE để lấy artistId và các field DB khác
+      // (localStorage chỉ có data từ idToken, không có artistId)
+      try {
+        const profile = await api.get('/me');
+        if (profile) {
+          dispatch(loginSuccess(adaptUser(profile)));
+        }
+      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+      // Restore artist request status
+>>>>>>> 7121db8 (fix(auth): fetch /me on session restore to populate artistId from DB)
       try {
         const profile = await api.get('/me');
         if (profile) {
