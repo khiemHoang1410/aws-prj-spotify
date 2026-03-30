@@ -49,7 +49,7 @@ export const fetchAuthSession = async () => {
       ...session,
       accessToken: data.accessToken,
       idToken: data.idToken || session.idToken,
-      expiresAt: Date.now() + 3_600_000,
+      expiresAt: Date.now() + 3_600_000, // Cognito access token mặc định 1 giờ
     };
     saveSession(updated);
     return updated;
