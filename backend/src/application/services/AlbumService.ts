@@ -53,4 +53,31 @@ export class AlbumService {
         if (!result.success) return result;
         return { success: true, data: result.data.filter(s => s.albumId === albumId) };
     }
+
+    /**
+     * Lấy albums theo artistId — dùng ArtistIdIndex GSI.
+     */
+    async getByArtistId(artistId: string): Promise<Result<Album[]>> {
+        return await this.albumRepo.findByArtistId(artistId);
+    }
+
+    /**
+     * Lấy albums theo tên artist — resolve artistId trước rồi query.
+     */
+    async getByArtistName(artistName: string): Promise<Result<Album[]>> {
+        const artists = await this.artistRepo.findByName(artistName);
+        if (!artists.success) return artists;
+        if (!artists.data.length) return { success: true, data: [] };
+
+        // Lấy albums của tất cả artists match (thường chỉ 1)
+        const results = await Promise.all(
+            artists.data.map(a => this.albumRepo.findByArtistId(a.id))
+        );
+
+        const albums: Album[] = [];
+        for (const r of results) {
+            if (r.success) albums.push(...r.data);
+        }
+        return { success: true, data: albums };
+    }
 }
