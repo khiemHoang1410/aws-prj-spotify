@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck } from 'lucide-react';
@@ -7,6 +7,7 @@ import { updateProfile } from '../services/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
+import { getHistory } from '../services/HistoryService';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -16,6 +17,11 @@ export default function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.name || user?.username || '');
   const [isSaving, setIsSaving] = useState(false);
+  const [playHistory, setPlayHistory] = useState([]);
+
+  useEffect(() => {
+    setPlayHistory(getHistory().slice(0, 10));
+  }, []);
 
   const handleSave = async () => {
     if (!displayName.trim()) return;
@@ -169,6 +175,18 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-    </div>
+      {/* Lịch sử nghe nhạc */}
+      <div className="mt-8">
+        <h2 className="text-xl font-bold text-white mb-4">Lịch sử nghe nhạc</h2>
+        {playHistory.length === 0 ? (
+          <p className="text-neutral-400 text-sm">Бạn chưa nghe bài hát nào gần đây.</p>
+        ) : (
+          <div className="grid grid-cols-5 gap-4">
+            {playHistory.map((song) => (
+              <CardSong key={`${song.song_id}-${song.played_at}`} song={song} onPlay={handlePlayLiked} />
+            ))}
+          </div>
+        )}
+      </div>    </div>
   );
 }

@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Music } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { getSongById, updateSong } from '../services/SongService';
+import { getSongs, updateSong } from '../services/SongService';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -35,15 +35,32 @@ export default function EditSongPage() {
   useEffect(() => {
     if (!activeEditSongId) return;
     setIsFetching(true);
-    getSongById(activeEditSongId).then((song) => {
-      if (song) {
-        setTitle(song.title);
-        setSelectedCategories(song.categories || []);
-        setLyrics('');
-        setDuration(parseDuration(song.duration));
+    getSongs().then((allSongs) => {
+      const song = allSongs.find((s) => s.song_id === activeEditSongId);
+      if (!song) {
+        dispatch(showToast({ message: 'Bài hát không tồn tại', type: 'error' }));
+        navigate('/artist-dashboard');
+        setIsFetching(false);
+        return;
       }
+      
+      // Permission check: Only owner artist can edit
+      if (song.artist_id && song.artist_id !== user?.artist_id) {
+        dispatch(showToast({ 
+          message: 'Bạn không có quyền chỉnh sửa bài hát này', 
+          type: 'error' 
+        }));
+        navigate('/artist-dashboard');
+        setIsFetching(false);
+        return;
+      }
+      
+      setTitle(song.title);
+      setSelectedCategories(song.categories || []);
+      setLyrics('');
+      setDuration(parseDuration(song.duration));
     }).finally(() => setIsFetching(false));
-  }, [activeEditSongId]);
+  }, [activeEditSongId, user, dispatch, navigate]);
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (
@@ -75,15 +92,13 @@ export default function EditSongPage() {
     };
     if (lyrics.trim()) formData.lyrics = lyrics.trim();
 
-    setIsLoading(true);
-    try {
-      await updateSong(activeEditSongId, formData);
+    const result = await updateSong(activeEditSongId, formData);
+    setIsLoading(false);
+    if (result.success) {
       dispatch(showToast({ message: 'Đã cập nhật bài hát thành công', type: 'success' }));
       navigate('/artist-dashboard');
-    } catch (err) {
-      dispatch(showToast({ message: err?.message || 'Lỗi khi cập nhật', type: 'error' }));
-    } finally {
-      setIsLoading(false);
+    } else {
+      dispatch(showToast({ message: result.message || 'Lỗi khi cập nhật', type: 'error' }));
     }
   };
 
