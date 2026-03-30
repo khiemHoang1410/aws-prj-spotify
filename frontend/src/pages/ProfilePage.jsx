@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { User, Edit2, Save, X, Music, BadgeCheck } from 'lucide-react';
+import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2 } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { updateProfile } from '../services/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
-import { getHistory } from '../services/HistoryService';
+import { getHistory, clearHistory } from '../services/HistoryService';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -20,7 +20,7 @@ export default function ProfilePage() {
   const [playHistory, setPlayHistory] = useState([]);
 
   useEffect(() => {
-    setPlayHistory(getHistory().slice(0, 10));
+    getHistory().then((h) => setPlayHistory(h.slice(0, 10)));
   }, []);
 
   const handleSave = async () => {
@@ -177,16 +177,33 @@ export default function ProfilePage() {
       </div>
       {/* Lịch sử nghe nhạc */}
       <div className="mt-8">
-        <h2 className="text-xl font-bold text-white mb-4">Lịch sử nghe nhạc</h2>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <Clock size={20} /> Lịch sử nghe nhạc
+          </h2>
+          {playHistory.length > 0 && (
+            <button
+              onClick={async () => {
+                await clearHistory();
+                setPlayHistory([]);
+                dispatch(showToast({ message: 'Đã xóa lịch sử nghe nhạc', type: 'success' }));
+              }}
+              className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-red-400 transition"
+            >
+              <Trash2 size={14} /> Xóa lịch sử
+            </button>
+          )}
+        </div>
         {playHistory.length === 0 ? (
-          <p className="text-neutral-400 text-sm">Бạn chưa nghe bài hát nào gần đây.</p>
+          <p className="text-neutral-400 text-sm">Bạn chưa nghe bài hát nào gần đây.</p>
         ) : (
           <div className="grid grid-cols-5 gap-4">
             {playHistory.map((song) => (
-              <CardSong key={`${song.song_id}-${song.played_at}`} song={song} onPlay={handlePlayLiked} />
+              <CardSong key={`${song.song_id}-${song.played_at || song.playedAt}`} song={song} onPlay={handlePlayLiked} />
             ))}
           </div>
         )}
-      </div>    </div>
+      </div>
+    </div>
   );
 }

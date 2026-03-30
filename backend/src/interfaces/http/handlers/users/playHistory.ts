@@ -1,9 +1,12 @@
 import { makeAuthHandler } from "../../middlewares/withAuth";
-import { Failure, Success } from "../../../../shared/utils/Result";
+import { PlayHistoryRepository } from "../../../../infrastructure/database/PlayHistoryRepository";
+import { Failure } from "../../../../shared/utils/Result";
+import { config } from "../../../../config";
 
-// Play history chưa có DynamoDB table riêng — trả về empty list
-// TODO: implement khi có PlayHistoryRepository
-export const handler = makeAuthHandler(async (_body, params, auth) => {
+const historyRepo = new PlayHistoryRepository();
+
+// GET /users/{id}/play-history
+export const handler = makeAuthHandler(async (_body, params, auth, query) => {
     const { id } = params;
     if (!id) return Failure("Thiếu user ID", 400);
 
@@ -12,5 +15,8 @@ export const handler = makeAuthHandler(async (_body, params, auth) => {
         return Failure("Forbidden", 403);
     }
 
-    return Success({ items: [], nextCursor: undefined });
+    const limit = Math.min(Number(query.limit) || 20, config.maxPageSize);
+    const cursor = query.cursor as string | undefined;
+
+    return historyRepo.findByUserId(id, limit, cursor);
 });
