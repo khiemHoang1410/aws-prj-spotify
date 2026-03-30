@@ -14,8 +14,8 @@ const loadPersistedPlayerState = () => {
     return {
       currentSong: parsedState.currentSong,
       currentTime: Number.isFinite(parsedState.currentTime) ? parsedState.currentTime : 0,
-      // Reload vào lại bài đang nghe thì auto phát tiếp
-      isPlaying: true,
+      // Giữ nguyên trạng thái play/pause trước khi reload
+      isPlaying: !!parsedState.isPlaying,
     };
   } catch {
     return null;
