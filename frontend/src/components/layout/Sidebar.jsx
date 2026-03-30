@@ -39,12 +39,12 @@ export default function Sidebar() {
   const handleCreatePlaylist = async () => {
     if (!newPlaylistName.trim()) return;
     setIsCreating(true);
-    const result = await createPlaylist({ name: newPlaylistName.trim(), owner: 'Bạn' });
-    if (result.success) {
-      setPlaylists((prev) => [...prev, result.data]);
-      dispatch(showToast({ message: `Đã tạo "${result.data.name}"`, type: 'success' }));
-    } else {
-      dispatch(showToast({ message: 'Không thể tạo playlist', type: 'error' }));
+    try {
+      const playlist = await createPlaylist({ name: newPlaylistName.trim(), owner: 'Bạn' });
+      setPlaylists((prev) => [...prev, playlist]);
+      dispatch(showToast({ message: `Đã tạo "${playlist.name}"`, type: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.message || 'Không thể tạo playlist', type: 'error' }));
     }
     setIsCreating(false);
     setNewPlaylistName('');

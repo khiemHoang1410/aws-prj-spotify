@@ -135,32 +135,30 @@ export default function UploadSongPage() {
         duration: durationSeconds,
         categories: selectedCategories,
       };
-      const result = await uploadSong(formData);
-      if (result.success) {
-        dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
-        const notifResult = await createNotification({
+      await uploadSong(formData);
+      dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
+      try {
+        const notif = await createNotification({
           type: 'new_song',
           message: `${user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
           artist_name: user.name || user.username,
           song_title: title.trim(),
           image_url: coverPreviews[0] || '',
         });
-        if (notifResult.success) dispatch(addNotification(notifResult.data));
-        setStep(0);
-        setTitle('');
-        setAudioFile(null);
-        setCoverFiles([]);
-        setCoverPreviews([]);
-        setMvFile(null);
-        setMvPreview('');
-        setLyrics('');
-        setDuration('');
-        setSelectedCategories([]);
-      } else {
-        setUploadError(result.message || 'Có lỗi xảy ra khi upload');
-      }
-    } catch {
-      setUploadError('Không thể upload bài hát. Vui lòng thử lại.');
+        if (notif) dispatch(addNotification(notif));
+      } catch { /* notification failure không block flow */ }
+      setStep(0);
+      setTitle('');
+      setAudioFile(null);
+      setCoverFiles([]);
+      setCoverPreviews([]);
+      setMvFile(null);
+      setMvPreview('');
+      setLyrics('');
+      setDuration('');
+      setSelectedCategories([]);
+    } catch (err) {
+      setUploadError(err?.message || 'Không thể upload bài hát. Vui lòng thử lại.');
     } finally {
       setIsLoading(false);
     }
