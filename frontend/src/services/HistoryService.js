@@ -17,8 +17,18 @@ const getStore = () => {
  * - API: sync lên BE khi đã login (POST /me/play-history)
  */
 import { recordPlay, getPlayHistory, clearPlayHistory } from './UserService';
+<<<<<<< HEAD
 import { store } from '../store/store';
 >>>>>>> f3c41cc (feat(history): implement play history feature end-to-end)
+=======
+
+// Lazy import store để tránh circular dependency (store → HistoryService → store)
+let _store = null;
+const getStore = () => {
+  if (!_store) _store = require('../store/store').store;
+  return _store;
+};
+>>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
 
 const HISTORY_KEY = 'spotify_play_history';
 const MAX_LOCAL_HISTORY = 50;
@@ -120,14 +130,14 @@ export const clearHistory = async () => {
 =======
 
   // 2. Sync lên BE nếu đã login (fire-and-forget)
-  const { isAuthenticated } = store.getState().auth;
+  const { isAuthenticated } = getStore().getState().auth;
   if (isAuthenticated) {
     recordPlay(song).catch(() => { /* ignore — không block UX */ });
   }
 };
 
 export const getHistory = async () => {
-  const { isAuthenticated, user } = store.getState().auth;
+  const { isAuthenticated, user } = getStore().getState().auth;
 
   // Nếu đã login → lấy từ BE (source of truth)
   if (isAuthenticated && user?.user_id) {
@@ -154,7 +164,7 @@ export const getHistory = async () => {
 export const clearHistory = async () => {
   saveLocal([]);
 
-  const { isAuthenticated } = store.getState().auth;
+  const { isAuthenticated } = getStore().getState().auth;
   if (isAuthenticated) {
     await clearPlayHistory().catch(() => { });
   }
