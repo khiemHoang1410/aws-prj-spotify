@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
-import { getProfile } from '../../services/UserService';
-import { getLikedSongs } from '../../services/SongService';
-import { loginSuccess, setLikedSongs } from '../../store/authSlice';
+import { getCurrentUser } from '../../services/AuthService';
+import { adaptUser } from '../../services/adapters';
+import { loginSuccess, setVerifyStatus } from '../../store/authSlice';
+import api from '../../services/apiClient';
+import { VERIFY_STATUS } from '../../constants/enums';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -87,7 +88,20 @@ export default function AppLayout() {
       // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
       dispatch(loginSuccess(user));
 
+<<<<<<< HEAD
       // Restore liked songs từ localStorage theo từng user
+=======
+      // Fetch full profile từ BE để lấy artistId và các field DB khác
+      // (localStorage chỉ có data từ idToken, không có artistId)
+      try {
+        const profile = await api.get('/me');
+        if (profile) {
+          dispatch(loginSuccess(adaptUser(profile)));
+        }
+      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+      // Restore artist request status
+>>>>>>> 7121db8 (fix(auth): fetch /me on session restore to populate artistId from DB)
       try {
         const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
         if (raw) {
