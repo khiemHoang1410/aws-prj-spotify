@@ -2,6 +2,7 @@
 export const songPublicRoutes = {
     "GET /songs": "src/interfaces/http/handlers/songs/list.handler",
     "GET /songs/{id}": "src/interfaces/http/handlers/songs/get.handler",
+    "GET /songs/{id}/lyrics": "src/interfaces/http/handlers/songs/lyrics.handler",
 };
 
 // Protected routes - cần JWT (artist/admin)
@@ -10,6 +11,7 @@ export const songProtectedRoutes = {
     "POST /songs": "src/interfaces/http/handlers/songs/create.handler",
     "PUT /songs/{id}": "src/interfaces/http/handlers/songs/update.handler",
     "DELETE /songs/{id}": "src/interfaces/http/handlers/songs/delete.handler",
+    "POST /songs/{id}/report": "src/interfaces/http/handlers/songs/report.handler",
 };
 
 // Backward compat
