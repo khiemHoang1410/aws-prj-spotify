@@ -9,7 +9,7 @@
  * - Retry on network failure (không retry 4xx)
  */
 
-import { fetchAuthSession, markSessionExpired } from './AuthService';
+import { fetchAuthSession, clearSession } from './AuthService';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const DEFAULT_TIMEOUT_MS = 15_000;
@@ -114,11 +114,19 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
   // 401 — token có thể đã hết hạn giữa chừng, thử refresh 1 lần
   if (res.status === 401 && _retry === 0) {
     // Force-expire session để fetchAuthSession trigger refresh (giữ refreshToken)
-    markSessionExpired();
+    const raw = localStorage.getItem('spotify_auth');
+    if (raw) {
+      try {
+        const sess = JSON.parse(raw);
+        sess.expiresAt = 0;
+        localStorage.setItem('spotify_auth', JSON.stringify(sess));
+      } catch { /* ignore */ }
+    }
     const refreshed = await fetchAuthSession();
     if (refreshed?.accessToken) {
       return request(method, path, { body, headers: extraHeaders, timeout, _retry: 1 });
     }
+    clearSession();
     _onAuthExpired?.();
     throw new AuthError('Phiên đăng nhập hết hạn');
   }

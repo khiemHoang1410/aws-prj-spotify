@@ -28,21 +28,13 @@ export default function CategoryPage() {
   useEffect(() => {
     if (!activeCategoryId) return;
     setIsLoading(true);
-    (async () => {
-      try {
-        const result = await getSongsByCategory(activeCategoryId);
-        setSongs(Array.isArray(result) ? result : []);
-      } catch {
-        setSongs([]);
-      } finally {
-        setIsLoading(false);
-      }
-    })();
+    const result = getSongsByCategory(activeCategoryId);
+    setSongs(result);
+    setIsLoading(false);
   }, [activeCategoryId]);
 
   const sortedSongs = useMemo(() => {
-    const safeSongs = Array.isArray(songs) ? songs : [];
-    const copy = [...safeSongs];
+    const copy = [...songs];
     switch (sortBy) {
       case 'popular':
         return copy.sort((a, b) => (b.play_count || 0) - (a.play_count || 0));

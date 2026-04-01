@@ -1,39 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { X, Play, Trash2 } from 'lucide-react';
+import { X, Play } from 'lucide-react';
 import { toggleRightSidebar } from '../../store/uiSlice';
 import { clearQueue, setCurrentSong } from '../../store/playerSlice';
+import { getPlayHistory } from '../../services/UserService';
 
 export default function QueueSidebar() {
   const dispatch = useDispatch();
   const { isRightSidebarOpen } = useSelector(state => state.ui);
   const { queue, currentSong } = useSelector(state => state.player);
+  const { user } = useSelector(state => state.auth);
 
   const [activeTab, setActiveTab] = useState('queue'); // 'queue' hoặc 'history'
   const [history, setHistory] = useState([]);
 
-  // Load play history from localStorage khi tab 'history' được active
+  // Tự động tải lịch sử khi chuyển sang tab "Đã nghe gần đây"
   useEffect(() => {
-    if (activeTab === 'history') {
-      try {
-        const raw = localStorage.getItem('spotify_play_history');
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (Array.isArray(parsed)) {
-            // Sort by played_at desc (recent first), limit 20
-            const sorted = parsed
-              .sort((a, b) => new Date(b.played_at) - new Date(a.played_at))
-              .slice(0, 20);
-            setHistory(sorted);
-            return;
-          }
-        }
-      } catch (err) {
-        console.warn('[QueueSidebar] Failed to parse history:', err);
-      }
-      setHistory([]);
+    if (activeTab === 'history' && user?.user_id) {
+       getPlayHistory(user.user_id).then(data => setHistory(data));
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   // Nếu Redux bảo đóng thì ẩn component này đi
   if (!isRightSidebarOpen) return null;
@@ -118,38 +104,17 @@ export default function QueueSidebar() {
             /* --- C. Đã nghe gần đây (Recently Played) --- */
             <div className="flex flex-col gap-1">
                {history.length > 0 ? history.map((song, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] group cursor-pointer transition">
-                     <div className="relative w-12 h-12 flex-shrink-0 cursor-pointer" onClick={() => dispatch(setCurrentSong(song))}>
+                  <div key={idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] group cursor-pointer transition" onClick={() => dispatch(setCurrentSong(song))}>
+                     <div className="relative w-12 h-12 flex-shrink-0">
                         <img src={song.image_url} className="w-full h-full rounded shadow-md object-cover" alt="cover"/>
                         <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center rounded">
                            <Play fill="white" size={16} className="ml-0.5"/>
                         </div>
                      </div>
-                     <div className="flex flex-col overflow-hidden flex-1 cursor-pointer" onClick={() => dispatch(setCurrentSong(song))}>
+                     <div className="flex flex-col overflow-hidden">
                         <span className="text-white font-semibold group-hover:underline truncate">{song.title}</span>
                         <span className="text-[#b3b3b3] text-sm truncate">{song.artist_name}</span>
                      </div>
-                     {/* Remove button */}
-                     <button
-                       onClick={(e) => {
-                         e.stopPropagation();
-                         try {
-                           const raw = localStorage.getItem('spotify_play_history');
-                           if (raw) {
-                             const parsed = JSON.parse(raw);
-                             const filtered = parsed.filter((s) => s.song_id !== song.song_id);
-                             localStorage.setItem('spotify_play_history', JSON.stringify(filtered));
-                             setHistory((prev) => prev.filter((s, i) => i !== idx));
-                           }
-                         } catch (err) {
-                           console.warn('[QueueSidebar] Failed to remove from history:', err);
-                         }
-                       }}
-                       className="opacity-0 group-hover:opacity-100 transition text-neutral-500 hover:text-red-400 flex-shrink-0"
-                       title="Remove from history"
-                     >
-                       <Trash2 size={14} />
-                     </button>
                   </div>
                )) : (
                   <p className="text-[#b3b3b3] text-sm px-2">Chưa có lịch sử nghe nhạc</p>

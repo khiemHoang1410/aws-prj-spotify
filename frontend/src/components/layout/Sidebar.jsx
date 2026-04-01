@@ -11,7 +11,6 @@ const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 const PLAYLIST_DEFAULT_IMG = '/pictures/playlistDefault.jpg';
 const FILTER_OPTIONS = ['Danh sách phát', 'Nghệ sĩ'];
 const normalizeText = (text = '') => text.trim().toLowerCase();
-const MAX_PLAYLIST_NAME_LEN = 80;
 
 export default function Sidebar() {
   const dispatch = useDispatch();
@@ -30,31 +29,20 @@ export default function Sidebar() {
   const [contextMenu, setContextMenu] = useState(null); // { playlistId, playlistName, x, y }
   const contextMenuRef = useRef(null);
 
-  const reloadPlaylists = async () => {
-    setIsLoading(true);
-    try {
-      const data = await getMyPlaylists();
-      setPlaylists(Array.isArray(data) ? data : []);
-    } catch {
-      setPlaylists([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   // Click outside đóng context menu
   useEffect(() => {
     if (!contextMenu) return;
-    const handleClick = (e) => {
-      if (contextMenuRef.current?.contains(e.target)) return;
-      setContextMenu(null);
-    };
+    const handleClick = () => setContextMenu(null);
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
   }, [contextMenu]);
 
   useEffect(() => {
-    void reloadPlaylists();
+    setIsLoading(true);
+    getMyPlaylists()
+      .then((data) => setPlaylists((data || []).filter((pl) => !isLikedPlaylistName(pl.name))))
+      .catch(() => setPlaylists([]))
+      .finally(() => setIsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -65,14 +53,7 @@ export default function Sidebar() {
 
   const handleCreatePlaylist = async () => {
     const trimmedName = newPlaylistName.trim();
-    if (!trimmedName) {
-      dispatch(showToast({ message: 'Tên playlist không được để trống', type: 'warning' }));
-      return;
-    }
-    if (trimmedName.length > MAX_PLAYLIST_NAME_LEN) {
-      dispatch(showToast({ message: `Tên playlist tối đa ${MAX_PLAYLIST_NAME_LEN} ký tự`, type: 'warning' }));
-      return;
-    }
+    if (!trimmedName) return;
     const normalizedName = normalizeText(trimmedName);
 
     // Re-fetch từ server để tránh stale state gây duplicate
@@ -80,7 +61,7 @@ export default function Sidebar() {
     let latestPlaylists = playlists;
     try {
       const fresh = await getMyPlaylists();
-      latestPlaylists = Array.isArray(fresh) ? fresh : [];
+      latestPlaylists = (fresh || []).filter((pl) => !isLikedPlaylistName(pl.name));
       setPlaylists(latestPlaylists);
     } catch { /* dùng local state nếu fetch fail */ }
 
@@ -95,7 +76,12 @@ export default function Sidebar() {
 
     const result = await createPlaylist({ name: trimmedName, owner: 'Bạn' });
     if (result.success) {
-      await reloadPlaylists();
+      setPlaylists((prev) => {
+        if (!result.data || isLikedPlaylistName(result.data.name)) return prev;
+        const hasId = prev.some((pl) => pl.id === result.data.id);
+        if (hasId) return prev;
+        return [...prev, result.data];
+      });
       dispatch(showToast({ message: `Đã tạo "${result.data.name}"`, type: 'success' }));
     } else {
       dispatch(showToast({ message: 'Không thể tạo playlist', type: 'error' }));
@@ -118,21 +104,15 @@ export default function Sidebar() {
 
   const handleDeletePlaylist = async (playlistId, playlistName) => {
     setContextMenu(null);
-    if (isLikedPlaylistName(playlistName)) {
-      dispatch(showToast({ message: 'Không thể xóa playlist hệ thống', type: 'warning' }));
-      return;
-    }
     if (!window.confirm(`Bạn có chắc muốn xoá playlist "${playlistName}"?`)) return;
-    const previous = playlists;
-    setPlaylists((prev) => prev.filter((pl) => pl.id !== playlistId));
-    const result = await deletePlaylist(playlistId);
-    if (result.success) {
+    try {
+      await deletePlaylist(playlistId);
+      setPlaylists((prev) => prev.filter((pl) => pl.id !== playlistId));
       dispatch(showToast({ message: `Đã xoá "${playlistName}"`, type: 'success' }));
       if (location.pathname === `/playlist/${playlistId}`) navigate('/');
-      return;
+    } catch {
+      dispatch(showToast({ message: 'Không thể xoá playlist', type: 'error' }));
     }
-    setPlaylists(previous);
-    dispatch(showToast({ message: 'Không thể xoá playlist', type: 'error' }));
   };
 
   return (
@@ -169,6 +149,18 @@ export default function Sidebar() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
+          {/* Bài hát đã thích */}
+          <div className={`flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer mb-1 transition ${location.pathname === '/liked' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+            onClick={() => navigate('/liked')}>
+            <div className="w-11 h-11 rounded bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center flex-shrink-0">
+              <Heart size={18} className="text-white" fill="currentColor" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-white truncate">Bài hát đã thích</p>
+              <p className="text-xs text-neutral-400 truncate">Danh sách phát • {likedSongs.length} bài hát</p>
+            </div>
+          </div>
+
           {/* Nghệ sĩ */}
           {filter === 'Nghệ sĩ' && (
             isLoadingArtists ? (
@@ -242,7 +234,7 @@ export default function Sidebar() {
             className="w-full text-left px-3 py-2 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] flex items-center gap-2 transition"
             onClick={() => {
               setContextMenu(null);
-              navigate(`/playlist/${contextMenu.playlistId}?mode=add-song`);
+              navigate(`/playlist/${contextMenu.playlistId}`);
             }}
           >
             <ListPlus size={14} /> Thêm bài hát
