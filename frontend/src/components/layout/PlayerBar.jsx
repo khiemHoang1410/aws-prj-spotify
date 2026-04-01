@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
-import { toggleLikeSongThunk } from '../../store/authSlice';
+import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, setShuffleMode, cycleRepeat } from '../../store/playerSlice';
+import { openModal, toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
@@ -33,11 +33,25 @@ export default function PlayerBar() {
   
   const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
-  const { likedSongs } = useSelector((state) => state.auth);
+  const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
 
   const initialVolumeRef = useRef(readInitialVolume());
   
   const isLyricsPage = location.pathname === '/lyrics';
+  const isPlaylistRoute = location.pathname.startsWith('/playlist/');
+  const activeRoutePlaylistId = isPlaylistRoute ? location.pathname.split('/')[2] : null;
+  const isCurrentSongFromActivePlaylist = !!(
+    activeRoutePlaylistId
+    && currentSong?._sourcePlaylistId
+    && currentSong._sourcePlaylistId === activeRoutePlaylistId
+  );
+  const canUseShuffle = isPlaylistRoute && isCurrentSongFromActivePlaylist;
+
+  useEffect(() => {
+    if (!canUseShuffle && isShuffle) {
+      dispatch(setShuffleMode(false));
+    }
+  }, [canUseShuffle, isShuffle, dispatch]);
   
   const [currentTimeLocal, setCurrentTimeLocal] = useState(currentTime || 0);
   const [volume, setVolume] = useState(initialVolumeRef.current);
@@ -51,6 +65,18 @@ export default function PlayerBar() {
 
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
+
+  const ensureAuthenticated = () => {
+    if (isAuthenticated) return true;
+    dispatch(openModal('login'));
+    return false;
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated && isPlaying) {
+      dispatch(togglePlay());
+    }
+  }, [dispatch, isAuthenticated, isPlaying]);
 
   useEffect(() => {
     if (globalSeekTime !== null) {
@@ -151,6 +177,7 @@ export default function PlayerBar() {
   };
 
   const handleSkipBack = () => {
+    if (!ensureAuthenticated()) return;
     if (currentTimeLocal > 3 || history.length === 0) {
       // Restart bài hiện tại
       setCurrentTimeLocal(0);
@@ -174,7 +201,8 @@ export default function PlayerBar() {
 
   const getTrendingFallbackSong = async () => {
     const allSongs = await getSongs();
-    const historyIds = new Set(getHistory().map((song) => song.song_id));
+    const historyList = await getHistory();
+    const historyIds = new Set(historyList.map((song) => song.song_id));
     if (currentSong?.song_id) historyIds.add(currentSong.song_id);
 
     const trendingSongs = getTrendingSongs(allSongs);
@@ -182,6 +210,11 @@ export default function PlayerBar() {
   };
 
   const handleSongEnded = async () => {
+    if (!isAuthenticated) {
+      dispatch(togglePlay());
+      return;
+    }
+
     if (repeatMode === REPEAT_MODE.ONE || repeatMode === REPEAT_MODE.ALL) {
       restartCurrentSong();
       return;
@@ -251,7 +284,7 @@ export default function PlayerBar() {
       
       <Audio 
         currentSong={currentSong}
-        isPlaying={isPlaying}
+        isPlaying={isAuthenticated ? isPlaying : false}
         volume={volume}
         seekTime={seekTime}
         onTimeUpdate={(time) => {
@@ -277,7 +310,10 @@ export default function PlayerBar() {
         </div>
         <button
           className={`ml-2 transition hover:scale-110 ${likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
-          onClick={() => dispatch(toggleLikeSongThunk(currentSong))}
+          onClick={() => {
+            if (!ensureAuthenticated()) return;
+            dispatch(toggleLikeSongThunk(currentSong));
+          }}
           title="Yêu thích"
         >
           <Heart size={16} fill={likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'currentColor' : 'none'} />
@@ -288,22 +324,49 @@ export default function PlayerBar() {
       <div className="flex flex-col items-center max-w-[40%] w-full gap-2">
         <div className="flex items-center gap-6">
           <button
-            className={`transition hover:scale-105 ${isShuffle ? 'text-green-400' : 'text-[#b3b3b3] hover:text-white'}`}
-            onClick={() => dispatch(toggleShuffle())}
+            className={`transition ${
+              !canUseShuffle
+                ? 'text-neutral-500 cursor-not-allowed'
+                : isShuffle
+                  ? 'text-green-400 hover:scale-105'
+                  : 'text-[#b3b3b3] hover:text-white hover:scale-105'
+            }`}
+            disabled={!canUseShuffle}
+            onClick={() => {
+              if (!canUseShuffle) return;
+              if (!ensureAuthenticated()) return;
+              dispatch(toggleShuffle());
+            }}
             title="Shuffle"
           >
             <Shuffle size={16} />
           </button>
           <button className="text-[#b3b3b3] hover:text-white" onClick={handleSkipBack} title="Trước"><SkipBack size={20} fill="currentColor" /></button>
           
-          <button className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition" onClick={() => dispatch(togglePlay())}>
+          <button
+            className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition"
+            onClick={() => {
+              if (!ensureAuthenticated()) return;
+              dispatch(togglePlay());
+            }}
+          >
             {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
           </button>
           
-          <button className="text-[#b3b3b3] hover:text-white" onClick={() => dispatch(playNextSong())} title="Tiếp theo"><SkipForward size={20} fill="currentColor" /></button>
+          <button
+            className="text-[#b3b3b3] hover:text-white"
+            onClick={() => {
+              if (!ensureAuthenticated()) return;
+              dispatch(playNextSong());
+            }}
+            title="Tiếp theo"
+          ><SkipForward size={20} fill="currentColor" /></button>
           <button
             className={`transition hover:scale-105 ${repeatMode !== REPEAT_MODE.OFF ? 'text-green-400' : 'text-[#b3b3b3] hover:text-white'}`}
-            onClick={() => dispatch(cycleRepeat())}
+            onClick={() => {
+              if (!ensureAuthenticated()) return;
+              dispatch(cycleRepeat());
+            }}
             title={`Repeat: ${repeatMode}`}
           >
             {repeatMode === REPEAT_MODE.ONE ? <Repeat1 size={16} /> : <Repeat size={16} />}

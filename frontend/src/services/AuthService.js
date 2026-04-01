@@ -7,6 +7,7 @@ import { adaptUser } from './adapters';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const TOKEN_KEY = 'spotify_auth';
+const REFRESH_ENDPOINT = 'https://bomr6veqa7.execute-api.ap-southeast-1.amazonaws.com/auth/refresh';
 
 // ─── Mock Accounts ────────────────────────────────────────────────────────────
 
@@ -20,41 +21,54 @@ const MOCK_ACCOUNTS = {
 
 const saveSession = (data) => localStorage.setItem(TOKEN_KEY, JSON.stringify(data));
 
+const readSession = () => {
+  const raw = localStorage.getItem(TOKEN_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+};
+
 export const clearSession = () => localStorage.removeItem(TOKEN_KEY);
+
+export const markSessionExpired = () => {
+  const session = readSession();
+  if (!session) return;
+  saveSession({ ...session, expiresAt: 0 });
+};
 
 // ─── Session / Token ──────────────────────────────────────────────────────────
 
 export const fetchAuthSession = async () => {
-  const raw = localStorage.getItem(TOKEN_KEY);
-  if (!raw) return null;
-
-  let session;
-  try { session = JSON.parse(raw); } catch { clearSession(); return null; }
+  const session = readSession();
+  if (!session) return null;
 
   // Token còn hạn
   if (!session.expiresAt || Date.now() < session.expiresAt) return session;
 
   // Hết hạn — thử refresh
-  if (!session.refreshToken || !API_URL) { clearSession(); return null; }
+  if (!session.refreshToken || !API_URL) return null;
 
   try {
-    const res = await fetch(`${API_URL}/auth/refresh`, {
+    const res = await fetch(REFRESH_ENDPOINT, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refreshToken: session.refreshToken }),
     });
-    if (!res.ok) { clearSession(); return null; }
+    if (!res.ok) return null;
     const data = await res.json();
     const updated = {
       ...session,
       accessToken: data.accessToken,
       idToken: data.idToken || session.idToken,
+      refreshToken: data.refreshToken || session.refreshToken,
       expiresAt: Date.now() + 3_600_000, // Cognito access token mặc định 1 giờ
     };
     saveSession(updated);
     return updated;
   } catch {
-    clearSession();
     return null;
   }
 };
