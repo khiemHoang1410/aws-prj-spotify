@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice';
-import { getReports, resolveReport, removeSong } from '../../services/AdminService';
+import { getReports, resolveReport, resolveAndRemoveSong } from '../../services/AdminService';
 import { REPORT_STATUS } from '../../constants/enums';
 
 const STATUS_BADGE = {
@@ -31,7 +31,7 @@ export default function AdminReports() {
 
   const handleRemove = async (report) => {
     try {
-      await removeSong(report.songId);
+      await resolveAndRemoveSong(report.id);
       setReports((prev) =>
         prev.map((r) => (r.id === report.id ? { ...r, status: REPORT_STATUS.RESOLVED } : r))
       );

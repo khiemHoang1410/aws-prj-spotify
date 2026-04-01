@@ -29,6 +29,7 @@ export const listHandler = makeAuthHandler(async () => {
     const items = result.data.map((r) => ({
         ...r,
         name: r.stageName,
+        link: r.socialLink ?? null,
         submittedAt: r.createdAt ?? null,
     }));
 
