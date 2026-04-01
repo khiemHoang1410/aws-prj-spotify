@@ -22,7 +22,15 @@ export const getArtistById = async (artistId) => {
 export const getArtistInfo = async (artistName) => {
   try {
     const data = await api.get(`/artists?name=${encodeURIComponent(artistName)}`);
-    return adaptPaginatedResponse(data, adaptArtist)[0] ?? null;
+    const fromSearch = adaptPaginatedResponse(data, adaptArtist);
+    const candidate = Array.isArray(fromSearch) ? fromSearch[0] : null;
+    if (candidate?.id) return candidate;
+
+    const allArtists = await getArtists();
+    const keyword = String(artistName || '').trim().toLowerCase();
+    return (Array.isArray(allArtists) ? allArtists : []).find(
+      (artist) => String(artist?.name || '').trim().toLowerCase() === keyword
+    ) || null;
   } catch {
     return null;
   }

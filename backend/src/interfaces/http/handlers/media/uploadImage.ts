@@ -30,7 +30,7 @@ export const handler = makeAuthHandler(async (body, _params, _auth) => {
         ContentType: contentType,
     });
 
-    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: config.uploadUrlExpiresIn });
+    const uploadUrl = await getSignedUrl(s3Client, command, { expiresIn: config.s3.uploadUrlExpiresIn });
     const fileUrl = `https://${Resource.SpotifyMedia.name}.s3.amazonaws.com/${key}`;
 
     return { success: true, data: { uploadUrl, fileUrl, fileId, key } } as any;
