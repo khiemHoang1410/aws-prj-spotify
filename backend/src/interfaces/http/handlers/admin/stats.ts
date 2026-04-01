@@ -20,7 +20,7 @@ export const handler = makeAuthHandler(async () => {
 
     return Success({
         totalSongs: songs.success ? songs.data.length : 0,
-        verifiedArtists: artists.success ? artists.data.length : 0,
+        verifiedArtists: artists.success ? artists.data.filter((a: any) => a.isVerified).length : 0,
         totalUsers: users.success ? users.data.length : 0,
         pendingReports: reports.success ? reports.data.length : 0,
     });
