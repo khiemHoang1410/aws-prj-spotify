@@ -7,6 +7,7 @@ export const UserSchema = z.object({
     avatarUrl: z.url().optional().nullable(),
     role: z.enum(["listener", "artist", "admin"]).default("listener"),
     artistId: z.uuid().optional().nullable(), // link tới Artist profile nếu là artist
+    isBanned: z.boolean().default(false),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
 });
