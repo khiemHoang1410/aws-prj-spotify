@@ -3,11 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2 } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
+import api from '../services/apiClient';
 import { updateProfile } from '../services/UserService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
 import { getHistory, clearHistory } from '../services/HistoryService';
+import { setVerifyStatus } from '../store/authSlice';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -22,6 +24,35 @@ export default function ProfilePage() {
   useEffect(() => {
     getHistory().then((h) => setPlayHistory(h.slice(0, 10)));
   }, []);
+
+  useEffect(() => {
+    if (user?.role !== ROLES.ARTIST) return;
+
+    (async () => {
+      try {
+        const data = await api.get('/artist-requests/me');
+        const status = String(data?.status || '').toLowerCase();
+        const mappedStatus = status === 'approved'
+          ? VERIFY_STATUS.APPROVED
+          : status === 'pending'
+            ? VERIFY_STATUS.PENDING
+            : VERIFY_STATUS.IDLE;
+        dispatch(setVerifyStatus({ status: mappedStatus }));
+      } catch {
+        // Fallback route for environments that expose /me/artist-request instead.
+        try {
+          const data = await api.get('/me/artist-request');
+          const status = String(data?.status || '').toLowerCase();
+          const mappedStatus = status === 'approved'
+            ? VERIFY_STATUS.APPROVED
+            : status === 'pending'
+              ? VERIFY_STATUS.PENDING
+              : VERIFY_STATUS.IDLE;
+          dispatch(setVerifyStatus({ status: mappedStatus }));
+        } catch { }
+      }
+    })();
+  }, [dispatch, user?.role]);
 
   const handleSave = async () => {
     if (!displayName.trim()) return;

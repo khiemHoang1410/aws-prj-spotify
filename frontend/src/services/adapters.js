@@ -17,6 +17,7 @@ export const adaptSong = (song) => {
     album_id: song.albumId || song.album_id || null,
     album_name: song.albumName || song.album_name || null,
     created_at: song.createdAt || song.created_at || null,
+    mv_url: song.mvUrl || song.mv_url || song.video_url || null,
     // Giữ lại các field FE-only nếu có
     video_url: song.video_url || null,
     artist_photo: song.artist_photo || null,
