@@ -22,7 +22,17 @@ const RejectSchema = z.object({
 
 // GET /admin/artist-requests
 export const listHandler = makeAuthHandler(async () => {
-    return artistRequestService.getPendingRequests();
+    const result = await artistRequestService.getPendingRequests();
+    if (!result.success) return result;
+
+    // Normalize field names cho frontend (stageName → name)
+    const items = result.data.map((r) => ({
+        ...r,
+        name: r.stageName,
+        submittedAt: r.createdAt ?? null,
+    }));
+
+    return { success: true, data: items };
 }, "admin");
 
 // POST /admin/artist-requests/{id}/approve
