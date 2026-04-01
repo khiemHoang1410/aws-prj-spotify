@@ -33,7 +33,7 @@ export default function Sidebar() {
   const reloadPlaylists = async () => {
     setIsLoading(true);
     try {
-      const data = await getMyPlaylists();
+      const data = await getMyPlaylists({ includeLiked: true });
       setPlaylists(Array.isArray(data) ? data : []);
     } catch {
       setPlaylists([]);
@@ -58,6 +58,15 @@ export default function Sidebar() {
   }, []);
 
   useEffect(() => {
+    const handleLikedSongsUpdated = () => {
+      void reloadPlaylists();
+    };
+
+    window.addEventListener('liked-songs-updated', handleLikedSongsUpdated);
+    return () => window.removeEventListener('liked-songs-updated', handleLikedSongsUpdated);
+  }, []);
+
+  useEffect(() => {
     if (filter !== 'Nghệ sĩ') return;
     setIsLoadingArtists(true);
     getFollowedArtists().then(setArtists).finally(() => setIsLoadingArtists(false));
@@ -79,7 +88,7 @@ export default function Sidebar() {
     setIsCreating(true);
     let latestPlaylists = playlists;
     try {
-      const fresh = await getMyPlaylists();
+      const fresh = await getMyPlaylists({ includeLiked: true });
       latestPlaylists = Array.isArray(fresh) ? fresh : [];
       setPlaylists(latestPlaylists);
     } catch { /* dùng local state nếu fetch fail */ }
