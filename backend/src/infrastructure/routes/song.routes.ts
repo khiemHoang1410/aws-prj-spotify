@@ -10,6 +10,7 @@ export const songPublicRoutes = {
 export const songProtectedRoutes = {
     "POST /songs/upload-url": "src/interfaces/http/handlers/songs/upload.handler",
     "POST /songs": "src/interfaces/http/handlers/songs/create.handler",
+    "POST /songs/{id}/view": "src/interfaces/http/handlers/songs/view.handler",
     "PUT /songs/{id}": "src/interfaces/http/handlers/songs/update.handler",
     "DELETE /songs/{id}": "src/interfaces/http/handlers/songs/delete.handler",
     "POST /songs/{id}/report": "src/interfaces/http/handlers/songs/report.handler",

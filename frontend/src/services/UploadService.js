@@ -45,10 +45,26 @@ export const uploadCoverImage = async (file) => {
   return { url: uploadData.fileUrl };
 };
 
+export const uploadMvVideo = async (file) => {
+  const json = await api.post('/songs/upload-url', { contentType: file.type || 'video/mp4' });
+  const uploadData = json?.uploadUrl ? json : json?.data;
+  if (!uploadData?.uploadUrl || !uploadData?.fileUrl) {
+    throw new Error('Không thể tạo URL upload MV');
+  }
+
+  const s3Res = await fetch(uploadData.uploadUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'video/mp4' },
+    body: file,
+  });
+  if (!s3Res.ok) throw new Error('Upload MV lên S3 thất bại');
+  return { url: uploadData.fileUrl };
+};
+
 /**
  * Hàm tổng hợp — dùng trong UploadSongPage
  */
-export const uploadSong = async ({ title, artistId, duration, lyrics, categories, coverFile, audioFile }) => {
+export const uploadSong = async ({ title, artistId, duration, lyrics, categories, coverFile, audioFile, mvFile }) => {
   const { uploadUrl, fileUrl } = await getUploadUrl();
 
   if (audioFile) await uploadFileToS3(uploadUrl, audioFile);
@@ -59,6 +75,12 @@ export const uploadSong = async ({ title, artistId, duration, lyrics, categories
     coverUrl = result.url;
   }
 
-  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, lyrics: lyrics || null, categories: categories || [] });
+  let mvUrl = null;
+  if (mvFile) {
+    const result = await uploadMvVideo(mvFile);
+    mvUrl = result.url;
+  }
+
+  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, mvUrl, lyrics: lyrics || null, categories: categories || [] });
   return data;
 };

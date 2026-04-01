@@ -1,9 +1,20 @@
 import React, { useState, useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { getArtistInfo } from '../../services/ArtistService';
+import { followArtist } from '../../services/ArtistService';
+import { showToast } from '../../store/uiSlice';
+import { toggleFollowArtist } from '../../store/authSlice';
 
 export default function BottomInfo({ currentSong }) {
+  const dispatch = useDispatch();
+  const { followedArtists } = useSelector((state) => state.auth);
   const [artistData, setArtistData] = useState(null);
   const [showModal, setShowModal] = useState(false);
+
+  const artistId = artistData?.id || artistData?.artist_id || null;
+  const isFollowing = Array.isArray(followedArtists) && artistId
+    ? followedArtists.includes(artistId)
+    : false;
 
   useEffect(() => {
     if (currentSong?.artist_name) {
@@ -12,6 +23,28 @@ export default function BottomInfo({ currentSong }) {
   }, [currentSong]);
 
   if (!artistData) return null;
+
+  const handleFollowToggle = async () => {
+    if (!artistId) {
+      dispatch(showToast({ message: 'Không tìm thấy nghệ sĩ để theo dõi', type: 'error' }));
+      return;
+    }
+
+    dispatch(toggleFollowArtist(artistId));
+    const response = await followArtist(artistId);
+    const success = response?.success !== false;
+
+    if (!success) {
+      dispatch(toggleFollowArtist(artistId));
+      dispatch(showToast({ message: 'Không thể cập nhật theo dõi nghệ sĩ', type: 'error' }));
+      return;
+    }
+
+    dispatch(showToast({
+      message: isFollowing ? 'Đã bỏ theo dõi nghệ sĩ' : 'Đã theo dõi nghệ sĩ',
+      type: 'success',
+    }));
+  };
 
   return (
     <>
@@ -40,14 +73,23 @@ export default function BottomInfo({ currentSong }) {
           <div className="bg-[#282828] rounded-xl p-6 flex flex-col justify-between h-[150px]">
             <div className="flex justify-between items-center mb-2">
               <h3 className="text-xl font-bold text-white">Credits</h3>
-              <span className="text-xs text-[#b3b3b3] hover:text-white hover:underline cursor-pointer" onClick={() => console.log('Chuyển tới trang Credits')}>Show all</span>
+              <span className="text-xs text-[#b3b3b3] hover:text-white hover:underline cursor-pointer">Show all</span>
             </div>
             <div className="flex justify-between items-center">
                <div>
                  <p className="text-white font-semibold">{artistData.name}</p>
                  <p className="text-xs text-[#b3b3b3]">{artistData.credits}</p>
                </div>
-               <button className="border border-[#b3b3b3] text-white px-4 py-1 rounded-full text-sm font-bold hover:scale-105 hover:border-white">Follow</button>
+               <button
+                 className={`border px-4 py-1 rounded-full text-sm font-bold hover:scale-105 transition ${
+                   isFollowing
+                     ? 'border-green-500 text-green-500 hover:border-green-400'
+                     : 'border-[#b3b3b3] text-white hover:border-white'
+                 }`}
+                 onClick={handleFollowToggle}
+               >
+                 {isFollowing ? 'Following' : 'Follow'}
+               </button>
             </div>
           </div>
 

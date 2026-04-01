@@ -121,7 +121,24 @@ const getLikedPlaylistCacheKey = async () => {
 const clearLikedPlaylistCache = async () => {
   const cacheKey = await getLikedPlaylistCacheKey();
   localStorage.removeItem(cacheKey);
+  localStorage.removeItem(LIKED_PLAYLIST_KEY);
   likedPlaylistPromise = null;
+};
+
+const clearLikedStateAfterDelete = async () => {
+  try {
+    const [{ store }, { setLikedSongs }] = await Promise.all([
+      import('../store/store'),
+      import('../store/authSlice'),
+    ]);
+    store.dispatch(setLikedSongs([]));
+  } catch { }
+
+  if (typeof window !== 'undefined') {
+    try {
+      window.dispatchEvent(new CustomEvent('liked-songs-updated', { detail: { likedSongs: [] } }));
+    } catch { }
+  }
 };
 
 const createLikedPlaylistOnce = async () => {
@@ -215,13 +232,26 @@ export const createPlaylist = async (payload) => {
   }
 };
 
-export const deletePlaylist = async (id) => {
+export const deletePlaylist = async (id, playlistName) => {
   try {
+    let isDeletingLiked = isLikedPlaylistName(playlistName || '');
+    if (!isDeletingLiked) {
+      const allPlaylists = await getMyPlaylists({ includeLiked: true });
+      const target = (Array.isArray(allPlaylists) ? allPlaylists : []).find((playlist) => playlist?.id === id);
+      isDeletingLiked = isLikedPlaylistName(target?.name || '');
+    }
+
     await api.delete(`/playlists/${encodeURIComponent(id)}`);
     const cacheKey = await getLikedPlaylistCacheKey();
     if (localStorage.getItem(cacheKey) === id) {
       await clearLikedPlaylistCache();
     }
+
+    if (isDeletingLiked) {
+      await clearLikedPlaylistCache();
+      await clearLikedStateAfterDelete();
+    }
+
     return { success: true };
   } catch {
     return { success: false };
