@@ -17,8 +17,6 @@ export default function Sidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  const { likedSongs } = useSelector((state) => state.auth);
-
   const [filter, setFilter] = useState('Danh sách phát');
   const [playlists, setPlaylists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
