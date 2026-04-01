@@ -172,10 +172,11 @@ export const getPlaylists = async () => {
   }
 };
 
-export const getMyPlaylists = async () => {
+export const getMyPlaylists = async ({ includeLiked = false } = {}) => {
   try {
     const data = await api.get('/playlists/me');
     const normalized = normalizePlaylistCollection(data);
+    if (includeLiked) return normalized;
     return normalized.filter((playlist) => !isLikedPlaylistName(playlist.name));
   } catch {
     return [];

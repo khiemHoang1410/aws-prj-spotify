@@ -2,7 +2,14 @@ import { v7 as uuidv7 } from "uuid";
 import { Playlist, PlaylistSchema } from "../../domain/entities/Playlist";
 import { PlaylistRepository } from "../../infrastructure/database/PlaylistRepository";
 import { SongRepository } from "../../infrastructure/database/SongRepository";
-import { Result, Failure } from "../../shared/utils/Result";
+import { Result, Failure, Success } from "../../shared/utils/Result";
+
+const normalizePlaylistName = (name: string): string =>
+    name
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
 
 export class PlaylistService {
     constructor(
@@ -16,6 +23,19 @@ export class PlaylistService {
                 .omit({ id: true, userId: true, createdAt: true, updatedAt: true })
                 .safeParse(rawData);
             if (!validation.success) return Failure(validation.error.issues[0].message, 400);
+
+            const requestedName = normalizePlaylistName(validation.data.name);
+            const existingPlaylistsResult = await this.playlistRepo.findByUserId(userId);
+            if (!existingPlaylistsResult.success) {
+                return Failure(existingPlaylistsResult.error || "Lỗi kiểm tra playlist", existingPlaylistsResult.code || 500);
+            }
+
+            const existingPlaylist = existingPlaylistsResult.data.find(
+                (playlist) => normalizePlaylistName(playlist.name) === requestedName,
+            );
+            if (existingPlaylist) {
+                return Success(existingPlaylist);
+            }
 
             const playlist: Playlist = {
                 ...validation.data,

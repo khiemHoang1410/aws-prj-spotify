@@ -3,6 +3,8 @@ import { VERIFY_STATUS } from '../constants/enums';
 import { likeSong, unlikeSong, getLikedSongs } from '../services/PlaylistService';
 import { showToast } from './uiSlice';
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const initialState = {
   isAuthenticated: false,
   user: null,
@@ -119,16 +121,31 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
       action: isLiked ? 'unlike' : 'like',
     };
     try {
-      const freshLikedSongs = await getLikedSongs({
-        forceRefresh: true,
-        retries: 4,
-        retryDelayMs: 350,
-        ensureExists: false,
-      });
-      dispatch(setLikedSongs(freshLikedSongs));
-    } catch (err) {
-      console.warn('[toggleLikeSongThunk] Failed to sync likedSongs:', err);
-      // Don't fail the whole operation, optimistic update is already done
+      const expectedLikedAfterAction = !isLiked;
+      let synced = false;
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const freshLikedSongs = await getLikedSongs({
+          forceRefresh: true,
+          retries: 2,
+          retryDelayMs: 250,
+          ensureExists: true,
+        });
+
+        const hasSongInFresh = freshLikedSongs.some((s) => s.song_id === song.song_id);
+        if (hasSongInFresh === expectedLikedAfterAction) {
+          dispatch(setLikedSongs(freshLikedSongs));
+          synced = true;
+          break;
+        }
+
+        await sleep(250);
+      }
+
+      if (!synced) {
+        const optimisticLikedSongs = getState().auth.likedSongs;
+        dispatch(setLikedSongs(optimisticLikedSongs));
+      }
     } finally {
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new CustomEvent('liked-songs-updated', {
@@ -136,8 +153,7 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
         }));
       }
     }
-  } catch (error) {
-    console.error('[toggleLikeSongThunk] Unexpected error:', error);
+  } catch (_error) {
     // Rollback on exception
     dispatch(toggleLikeSong(song));
     dispatch(showToast({
