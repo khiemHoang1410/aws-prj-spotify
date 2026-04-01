@@ -5,5 +5,6 @@ export const adminRoutes = {
     "POST /admin/artist-requests/{id}/reject": "src/interfaces/http/handlers/admin/artistRequests.rejectHandler",
     "GET /admin/reports": "src/interfaces/http/handlers/admin/reports.listHandler",
     "POST /admin/reports/{id}/resolve": "src/interfaces/http/handlers/admin/reports.resolveHandler",
+    "POST /admin/reports/{id}/resolve-and-remove": "src/interfaces/http/handlers/admin/reports.resolveAndRemoveHandler",
     "DELETE /admin/songs/{id}": "src/interfaces/http/handlers/admin/removeSong.handler",
 };
