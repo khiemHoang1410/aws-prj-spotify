@@ -4,7 +4,7 @@ export const getStats = async () => {
   try {
     return await api.get('/admin/stats');
   } catch {
-    return { users: 0, songs: 0, artists: 0, reports: 0 };
+    return { totalSongs: 0, verifiedArtists: 0, totalUsers: 0, pendingReports: 0 };
   }
 };
 
@@ -40,6 +40,10 @@ export const getReports = async () => {
 
 export const resolveReport = (reportId) =>
   api.post(`/admin/reports/${reportId}/resolve`).catch(() => ({ success: false }));
+
+// Resolve report + xóa bài hát cùng lúc (atomic)
+export const resolveAndRemoveSong = (reportId) =>
+  api.post(`/admin/reports/${reportId}/resolve-and-remove`).catch(() => ({ success: false }));
 
 export const removeSong = (songId) =>
   api.delete(`/admin/songs/${songId}`).catch(() => ({ success: false }));
