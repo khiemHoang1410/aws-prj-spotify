@@ -11,7 +11,6 @@ const artistRequestService = new ArtistRequestService(
     new ArtistRepository(),
     new UserRepository(),
 );
-
 const AdminNoteSchema = z.object({
     adminNote: z.string().max(500).nullable().optional(),
 });
@@ -21,19 +20,24 @@ const RejectSchema = z.object({
 });
 
 // GET /admin/artist-requests
-export const listHandler = makeAuthHandler(async () => {
-    const result = await artistRequestService.getPendingRequests();
+export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) => {
+    const limit = Math.min(parseInt(query.limit ?? "20", 10) || 20, 100);
+    const cursor = query.cursor as string | undefined;
+    const status = query.status as string | undefined;
+
+    const repo = new ArtistRequestRepository();
+    const result = await repo.findAllPaginated(limit, cursor, status ? { status } : undefined);
     if (!result.success) return result;
 
     // Normalize field names cho frontend (stageName → name)
-    const items = result.data.map((r) => ({
+    const items = result.data.items.map((r: any) => ({
         ...r,
         name: r.stageName,
         link: r.socialLink ?? null,
         submittedAt: r.createdAt ?? null,
     }));
 
-    return { success: true, data: items };
+    return { success: true, data: { items, nextCursor: result.data.nextCursor } };
 }, "admin");
 
 // POST /admin/artist-requests/{id}/approve

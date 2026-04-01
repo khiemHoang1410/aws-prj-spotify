@@ -10,12 +10,16 @@ const songRepo = new SongRepository();
 const userRepo = new UserRepository();
 
 // GET /admin/reports — trả về reports đã enrich songTitle + reporterName
-export const listHandler = makeAuthHandler(async () => {
-    const result = await reportRepo.findAllPending();
+export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) => {
+    const limit = Math.min(parseInt(query.limit ?? "20", 10) || 20, 100);
+    const cursor = query.cursor as string | undefined;
+    const status = query.status as string | undefined;
+
+    const result = await reportRepo.findAllPaginated(limit, cursor, status ? { status } : undefined);
     if (!result.success) return result;
 
     const enriched = await Promise.all(
-        result.data.map(async (report) => {
+        result.data.items.map(async (report) => {
             const [songResult, userResult] = await Promise.all([
                 songRepo.findById(report.songId),
                 userRepo.findById(report.userId),
@@ -32,7 +36,7 @@ export const listHandler = makeAuthHandler(async () => {
         })
     );
 
-    return Success(enriched);
+    return Success({ items: enriched, nextCursor: result.data.nextCursor });
 }, "admin");
 
 // POST /admin/reports/{id}/resolve
