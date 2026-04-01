@@ -39,38 +39,3 @@ export const createNotification = async (payload) => {
     return { success: false };
   }
 };
-
-/**
- * Get human-readable notification message
- */
-export const getNotificationMessage = (notification) => {
-  if (!notification) return '';
-  
-  if (notification.entityType === 'ARTIST_REQUEST') {
-    const statusText = notification.status === 'approved' ? 'đã được duyệt' : 'đã bị từ chối';
-    return `Yêu cầu nghệ sĩ "${notification.stageName}" ${statusText}`;
-  }
-  
-  if (notification.entityType === 'PLAYLIST') {
-    return `Danh sách phát "${notification.name}" được tạo mới`;
-  }
-  
-  return 'Có thông báo mới';
-};
-
-/**
- * Get route path for notification item
- */
-export const getNotificationRoute = (notification) => {
-  if (!notification) return '/';
-  
-  if (notification.entityType === 'ARTIST_REQUEST' && notification.status === 'approved') {
-    return `/artist/${notification.userId}`;
-  }
-  
-  if (notification.entityType === 'PLAYLIST') {
-    return `/playlist/${notification.id}`;
-  }
-  
-  return '/';
-};

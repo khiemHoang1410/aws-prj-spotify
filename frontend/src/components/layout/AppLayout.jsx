@@ -1,17 +1,14 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
-import { closeModal, loginSuccess, setLikedSongs } from '../../store/authSlice';
+import { loginSuccess } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
-import { getLikedSongs } from '../../services/PlaylistService';
-import { setCurrentSong } from '../../store/playerSlice';
-import { getSongById } from '../../services/SongService';
-import { showToast } from '../../store/uiSlice';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
 import QueueSidebar from './QueueSidebar';
+import AuthModal from '../modals/AuthModal';
 import ReportModal from '../modals/ReportModal';
 import Toast from '../ui/Toast';
 import MiniLyricsPanel from '../Lyrics/MiniLyricsPanel';
@@ -46,13 +43,16 @@ const isSameUserSnapshot = (leftUser, rightUser) => {
     && leftUser.avatar_url === rightUser.avatar_url;
 };
 
+const isSameLikedSongs = (currentLikedSongs, nextLikedSongs) => {
+  if (currentLikedSongs.length !== nextLikedSongs.length) return false;
+  return currentLikedSongs.every((song, index) => song.song_id === nextLikedSongs[index]?.song_id);
+};
+
 export default function AppLayout() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { isPiP, isReportModalOpen } = useSelector((state) => state.ui);
   const { currentSong } = useSelector((state) => state.player);
-  const { user: authUser, isModalOpen, modalType } = useSelector((state) => state.auth);
+  const { user: authUser } = useSelector((state) => state.auth);
   const location = useLocation();
 
   const isLyricsPage = location.pathname === '/lyrics';
@@ -64,7 +64,6 @@ export default function AppLayout() {
       if (freshUser) {
         const mergedUser = mergeUserRoleSafely(cachedUser, freshUser);
         if (!isSameUserSnapshot(cachedUser, mergedUser)) {
-          updateSessionUser(mergedUser);
           dispatch(loginSuccess(mergedUser));
         }
       }
@@ -79,28 +78,33 @@ export default function AppLayout() {
       // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
       dispatch(loginSuccess(user));
 
+      // Fetch full profile từ BE để lấy artistId và các field DB khác
+      // (localStorage chỉ có data từ idToken, không có artistId)
+      let adaptedProfile = null;
+      try {
+        const profile = await api.get('/me');
+        if (profile) {
+          adaptedProfile = adaptUser(profile);
+        }
+      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+      // Kiểm tra user có phải artist không qua /me/artist-request
+      const artistData = await checkAndSaveArtistProfile(user.user_id);
+
+      // Merge: nếu có artist profile → cập nhật role + artistId
+      const finalUser = adaptedProfile || { ...user };
+      if (artistData?.id) {
+        finalUser.role = 'artist';
+        finalUser.artist_id = artistData.id;
+      }
+      dispatch(loginSuccess(finalUser));
+
       // Restore liked songs từ localStorage theo từng user
       try {
         const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
         if (raw) {
           const liked = JSON.parse(raw);
-          if (Array.isArray(liked)) dispatch(setLikedSongs(liked));
-        }
-      } catch { /* ignore */ }
-
-      // Refresh profile + liked songs từ backend
-      if (!import.meta.env.VITE_API_URL) return;
-      try {
-        const freshUser = await getProfile();
-        if (freshUser?.user_id) {
-          const mergedUser = mergeUserRoleSafely(user, freshUser);
-          updateSessionUser(mergedUser);
-          dispatch(loginSuccess(mergedUser));
-        }
-
-        const likedFromBackend = await getLikedSongs({ ensureExists: false });
-        if (Array.isArray(likedFromBackend)) {
-          dispatch(setLikedSongs(likedFromBackend));
+          if (Array.isArray(liked)) dispatch({ type: 'auth/setLikedSongs', payload: liked });
         }
       } catch { /* ignore */ }
 
@@ -121,37 +125,6 @@ export default function AppLayout() {
 
     return () => clearInterval(interval);
   }, [authUser]);
-
-  // Handle song share link: ?song=xxx
-  useEffect(() => {
-    const songId = searchParams.get('song');
-    if (!songId) return;
-
-    (async () => {
-      try {
-        const song = await getSongById(songId);
-        if (song) {
-          dispatch(setCurrentSong(song));
-        } else {
-          dispatch(showToast({ message: 'Không tìm thấy bài hát', type: 'error' }));
-        }
-      } catch (err) {
-        console.error('[AppLayout] Error loading shared song:', err);
-        dispatch(showToast({ message: 'Lỗi tải bài hát chia sẻ', type: 'error' }));
-      }
-    })();
-  }, [searchParams, dispatch]);
-
-  // Bridge compatibility: các nơi cũ còn dispatch openModal('login'|'register')
-  useEffect(() => {
-    if (!isModalOpen) return;
-
-    const targetPath = modalType === 'register' ? '/register' : '/login';
-    if (location.pathname !== targetPath) {
-      navigate(targetPath);
-    }
-    dispatch(closeModal());
-  }, [isModalOpen, modalType, location.pathname, navigate, dispatch]);
 
   return (
     <div className="h-screen w-full flex flex-col bg-black text-white overflow-hidden font-sans">
@@ -178,6 +151,7 @@ export default function AppLayout() {
         <PlayerBar />
       </footer>
 
+      <AuthModal />
       <Toast />
       {isPiP && currentSong && <MiniLyricsPanel />}
       {isReportModalOpen && <ReportModal />}

@@ -1,11 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3, User } from 'lucide-react';
-import { logout, setFollowedArtists, loginSuccess } from '../../store/authSlice';
+import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react';
+import { openModal, logout, setFollowedArtists, loginSuccess } from '../../store/authSlice';
 import { toggleBrowse } from '../../store/uiSlice';
 import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
-import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead, getNotificationMessage, getNotificationRoute } from '../../services/NotificationService';
+import { getNotifications, markAsRead as markNotifAsRead, markAllAsRead } from '../../services/NotificationService';
 import { getFollowedArtists } from '../../services/ArtistService';
 import { logoutUser, checkAndSaveArtistProfile } from '../../services/AuthService';
 import { adaptUser } from '../../services/adapters';
@@ -24,25 +24,10 @@ export default function Navbar() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
   const isHome = location.pathname === '/';
-  const [avatarBroken, setAvatarBroken] = useState(false);
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    getNotifications().then((data) => {
-      // Transform API objects to notification format
-      const transformed = data.map((item) => ({
-        id: item.id,
-        entityType: item.entityType,
-        message: getNotificationMessage(item),
-        route: getNotificationRoute(item),
-        image_url: item.photoUrl || item.cover_url || null,
-        created_at: item.createdAt,
-        is_read: false, // Assume all fresh notifications are unread
-        // Store original data for reference
-        _original: item,
-      }));
-      dispatch(setNotifications(transformed));
-    });
+    getNotifications().then((data) => dispatch(setNotifications(data)));
     getFollowedArtists().then((artists) => {
       dispatch(setFollowedArtists(artists.map((a) => a.name)));
     });
@@ -128,10 +113,10 @@ export default function Navbar() {
       <div className="flex items-center justify-end gap-4 w-1/4">
         {!isAuthenticated ? (
           <>
-            <button className="text-[#b3b3b3] font-bold hover:text-white hover:scale-105 transition whitespace-nowrap" onClick={() => navigate('/register')}>
+            <button className="text-[#b3b3b3] font-bold hover:text-white hover:scale-105 transition whitespace-nowrap" onClick={() => dispatch(openModal('register'))}>
               Đăng ký
             </button>
-            <button className="bg-white text-black font-bold py-3 px-8 rounded-full hover:scale-105 transition whitespace-nowrap" onClick={() => navigate('/login')}>
+            <button className="bg-white text-black font-bold py-3 px-8 rounded-full hover:scale-105 transition whitespace-nowrap" onClick={() => dispatch(openModal('login'))}>
               Đăng nhập
             </button>
           </>
@@ -172,8 +157,6 @@ export default function Navbar() {
                           className={`flex items-start gap-3 px-4 py-3 hover:bg-[#3e3e3e] cursor-pointer transition ${!notif.is_read ? 'bg-[#333]' : ''}`}
                           onClick={async () => {
                             if (!notif.is_read) { await markNotifAsRead(notif.id); dispatch(markRead(notif.id)); }
-                            // Navigate to relevant page
-                            if (notif.route) { navigate(notif.route); dispatch(closeNotificationDropdown()); }
                           }}
                         >
                           <img src={notif.image_url || '/pictures/whiteBackground.jpg'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
@@ -195,18 +178,7 @@ export default function Navbar() {
             <div ref={userMenuRef} className="relative">
             <div className="flex items-center justify-center cursor-pointer bg-black/50 hover:bg-[#282828] p-1 rounded-full transition border-[3px] border-transparent hover:border-[#282828]"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} title={user.username}>
-              {!avatarBroken && user?.avatar_url ? (
-                <img
-                  src={user.avatar_url}
-                  alt="avatar"
-                  className="w-8 h-8 rounded-full object-cover"
-                  onError={() => setAvatarBroken(true)}
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-neutral-700 flex items-center justify-center">
-                  <User size={16} className="text-neutral-300" />
-                </div>
-              )}
+              <img src={user.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
             </div>
 
             {isUserMenuOpen && (

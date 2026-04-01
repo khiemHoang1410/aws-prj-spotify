@@ -35,16 +35,9 @@ export default function AlbumDetailPage() {
     if (!activeAlbumId) return;
     setIsLoading(true);
     getAlbumById(activeAlbumId)
-      .then((data) => {
-        if (!data?.id) {
-          dispatch(showToast({ message: 'Album không tồn tại hoặc ID không hợp lệ.', type: 'warning' }));
-          navigate('/artist-dashboard');
-          return;
-        }
-        setAlbum(data);
-      })
+      .then((data) => setAlbum(data))
       .finally(() => setIsLoading(false));
-  }, [activeAlbumId, dispatch, navigate]);
+  }, [activeAlbumId]);
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useParams, useSearchParams } from 'react-router-dom';
-import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2, Heart } from 'lucide-react';
+import { useParams } from 'react-router-dom';
+import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from 'lucide-react';
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
-import { openModal, toggleLikeSongThunk } from '../store/authSlice';
+import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getPlaylistById, addSongToPlaylist, removeSongFromPlaylist, isLikedPlaylistName } from '../services/PlaylistService';
+import { getPlaylistById, addSongToPlaylist, removeSongFromPlaylist } from '../services/PlaylistService';
 import { searchSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
@@ -20,8 +20,7 @@ function formatDuration(seconds) {
 export default function PlaylistDetailPage() {
   const dispatch = useDispatch();
   const { id: activePlaylistId } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
-  const { isAuthenticated, likedSongs } = useSelector((state) => state.auth);
+  const { isAuthenticated } = useSelector((state) => state.auth);
 
   const [playlist, setPlaylist] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -33,17 +32,6 @@ export default function PlaylistDetailPage() {
 
   // [S7-005.2] Shuffle state
   const [isShuffleActive, setIsShuffleActive] = useState(false);
-
-  useEffect(() => {
-    if (searchParams.get('mode') === 'add-song') {
-      setIsAddingSongs(true);
-      setSearchParams((prev) => {
-        const next = new URLSearchParams(prev);
-        next.delete('mode');
-        return next;
-      }, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (!activePlaylistId) return;
@@ -63,21 +51,12 @@ export default function PlaylistDetailPage() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong({
-      ...song,
-      _sourcePlaylistId: activePlaylistId,
-    }));
+    dispatch(setCurrentSong(song));
   };
 
   const handlePlayAll = () => {
     if (!playlist?.songs?.length) return;
     handlePlaySong(playlist.songs[0]);
-  };
-
-  const reloadPlaylistDetail = async () => {
-    if (!activePlaylistId) return;
-    const fresh = await getPlaylistById(activePlaylistId);
-    if (fresh) setPlaylist(fresh);
   };
 
   useEffect(() => {
@@ -89,48 +68,9 @@ export default function PlaylistDetailPage() {
     return () => clearTimeout(t);
   }, [searchTerm]);
 
-  useEffect(() => {
-    const handleLikedSongsUpdated = (event) => {
-      if (!playlist?.name || !isLikedPlaylistName(playlist.name)) return;
-
-      const detail = event?.detail || {};
-      const changedSong = detail.song;
-      const action = detail.action;
-
-      if (changedSong?.song_id) {
-        setPlaylist((prev) => {
-          if (!prev) return prev;
-          const existed = (prev.songs || []).some((s) => s.song_id === changedSong.song_id);
-
-          if (action === 'like' && !existed) {
-            return { ...prev, songs: [...(prev.songs || []), changedSong] };
-          }
-
-          if (action === 'unlike' && existed) {
-            return { ...prev, songs: (prev.songs || []).filter((s) => s.song_id !== changedSong.song_id) };
-          }
-
-          return prev;
-        });
-      }
-
-      // Reconcile với backend sau một nhịp để tránh stale read.
-      setTimeout(() => {
-        void reloadPlaylistDetail();
-      }, 350);
-    };
-
-    window.addEventListener('liked-songs-updated', handleLikedSongsUpdated);
-    return () => window.removeEventListener('liked-songs-updated', handleLikedSongsUpdated);
-  }, [playlist?.name, activePlaylistId]);
-
   const handleAddSong = async (song) => {
     if (addedIds.includes(song.song_id)) return;
-    const result = await addSongToPlaylist(playlist.id, song);
-    if (!result?.success) {
-      dispatch(showToast({ message: 'Không thể thêm bài hát vào playlist', type: 'error' }));
-      return;
-    }
+    await addSongToPlaylist(playlist.id, song);
     setAddedIds((prev) => [...prev, song.song_id]);
     setPlaylist((prev) => ({
       ...prev,
@@ -141,11 +81,7 @@ export default function PlaylistDetailPage() {
 
   // [S6-001.5] handleRemoveSong
   const handleRemoveSong = async (songId) => {
-    const result = await removeSongFromPlaylist(playlist.id, songId);
-    if (!result?.success) {
-      dispatch(showToast({ message: 'Không thể xoá bài hát khỏi playlist', type: 'error' }));
-      return;
-    }
+    await removeSongFromPlaylist(playlist.id, songId);
     setPlaylist((prev) => ({
       ...prev,
       songs: prev.songs.filter((s) => s.song_id !== songId),
@@ -198,7 +134,7 @@ export default function PlaylistDetailPage() {
       {/* Gradient header */}
       <div className="flex items-end gap-6 h-64 px-2 pb-6 bg-gradient-to-b from-purple-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
         <img
-          src={'/pictures/playlistDefault.jpg'}
+          src={playlist.image_url}
           alt={playlist.name}
           className="w-44 h-44 rounded-md shadow-2xl object-cover flex-shrink-0"
         />
@@ -254,12 +190,11 @@ export default function PlaylistDetailPage() {
 
       {/* Song table header — [S6-001.3] thêm cột actions */}
       {playlist.songs?.length > 0 && (
-        <div className="grid grid-cols-[24px_1fr_1fr_56px_40px_40px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
+        <div className="grid grid-cols-[24px_1fr_1fr_56px_40px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
           <span>#</span>
           <span>Tiêu đề</span>
           <span>Nghệ sĩ</span>
           <span className="flex justify-center"><Clock size={14} /></span>
-          <span></span>
           <span></span>
         </div>
       )}
@@ -267,19 +202,17 @@ export default function PlaylistDetailPage() {
       {/* Song rows */}
       {playlist.songs?.length > 0 ? (
         <div className="flex flex-col">
-          {playlist.songs.map((song, idx) => {
-            const isLiked = likedSongs.some((s) => s.song_id === song?.song_id);
-            return (
+          {playlist.songs.map((song, idx) => (
             <div
               key={song.song_id}
-              className="grid grid-cols-[24px_1fr_1fr_56px_40px_40px] gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition"
+              className="grid grid-cols-[24px_1fr_1fr_56px_40px] gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition"
               onClick={() => handlePlaySong(song)}
             >
               <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
               <Play
                 size={16}
                 className="text-white hidden group-hover:flex items-center fill-white cursor-pointer"
-                onClick={(e) => { e.stopPropagation(); handlePlaySong(song); }}
+                onClick={() => handlePlaySong(song)}
               />
               <div className="flex items-center gap-3 min-w-0">
                 <img src={song.image_url} alt={song.title} className="w-10 h-10 rounded object-cover flex-shrink-0"
@@ -288,23 +221,6 @@ export default function PlaylistDetailPage() {
               </div>
               <span className="text-sm text-neutral-400 flex items-center truncate">{song.artist_name}</span>
               <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
-              {/* Heart like/unlike button */}
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (!isAuthenticated) {
-                    dispatch(openModal('login'));
-                    return;
-                  }
-                  dispatch(toggleLikeSongThunk(song));
-                }}
-                className={`flex items-center justify-center opacity-0 group-hover:opacity-100 transition ${
-                  isLiked ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'
-                }`}
-                title={isLiked ? 'Bỏ thích' : 'Thích'}
-              >
-                <Heart size={16} fill={isLiked ? 'currentColor' : 'none'} />
-              </button>
               {/* [S6-001.4] Nút xoá bài hát */}
               <button
                 onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.song_id); }}
@@ -314,8 +230,7 @@ export default function PlaylistDetailPage() {
                 <Trash2 size={16} />
               </button>
             </div>
-            );
-          })}
+          ))}
         </div>
       ) : (
         <div className="mt-10">

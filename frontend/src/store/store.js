@@ -64,7 +64,7 @@ store.subscribe(() => {
 
     // API: debounce 1500ms để chống spam khi skip liên tục
     clearTimeout(_debounceTimer);
-    _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong, { isAuthenticated }), 1500);
+    _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
   }
 
   // 3. Persist player state (currentSong + currentTime)
@@ -79,9 +79,3 @@ store.subscribe(() => {
     } catch { }
   }
 });
-
-if (typeof window !== 'undefined') {
-  window.addEventListener('beforeunload', () => {
-    persistPlayerState();
-  });
-}
