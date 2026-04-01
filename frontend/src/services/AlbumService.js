@@ -21,8 +21,13 @@ export const getAlbumById = async (albumId) => {
 
 export const getAlbumsByArtist = async (artistName) => {
   try {
-    const data = await api.get(`/albums?artist=${encodeURIComponent(artistName)}`);
-    return adaptPaginatedResponse(data, adaptAlbum);
+    const albums = await getAllAlbums();
+    const keyword = String(artistName || '').trim().toLowerCase();
+    return (Array.isArray(albums) ? albums : []).filter((album) => {
+      if (!album?.id || !album?.title) return false;
+      if (!keyword) return true;
+      return String(album.artist_name || '').trim().toLowerCase() === keyword;
+    });
   } catch {
     return [];
   }

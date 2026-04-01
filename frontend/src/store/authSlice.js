@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { VERIFY_STATUS } from '../constants/enums';
-import { likeSong, unlikeSong } from '../services/PlaylistService';
+import { likeSong, unlikeSong, getLikedSongs } from '../services/PlaylistService';
 import { showToast } from './uiSlice';
 
 const initialState = {
@@ -97,6 +97,7 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
           message: `Lỗi bỏ thích: ${result?.error || 'Vui lòng thử lại'}`,
           type: 'error',
         }));
+        return;
       }
     } else {
       // Add to liked
@@ -107,6 +108,31 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
         dispatch(showToast({
           message: `Lỗi thích bài hát: ${result?.error || 'Vui lòng thử lại'}`,
           type: 'error',
+        }));
+        return;
+      }
+    }
+    
+    // Success: fetch fresh liked songs from server + sync Redux
+    const eventDetail = {
+      song,
+      action: isLiked ? 'unlike' : 'like',
+    };
+    try {
+      const freshLikedSongs = await getLikedSongs({
+        forceRefresh: true,
+        retries: 4,
+        retryDelayMs: 350,
+        ensureExists: false,
+      });
+      dispatch(setLikedSongs(freshLikedSongs));
+    } catch (err) {
+      console.warn('[toggleLikeSongThunk] Failed to sync likedSongs:', err);
+      // Don't fail the whole operation, optimistic update is already done
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('liked-songs-updated', {
+          detail: eventDetail,
         }));
       }
     }
