@@ -5,6 +5,8 @@ export const ArtistRequestSchema = z.object({
     userId: z.string().min(1),
     stageName: z.string().min(1, "Tên nghệ danh không được để trống").max(255),
     bio: z.string().optional().nullable(),
+    genre: z.string().optional().nullable(),
+    socialLink: z.url().optional().nullable(),
     photoUrl: z.url().optional().nullable(),
     status: z.enum(["pending", "approved", "rejected"]).default("pending"),
     adminNote: z.string().optional().nullable(), // ghi chú khi reject
