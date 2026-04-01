@@ -6,7 +6,7 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats, getArtistByUserId } from '../services/ArtistService';
+import { getArtistByUserId } from '../services/ArtistService';
 import { getSongs, deleteSong } from '../services/SongService';
 import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
 
@@ -61,13 +61,30 @@ export default function ArtistDashboardPage() {
         return;
       }
       Promise.all([
-        getArtistStats(artistId),
         getSongs(),
         getAlbumsByArtist(user.username),
-      ]).then(([statsData, allSongs, albums]) => {
-        setStats(statsData);
-        setMySongs(allSongs.filter((s) => s.artist_id === artistId));
-        setMyAlbums(albums);
+      ]).then(([allSongs, albums]) => {
+        const safeSongs = Array.isArray(allSongs) ? allSongs : [];
+        const safeAlbums = Array.isArray(albums) ? albums : [];
+
+        const songs = safeSongs.filter((song) => {
+          if (!song?.song_id) return false;
+          const byArtistId = artistId ? song.artist_id === artistId : false;
+          const byArtistName = String(song.artist_name || '').trim().toLowerCase() === String(user.username || '').trim().toLowerCase();
+          return byArtistId || byArtistName;
+        });
+
+        const albumsOnly = safeAlbums.filter((album) => album?.id && !album?.song_id);
+
+        setMySongs(songs);
+        setMyAlbums(albumsOnly);
+        setStats({
+          totalSongs: songs.length,
+          totalAlbums: albumsOnly.length,
+          totalPlays: songs.reduce((sum, song) => sum + Number(song.play_count || 0), 0),
+          followers: 0,
+          monthlyListeners: 0,
+        });
       }).finally(() => setIsLoading(false));
     });
   }, [user, dispatch]);
