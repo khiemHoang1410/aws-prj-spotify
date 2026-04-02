@@ -20,6 +20,7 @@ import ArtistVerifyPage from '../pages/ArtistVerifyPage';
 import EditSongPage from '../pages/EditSongPage';
 import AdminLayout from '../pages/admin/AdminLayout';
 import PageIntro from '../pages/PageIntro';
+import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: '/artist/:id', element: <ArtistProfilePage /> },
       { path: '/album/:id', element: <AlbumDetailPage /> },
       { path: '/category/:id', element: <CategoryPage /> },
+      { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
 
       // Protected — cần đăng nhập
       { path: '/liked', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },

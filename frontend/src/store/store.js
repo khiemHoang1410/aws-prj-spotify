@@ -4,6 +4,7 @@ import authReducer from './authSlice';
 import uiReducer from './uiSlice';
 import settingsReducer from './settingsSlice';
 import notificationReducer from './notificationSlice';
+import editorialReducer from './editorialSlice';
 import { logout } from './authSlice';
 import { showToast } from './uiSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
@@ -18,6 +19,7 @@ export const store = configureStore({
     ui: uiReducer,
     settings: settingsReducer,
     notification: notificationReducer,
+    editorial: editorialReducer,
   },
 });
 
