@@ -7,6 +7,7 @@ import { getSongs } from '../services/SongService';
 import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
 import CardSong from '../components/cards/CardSong';
 import SkeletonCard from '../components/ui/SkeletonCard';
+import FeaturedPlaylists from '../components/editorial/FeaturedPlaylists';
 
 export default function HomePage() {
   const dispatch = useDispatch();
@@ -87,6 +88,7 @@ export default function HomePage() {
 
   return (
     <>
+      <FeaturedPlaylists />
       {isAuthenticated && <Section title="Dành cho bạn" sectionKey="personalized" items={personalizedSongs} />}
       <Section title="Thịnh hành" sectionKey="trending" items={trendingSongs} />
       <Section title="Mới phát hành" sectionKey="newReleases" items={newReleases} />
