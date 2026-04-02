@@ -16,7 +16,7 @@ export default function CardEditorialPlaylist({ playlist }) {
         <img
           src={coverUrl || IMG_FALLBACK}
           alt={name}
-          className="w-full aspect-square object-contain bg-neutral-800 rounded shadow-lg"
+          className="w-full aspect-square object-cover bg-neutral-800 rounded shadow-lg"
           loading="lazy"
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
         />

@@ -23,11 +23,9 @@ export default function FeaturedPlaylists() {
     return (
       <div className="mb-8">
         <div className="h-6 w-48 bg-neutral-800 rounded animate-pulse mb-4" />
-        <div className="flex overflow-x-auto gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex-shrink-0 min-w-[160px]">
-              <SkeletonCard variant="playlist" />
-            </div>
+        <div className="grid grid-cols-5 gap-6">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} />
           ))}
         </div>
       </div>
@@ -49,11 +47,9 @@ export default function FeaturedPlaylists() {
   return (
     <div className="mb-8">
       <h2 className="text-2xl font-bold text-white mb-4">Playlist nổi bật</h2>
-      <div className="flex overflow-x-auto gap-4">
+      <div className="grid grid-cols-5 gap-6">
         {items.map((playlist) => (
-          <div key={playlist.id} className="flex-shrink-0 min-w-[160px]">
-            <CardEditorialPlaylist playlist={playlist} />
-          </div>
+          <CardEditorialPlaylist key={playlist.id} playlist={playlist} />
         ))}
       </div>
     </div>
