@@ -5,17 +5,8 @@ import { PlayHistory } from "../../domain/entities/PlayHistory";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const TABLE = () => Resource.SpotifyTable.name;
-<<<<<<< HEAD
-<<<<<<< HEAD
-const SK_PREFIX = "SONG#";
-const TTL_90_DAYS = 90 * 24 * 3600;
-=======
-const PREFIX = "HISTORY";
->>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
-=======
 const SK_PREFIX = "SONG#";
 const TTL_30_DAYS = 30 * 24 * 3600;
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
 
 export class PlayHistoryRepository {
     /**
@@ -26,46 +17,19 @@ export class PlayHistoryRepository {
      */
     async record(entry: Omit<PlayHistory, "playedAt"> & { playedAt?: string }): Promise<Result<PlayHistory>> {
         try {
-<<<<<<< HEAD
-<<<<<<< HEAD
-            const now = new Date().toISOString();
-            const ttl = Math.floor(Date.now() / 1000) + TTL_90_DAYS;
-=======
             const now = new Date().toISOString();
             const ttl = Math.floor(Date.now() / 1000) + TTL_30_DAYS;
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
             const item: PlayHistory & Record<string, any> = {
                 ...entry,
                 pk: `USER#${entry.userId}`,
                 sk: `${SK_PREFIX}${entry.songId}`,
                 entityType: "HISTORY",
-<<<<<<< HEAD
-                playedAt: now,
-=======
                 playedAt: now, // server-side timestamp, ignore client value
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
                 ttl,
             };
             await dynamoDb.send(new PutCommand({ TableName: TABLE(), Item: item }));
             const { pk, sk, entityType, ...clean } = item;
             return Success(clean as PlayHistory);
-<<<<<<< HEAD
-=======
-            const now = entry.playedAt || new Date().toISOString();
-            await dynamoDb.send(new PutCommand({
-                TableName: TABLE(),
-                Item: {
-                    ...entry,
-                    pk: `USER#${entry.userId}`,
-                    sk: `${PREFIX}#${now}#${entry.songId}`,
-                    entityType: PREFIX,
-                    playedAt: now,
-                },
-            }));
-            return Success({ ...entry, playedAt: now });
->>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
-=======
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
         } catch (error: any) {
             return Failure(`Lỗi lưu play history: ${error.message}`, 500);
         }
@@ -73,10 +37,7 @@ export class PlayHistoryRepository {
 
     /**
      * Lấy history của user, sort mới nhất trước ở app layer.
-<<<<<<< HEAD
-=======
      * Query pk = USER#{userId}, sk begins_with SONG#
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
      */
     async findByUserId(
         userId: string,
@@ -89,15 +50,7 @@ export class PlayHistoryRepository {
                 KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
                 ExpressionAttributeValues: {
                     ":pk": `USER#${userId}`,
-<<<<<<< HEAD
-<<<<<<< HEAD
                     ":prefix": SK_PREFIX,
-=======
-                    ":prefix": `${PREFIX}#`,
->>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
-=======
-                    ":prefix": SK_PREFIX,
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
                 },
                 Limit: limit,
             };
@@ -109,10 +62,7 @@ export class PlayHistoryRepository {
                 ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
                 : undefined;
 
-<<<<<<< HEAD
-=======
             // Sort by playedAt descending at app layer
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
             const items = ((response.Items as PlayHistory[]) || [])
                 .sort((a, b) => (b.playedAt ?? "").localeCompare(a.playedAt ?? ""));
 
@@ -123,16 +73,8 @@ export class PlayHistoryRepository {
     }
 
     /**
-<<<<<<< HEAD
-     * Xóa toàn bộ history của user với pagination (>25 records).
-=======
      * Xóa toàn bộ history của user.
-<<<<<<< HEAD
-     * Dùng pagination để handle trường hợp user có nhiều records (>1MB).
->>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
-=======
      * Dùng pagination để handle trường hợp user có nhiều records (>25 DynamoDB BatchWrite limit).
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
      */
     async clearByUserId(userId: string): Promise<Result<void>> {
         try {
@@ -144,24 +86,10 @@ export class PlayHistoryRepository {
                     KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
                     ExpressionAttributeValues: {
                         ":pk": `USER#${userId}`,
-<<<<<<< HEAD
-<<<<<<< HEAD
                         ":prefix": SK_PREFIX,
                     },
                     ProjectionExpression: "pk, sk",
                     Limit: 25,
-=======
-                        ":prefix": `${PREFIX}#`,
-                    },
-                    ProjectionExpression: "pk, sk",
-                    Limit: 25, // DynamoDB BatchWrite max 25 items
->>>>>>> a61e1ca (refactor: optimize PlayHistoryRepository, store subscribers, circular dep)
-=======
-                        ":prefix": SK_PREFIX,
-                    },
-                    ProjectionExpression: "pk, sk",
-                    Limit: 25,
->>>>>>> 7790a0d (feat: redesign play history with upsert schema, TTL, stream count, debounce)
                 };
                 if (lastKey) params.ExclusiveStartKey = lastKey;
 
