@@ -93,7 +93,7 @@ export default function EditorialPlaylistDetail() {
         <img
           src={playlist.coverUrl || COVER_FALLBACK}
           alt={playlist.name}
-          className="w-44 h-44 rounded-md shadow-2xl object-contain bg-neutral-800 flex-shrink-0"
+          className="w-44 h-44 rounded-md shadow-2xl object-cover bg-neutral-800 flex-shrink-0"
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = COVER_FALLBACK; }}
         />
         <div className="min-w-0">
