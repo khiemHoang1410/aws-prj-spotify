@@ -32,6 +32,7 @@ export default $config({
     const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
     const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
     const { notificationRoutes } = await import("./src/infrastructure/routes/notification.routes.js");
+    const { editorialPlaylistPublicRoutes, editorialPlaylistAdminRoutes } = await import("./src/infrastructure/routes/editorialPlaylist.routes.js");
 
     // 2. Cognito User Pool
     const userPool = new sst.aws.CognitoUserPool("SpotifyUserPool", {
@@ -120,7 +121,7 @@ export default $config({
       link: [table, bucket, userPool, userPoolClient],
       cors: {
         allowOrigins: isProd ? sstEnv.prodCorsOrigins : ["*"],
-        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowMethods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
         allowHeaders: ["Content-Type", "Authorization"],
       },
     });
@@ -149,6 +150,7 @@ export default $config({
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(categoryPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(editorialPlaylistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
     // Protected routes
     Object.entries(songProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
@@ -159,6 +161,7 @@ export default $config({
     Object.entries(userProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(notificationRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(mediaProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(editorialPlaylistAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
     return {
       api: api.url,

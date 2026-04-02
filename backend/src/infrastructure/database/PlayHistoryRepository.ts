@@ -62,6 +62,7 @@ export class PlayHistoryRepository {
                 ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
                 : undefined;
 
+
             const items = ((response.Items as PlayHistory[]) || [])
                 .sort((a, b) => (b.playedAt ?? "").localeCompare(a.playedAt ?? ""));
 
