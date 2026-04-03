@@ -6,7 +6,7 @@ import {
   selectFeaturedLoading,
   selectFeaturedError,
 } from '../../store/editorialSlice';
-import CardEditorialPlaylist from './CardEditorialPlaylist';
+import CardPlaylist from '../cards/CardPlaylist';
 import SkeletonCard from '../ui/SkeletonCard';
 
 export default function FeaturedPlaylists() {
@@ -49,7 +49,7 @@ export default function FeaturedPlaylists() {
       <h2 className="text-2xl font-bold text-white mb-4">Playlist nổi bật</h2>
       <div className="grid grid-cols-5 gap-6">
         {items.map((playlist) => (
-          <CardEditorialPlaylist key={playlist.id} playlist={playlist} />
+          <CardPlaylist key={playlist.id} playlist={playlist} />
         ))}
       </div>
     </div>
