@@ -1,6 +1,8 @@
 // Public routes - không cần JWT
 export const songPublicRoutes = {
     "GET /songs": "src/interfaces/http/handlers/songs/list.handler",
+    "GET /songs/trending": "src/interfaces/http/handlers/songs/trending.handler",
+    "GET /songs/new-releases": "src/interfaces/http/handlers/songs/newReleases.handler",
     "GET /songs/{id}": "src/interfaces/http/handlers/songs/get.handler",
     "GET /songs/{id}/lyrics": "src/interfaces/http/handlers/songs/lyrics.handler",
     "POST /songs/{id}/stream": "src/interfaces/http/handlers/songs/stream.handler",
