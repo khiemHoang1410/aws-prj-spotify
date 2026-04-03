@@ -7,6 +7,7 @@ export const songPublicRoutes = {
     "GET /songs/{id}/lyrics": "src/interfaces/http/handlers/songs/lyrics.handler",
     "POST /songs/{id}/stream": "src/interfaces/http/handlers/songs/stream.handler",
     "GET /songs/{id}/related": "src/interfaces/http/handlers/songs/related.handler",
+    "GET /songs/{id}/comments": "src/interfaces/http/handlers/songs/comments.listHandler",
 };
 
 // Protected routes - cần JWT (artist/admin)
@@ -19,6 +20,8 @@ export const songProtectedRoutes = {
     "POST /songs/{id}/report": "src/interfaces/http/handlers/songs/report.handler",
     "POST /songs/{id}/like": "src/interfaces/http/handlers/songs/like.likeHandler",
     "DELETE /songs/{id}/like": "src/interfaces/http/handlers/songs/like.unlikeHandler",
+    "POST /songs/{id}/comments": "src/interfaces/http/handlers/songs/comments.createHandler",
+    "DELETE /songs/{id}/comments/{commentId}": "src/interfaces/http/handlers/songs/comments.deleteHandler",
 };
 
 // Backward compat
