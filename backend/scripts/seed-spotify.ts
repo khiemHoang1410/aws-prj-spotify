@@ -140,7 +140,15 @@ async function getCoverArt(releaseId: string): Promise<string | null> {
     if (!res.ok) return null;
     const data = await res.json() as { images: { image: string; front: boolean }[] };
     const front = data.images?.find((img) => img.front) ?? data.images?.[0];
-    return front?.image ?? null;
+    const url = front?.image ?? null;
+    if (!url) return null;
+
+    // Validate ảnh thực sự load được
+    const check = await fetch(url, { method: "HEAD", redirect: "follow" });
+    if (!check.ok) return null;
+    const ct = check.headers.get("content-type") ?? "";
+    if (!ct.startsWith("image/")) return null;
+    return url;
   } catch {
     return null;
   }
@@ -223,6 +231,8 @@ async function insertSong(item: {
       entityType: "SONG",
       ...item,
       albumId: null,
+      lyrics: null,
+      categories: [],
       playCount: 0,
       createdAt: now,
       updatedAt: now,
@@ -257,7 +267,11 @@ async function main() {
 
     // 2. Lấy cover art
     const coverUrl = releaseId ? await getCoverArt(releaseId) : null;
-    console.log(`  🎨 Cover: ${coverUrl ? "found" : "not found"}`);
+    if (!coverUrl) {
+      console.log(`  ❌ Không có ảnh hợp lệ, bỏ qua\n`);
+      continue;
+    }
+    console.log(`  🎨 Cover: found`);
 
     // 3. Upsert artist
     const artistId = await upsertArtist(mbArtistId, artistName, null);

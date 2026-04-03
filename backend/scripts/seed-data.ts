@@ -6,10 +6,9 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
 import { readFileSync } from "fs";
-import { join, dirname } from "path";
-import { fileURLToPath } from "url";
+import { join } from "path";
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+const BASE_DIR = process.cwd();
 
 const region = "ap-southeast-1";
 const client = new DynamoDBClient({ region });
@@ -22,7 +21,7 @@ function getTableName(): string {
     if (process.env.TABLE_NAME) return process.env.TABLE_NAME;
     try {
         const outputs = JSON.parse(
-            readFileSync(join(__dirname, "../.sst/outputs.json"), "utf-8")
+            readFileSync(join(BASE_DIR, ".sst/outputs.json"), "utf-8")
         );
         return outputs.tableName;
     } catch {

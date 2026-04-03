@@ -4,6 +4,7 @@ import { PlaylistService } from "../../../../application/services/PlaylistServic
 import { PlaylistRepository } from "../../../../infrastructure/database/PlaylistRepository";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { validate, validateUUID } from "../../../../shared/utils/validate";
+import { Failure } from "../../../../shared/utils/Result";
 
 const playlistService = new PlaylistService(new PlaylistRepository(), new SongRepository());
 
@@ -30,6 +31,7 @@ export const addHandler = makeAuthHandler(async (body, params, auth) => {
     const v = validate(AddSongSchema, body);
     if (!v.success) return v;
 
+    if (!v.data.songId) return Failure("songId là bắt buộc", 400);
     return playlistService.addSong(idResult.data, v.data.songId, auth.userId);
 });
 

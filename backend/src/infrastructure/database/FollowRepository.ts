@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, DeleteCommand, QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, DeleteCommand, QueryCommand, GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { Resource } from "sst";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
@@ -65,6 +65,27 @@ export class FollowRepository {
             return Success(ids);
         } catch (error: any) {
             return Failure(`Lỗi lấy danh sách follow: ${error.message}`, 500);
+        }
+    }
+
+    async getFollowerUserIds(artistId: string): Promise<Result<string[]>> {
+        try {
+            const res = await docClient.send(new ScanCommand({
+                TableName: this.tableName,
+                FilterExpression: "entityType = :type AND artistId = :artistId",
+                ExpressionAttributeValues: {
+                    ":type": "FOLLOW",
+                    ":artistId": artistId,
+                },
+            }));
+
+            const userIds = Array.from(new Set((res.Items || [])
+                .map((item: any) => item.userId)
+                .filter((id: any) => typeof id === "string" && id.length > 0)));
+
+            return Success(userIds);
+        } catch (error: any) {
+            return Failure(`Lỗi lấy followers của artist: ${error.message}`, 500);
         }
     }
 }

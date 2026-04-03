@@ -1,7 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 import { VERIFY_STATUS } from '../constants/enums';
-import { likeSong, unlikeSong } from '../services/PlaylistService';
+import { likeSong, unlikeSong, getLikedSongs } from '../services/PlaylistService';
 import { showToast } from './uiSlice';
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const initialState = {
   isAuthenticated: false,
@@ -97,6 +99,7 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
           message: `Lỗi bỏ thích: ${result?.error || 'Vui lòng thử lại'}`,
           type: 'error',
         }));
+        return;
       }
     } else {
       // Add to liked
@@ -108,10 +111,49 @@ export const toggleLikeSongThunk = (song) => async (dispatch, getState) => {
           message: `Lỗi thích bài hát: ${result?.error || 'Vui lòng thử lại'}`,
           type: 'error',
         }));
+        return;
       }
     }
-  } catch (error) {
-    console.error('[toggleLikeSongThunk] Unexpected error:', error);
+    
+    // Success: fetch fresh liked songs from server + sync Redux
+    const eventDetail = {
+      song,
+      action: isLiked ? 'unlike' : 'like',
+    };
+    try {
+      const expectedLikedAfterAction = !isLiked;
+      let synced = false;
+
+      for (let attempt = 0; attempt < 5; attempt += 1) {
+        const freshLikedSongs = await getLikedSongs({
+          forceRefresh: true,
+          retries: 2,
+          retryDelayMs: 250,
+          ensureExists: true,
+        });
+
+        const hasSongInFresh = freshLikedSongs.some((s) => s.song_id === song.song_id);
+        if (hasSongInFresh === expectedLikedAfterAction) {
+          dispatch(setLikedSongs(freshLikedSongs));
+          synced = true;
+          break;
+        }
+
+        await sleep(250);
+      }
+
+      if (!synced) {
+        const optimisticLikedSongs = getState().auth.likedSongs;
+        dispatch(setLikedSongs(optimisticLikedSongs));
+      }
+    } finally {
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('liked-songs-updated', {
+          detail: eventDetail,
+        }));
+      }
+    }
+  } catch (_error) {
     // Rollback on exception
     dispatch(toggleLikeSong(song));
     dispatch(showToast({

@@ -19,6 +19,7 @@ const toggleFullscreen = () => {
 // Import các component con vừa tạo
 import LyricsMode from './LyricsMode';
 import BottomInfo from './BottomInfo';
+import VideoPlayer from '../VideoPlayer';
 
 const waitForFullscreenExit = () => new Promise((resolve) => {
   if (!document.fullscreenElement) {
@@ -257,6 +258,9 @@ export default function LyricsContent() {
         
         {/* TASK-001-B1: onError fallback về songDefault.jpg */}
         {displayMode === 'artwork' && (
+          currentSong.mv_url ? (
+            <VideoPlayer src={currentSong.mv_url} />
+          ) : (
           <div className="relative mt-10">
             <div className="w-[400px] h-[400px] rounded-full animate-[spin_20s_linear_infinite] shadow-2xl ring-4 ring-neutral-700 overflow-hidden">
               <img
@@ -270,6 +274,7 @@ export default function LyricsContent() {
               <div className="w-16 h-16 rounded-full bg-[#1e1e1e] ring-2 ring-neutral-600" />
             </div>
           </div>
+          )
         )}
         {displayMode === 'canvas' && <div className="text-white mt-20">Giao diện Canvas Video...</div>}
         {displayMode === 'artist' && <div className="text-white mt-20">Giao diện Artist Image...</div>}

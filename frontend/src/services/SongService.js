@@ -71,5 +71,14 @@ export const getLyrics = async (songId) => {
   }
 };
 
+export const recordView = async (songId) => {
+  if (!songId) return;
+  try {
+    await api.post(`/songs/${encodeURIComponent(songId)}/view`);
+  } catch {
+    // Fire-and-forget: lỗi không được ảnh hưởng playback
+  }
+};
+
 /** Client-side relevance search — deprecated, dùng searchSongs() */
 export const searchWithRelevance = () => ({ songs: [], matchedCategories: [] });

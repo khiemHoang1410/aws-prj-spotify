@@ -10,6 +10,7 @@ export const SongSchema = z.object({
     duration: z.number().int().min(1, "Thời lượng phải lớn hơn 0"),
     fileUrl: z.url({ message: "Link nhạc phải là URL hợp lệ" }),
     coverUrl: z.url().optional().nullable(),
+    mvUrl: z.url().optional().nullable(),
     lyrics: z.string().optional().nullable(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
