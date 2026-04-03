@@ -23,12 +23,20 @@ export default class ErrorBoundary extends Component {
           <p className="text-neutral-400 text-sm mb-6 max-w-md">
             {this.state.error?.message || 'Đã xảy ra lỗi không mong muốn.'}
           </p>
-          <button
-            onClick={() => this.setState({ hasError: false, error: null })}
-            className="px-6 py-2 bg-green-500 text-black font-semibold rounded-full hover:bg-green-400 transition"
-          >
-            Thử lại
-          </button>
+          <div className="flex gap-3">
+            <a
+              href="/"
+              className="px-6 py-2 bg-neutral-700 text-white font-semibold rounded-full hover:bg-neutral-600 transition"
+            >
+              Về trang chủ
+            </a>
+            <button
+              onClick={() => this.setState({ hasError: false, error: null })}
+              className="px-6 py-2 bg-green-500 text-black font-semibold rounded-full hover:bg-green-400 transition"
+            >
+              Thử lại
+            </button>
+          </div>
         </div>
       );
     }
