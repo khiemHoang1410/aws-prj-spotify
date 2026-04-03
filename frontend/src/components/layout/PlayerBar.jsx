@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
 import { toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
-import { getSongs } from '../../services/SongService';
+import { getSongs, recordView } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
 import { getHistory } from '../../services/HistoryService';
 import Audio from './Audio';
@@ -51,6 +51,17 @@ export default function PlayerBar() {
 
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
+  const countedSongIdsRef = useRef(new Set());
+
+  useEffect(() => {
+    const songId = currentSong?.song_id;
+    if (!isAuthenticated || !songId) return;
+    if (currentTimeLocal < 20) return;
+    if (countedSongIdsRef.current.has(songId)) return;
+
+    countedSongIdsRef.current.add(songId);
+    void recordView(songId);
+  }, [isAuthenticated, currentSong?.song_id, currentTimeLocal]);
 
   useEffect(() => {
     if (globalSeekTime !== null) {

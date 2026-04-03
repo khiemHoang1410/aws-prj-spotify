@@ -24,7 +24,7 @@ export class PlayHistoryRepository {
                 pk: `USER#${entry.userId}`,
                 sk: `${SK_PREFIX}${entry.songId}`,
                 entityType: "HISTORY",
-                playedAt: now, // server-side timestamp, ignore client value
+                playedAt: now,
                 ttl,
             };
             await dynamoDb.send(new PutCommand({ TableName: TABLE(), Item: item }));
@@ -98,7 +98,7 @@ export class PlayHistoryRepository {
 
                 if (response.Items?.length) {
                     await Promise.all(
-                        response.Items.map(item =>
+                        response.Items.map((item) =>
                             dynamoDb.send(new DeleteCommand({
                                 TableName: TABLE(),
                                 Key: { pk: item.pk, sk: item.sk },

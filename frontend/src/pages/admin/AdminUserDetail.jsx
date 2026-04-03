@@ -20,6 +20,15 @@ export default function AdminUserDetail({ user, onClose }) {
     });
   }, [user.id]);
 
+  const retry = () => {
+    setLoading(true);
+    setDetail(null);
+    getUser(user.id).then((data) => {
+      setDetail(data);
+      setLoading(false);
+    });
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60" onClick={onClose}>
       <div
@@ -67,7 +76,12 @@ export default function AdminUserDetail({ user, onClose }) {
             <Row label="Ngày tạo" value={detail.createdAt ? new Date(detail.createdAt).toLocaleString('vi-VN') : '—'} />
           </div>
         ) : (
-          <p className="text-neutral-400">Không tìm thấy thông tin user.</p>
+          <div className="text-center py-4">
+            <p className="text-neutral-400 mb-3">Không tìm thấy thông tin user.</p>
+            <button onClick={retry} className="px-3 py-1.5 text-xs bg-neutral-700 hover:bg-neutral-600 text-white rounded-lg transition">
+              Thử lại
+            </button>
+          </div>
         )}
       </div>
     </div>

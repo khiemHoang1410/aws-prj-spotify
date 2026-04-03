@@ -41,6 +41,7 @@ export default function UploadSongPage() {
   const [uploadError, setUploadError] = useState('');
   const [artistId, setArtistId] = useState(null);
   const [artistLoading, setArtistLoading] = useState(true);
+  const [autoLyricsFetchedKey, setAutoLyricsFetchedKey] = useState('');
 
   // Lấy artistId từ BE khi mount — bắt buộc có trước khi cho upload
   React.useEffect(() => {
@@ -55,6 +56,37 @@ export default function UploadSongPage() {
       .catch(() => setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.'))
       .finally(() => setArtistLoading(false));
   }, [user]);
+
+  React.useEffect(() => {
+    const artistName = String(user?.name || user?.username || '').trim();
+    const songTitle = String(title || '').trim();
+    if (!audioFile || !artistName || !songTitle) return;
+    if (String(lyrics || '').trim()) return;
+
+    const fetchKey = `${songTitle}__${artistName}__${audioFile?.name || ''}`;
+    if (fetchKey === autoLyricsFetchedKey) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://lrclib.net/api/get?track_name=${encodeURIComponent(songTitle)}&artist_name=${encodeURIComponent(artistName)}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        const autoLyrics = data?.syncedLyrics || data?.plainLyrics || '';
+        if (!autoLyrics) return;
+
+        setLyrics((prev) => {
+          if (String(prev || '').trim()) return prev;
+          return autoLyrics;
+        });
+        dispatch(showToast({ message: 'Đã tự động điền lời bài hát', type: 'info' }));
+        setAutoLyricsFetchedKey(fetchKey);
+      } catch { }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [audioFile, title, user?.name, user?.username, lyrics, autoLyricsFetchedKey, dispatch]);
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (
@@ -151,6 +183,7 @@ export default function UploadSongPage() {
         title: title.trim(),
         artistId,
         audioFile,
+        mvFile,
         coverFile: coverFiles[0] || null,
         lyrics,
         duration: durationSeconds,
