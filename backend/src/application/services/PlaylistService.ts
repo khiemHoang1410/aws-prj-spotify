@@ -95,6 +95,24 @@ export class PlaylistService {
         return await this.playlistRepo.getSongs(playlistId);
     }
 
+    async updatePlaylist(playlistId: string, userId: string, rawData: any): Promise<Result<Playlist>> {
+        try {
+            const playlistResult = await this.playlistRepo.findById(playlistId);
+            if (!playlistResult.success || !playlistResult.data) return Failure("Playlist không tồn tại", 404);
+            if (playlistResult.data.userId !== userId) return Failure("Không có quyền chỉnh sửa playlist này", 403);
+
+            const validation = PlaylistSchema
+                .pick({ name: true, description: true, coverUrl: true, isPublic: true })
+                .partial()
+                .safeParse(rawData);
+            if (!validation.success) return Failure(validation.error.issues[0].message, 400);
+
+            return await this.playlistRepo.update(playlistId, validation.data);
+        } catch (error: any) {
+            return Failure(`Lỗi cập nhật playlist: ${error.message}`, 500);
+        }
+    }
+
     async deletePlaylist(playlistId: string, userId: string): Promise<Result<void>> {
         try {
             const playlistResult = await this.playlistRepo.findById(playlistId);
