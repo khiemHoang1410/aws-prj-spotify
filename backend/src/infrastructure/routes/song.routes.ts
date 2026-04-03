@@ -14,6 +14,8 @@ export const songProtectedRoutes = {
     "PUT /songs/{id}": "src/interfaces/http/handlers/songs/update.handler",
     "DELETE /songs/{id}": "src/interfaces/http/handlers/songs/delete.handler",
     "POST /songs/{id}/report": "src/interfaces/http/handlers/songs/report.handler",
+    "POST /songs/{id}/like": "src/interfaces/http/handlers/songs/like.likeHandler",
+    "DELETE /songs/{id}/like": "src/interfaces/http/handlers/songs/like.unlikeHandler",
 };
 
 // Backward compat

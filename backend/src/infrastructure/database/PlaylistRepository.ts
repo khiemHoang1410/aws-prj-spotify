@@ -143,6 +143,27 @@ export class PlaylistRepository {
         }
     }
 
+    async update(id: string, data: Partial<Playlist>): Promise<Result<Playlist>> {
+        try {
+            const existing = await this.findById(id);
+            if (!existing.success || !existing.data) return Failure("Playlist không tồn tại", 404);
+
+            const updated: Playlist = {
+                ...existing.data,
+                ...data,
+                id,
+                updatedAt: new Date().toISOString(),
+            };
+            await docClient.send(new PutCommand({
+                TableName: this.tableName,
+                Item: { ...updated, pk: `${this.prefix}#${id}`, sk: "METADATA", entityType: this.prefix },
+            }));
+            return Success(updated);
+        } catch (error: any) {
+            return Failure(`Lỗi cập nhật playlist: ${error.message}`, 500);
+        }
+    }
+
     async delete(id: string): Promise<Result<void>> {
         try {
             await docClient.send(new DeleteCommand({

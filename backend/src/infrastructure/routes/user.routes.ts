@@ -12,4 +12,5 @@ export const userProtectedRoutes = {
     "GET /users/{id}/play-history": "src/interfaces/http/handlers/users/playHistory.handler",
     "POST /me/play-history": "src/interfaces/http/handlers/users/recordPlay.handler",
     "DELETE /me/play-history": "src/interfaces/http/handlers/users/clearPlayHistory.handler",
+    "GET /me/liked-songs": "src/interfaces/http/handlers/songs/like.getLikedHandler",
 };
