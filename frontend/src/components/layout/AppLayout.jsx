@@ -2,8 +2,9 @@ import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
-import { loginSuccess } from '../../store/authSlice';
+import { loginSuccess, setLikedSongs } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
+import { getLikedSongs } from '../../services/SongService';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -99,13 +100,10 @@ export default function AppLayout() {
       }
       dispatch(loginSuccess(finalUser));
 
-      // Restore liked songs từ localStorage theo từng user
+      // Restore liked songs từ API
       try {
-        const raw = localStorage.getItem(`spotify_liked_${user.user_id}`);
-        if (raw) {
-          const liked = JSON.parse(raw);
-          if (Array.isArray(liked)) dispatch({ type: 'auth/setLikedSongs', payload: liked });
-        }
+        const liked = await getLikedSongs();
+        if (liked.length > 0) dispatch(setLikedSongs(liked));
       } catch { /* ignore */ }
 
       // Refresh user profile từ backend để cập nhật role + artistId mới nhất
