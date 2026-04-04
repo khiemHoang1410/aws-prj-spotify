@@ -80,5 +80,32 @@ export const recordView = async (songId) => {
   }
 };
 
+export const likeSong = async (songId) => {
+  try {
+    await api.post(`/songs/${encodeURIComponent(songId)}/like`);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+};
+
+export const unlikeSong = async (songId) => {
+  try {
+    await api.delete(`/songs/${encodeURIComponent(songId)}/like`);
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+};
+
+export const getLikedSongs = async () => {
+  try {
+    const data = await api.get('/me/liked-songs?limit=100');
+    return (data?.items || []).map(adaptSong);
+  } catch {
+    return [];
+  }
+};
+
 /** Client-side relevance search — deprecated, dùng searchSongs() */
 export const searchWithRelevance = () => ({ songs: [], matchedCategories: [] });
