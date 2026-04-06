@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus } from 'lucide-react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Laugh, ListTodo } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
@@ -150,6 +150,28 @@ export default function Sidebar() {
         onClick={() => navigate('/intro')}>
         <AudioLines size={28} />
         <span className="font-bold text-lg tracking-tight">Spotify</span>
+      </div>
+
+      {/* Quick links */}
+      <div className="bg-[#121212] rounded-lg px-3 py-2 flex flex-col gap-0.5">
+        {[
+          { label: 'Câu đùa vui', path: '/jokes', renderIcon: () => <Laugh size={18} /> },
+          { label: 'Việc cần làm', path: '/todos', renderIcon: () => <ListTodo size={18} /> },
+        ].map(({ label, path, renderIcon }) => {
+          const isActive = location.pathname === path;
+          return (
+            <button
+              key={path}
+              onClick={() => navigate(path)}
+              className={`flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition w-full text-left ${
+                isActive ? 'bg-white/10 text-green-400' : 'text-[#b3b3b3] hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {renderIcon()}
+              {label}
+            </button>
+          );
+        })}
       </div>
 
       {/* Thư viện */}
