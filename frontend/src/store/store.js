@@ -8,7 +8,8 @@ import editorialReducer from './editorialSlice';
 import { logout } from './authSlice';
 import { showToast } from './uiSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
-import { addToHistoryLocal, addToHistoryRemote } from '../services/HistoryService';
+import { addToHistoryLocal } from '../services/HistoryService';
+import { recordPlay } from '../services/UserService';
 
 const PLAYER_STATE_STORAGE_KEY = 'spotify_player_state_v1';
 
@@ -58,7 +59,12 @@ store.subscribe(() => {
 
     // API: debounce 1500ms để chống spam khi skip liên tục
     clearTimeout(_debounceTimer);
-    _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
+    _debounceTimer = setTimeout(() => {
+      const { isAuthenticated } = store.getState().auth;
+      if (isAuthenticated && import.meta.env.VITE_API_URL) {
+        recordPlay(currentSong).catch(() => {});
+      }
+    }, 1500);
   }
 
   // 3. Persist player state (currentSong + currentTime)
