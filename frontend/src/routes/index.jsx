@@ -41,7 +41,7 @@ export const router = createBrowserRouter([
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
 
       // Protected — cần đăng nhập
-      { path: '/liked', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
+      { path: '/liked-songs', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
       { path: '/profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
       { path: '/settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
       { path: '/artist-verify', element: <ProtectedRoute><ArtistVerifyPage /></ProtectedRoute> },
