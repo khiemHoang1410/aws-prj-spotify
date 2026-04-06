@@ -33,7 +33,7 @@ export default function PlayerBar() {
   
   const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
-  const { likedSongs } = useSelector((state) => state.auth);
+  const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
 
   const initialVolumeRef = useRef(readInitialVolume());
   

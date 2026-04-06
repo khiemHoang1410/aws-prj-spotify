@@ -8,7 +8,8 @@ import editorialReducer from './editorialSlice';
 import { logout } from './authSlice';
 import { showToast } from './uiSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
-import { addToHistoryLocal, addToHistoryRemote } from '../services/HistoryService';
+import { addToHistoryLocal } from '../services/HistoryService';
+import { recordPlay } from '../services/UserService';
 
 const PLAYER_STATE_STORAGE_KEY = 'spotify_player_state_v1';
 
@@ -43,20 +44,12 @@ setRequestFailedCallback((message) => {
 // ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
 // Init với bài đang restore từ localStorage để tránh ghi history khi app load
 let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
-let _lastLikedSongsRef = null;
 let _debounceTimer = null;
 
 store.subscribe(() => {
   const state = store.getState();
 
-  // 1. Persist liked songs theo user
-  const { isAuthenticated, user, likedSongs } = state.auth;
-  if (isAuthenticated && user?.user_id && likedSongs !== _lastLikedSongsRef) {
-    _lastLikedSongsRef = likedSongs;
-    localStorage.setItem(`spotify_liked_${user.user_id}`, JSON.stringify(likedSongs));
-  }
-
-  // 2. Track play history khi song thay đổi
+  // 1. Track play history khi song thay đổi
   const { currentSong } = state.player;
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
@@ -66,7 +59,12 @@ store.subscribe(() => {
 
     // API: debounce 1500ms để chống spam khi skip liên tục
     clearTimeout(_debounceTimer);
-    _debounceTimer = setTimeout(() => addToHistoryRemote(currentSong), 1500);
+    _debounceTimer = setTimeout(() => {
+      const { isAuthenticated } = store.getState().auth;
+      if (isAuthenticated && import.meta.env.VITE_API_URL) {
+        recordPlay(currentSong).catch(() => {});
+      }
+    }, 1500);
   }
 
   // 3. Persist player state (currentSong + currentTime)

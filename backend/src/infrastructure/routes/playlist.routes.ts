@@ -1,11 +1,12 @@
 export const playlistPublicRoutes = {
     "GET /playlists": "src/interfaces/http/handlers/playlists/list.handler",
+    "GET /playlists/{id}": "src/interfaces/http/handlers/playlists/get.handler",
 };
 
 export const playlistProtectedRoutes = {
     "POST /playlists": "src/interfaces/http/handlers/playlists/create.handler",
     "GET /playlists/me": "src/interfaces/http/handlers/playlists/myPlaylists.handler",
-    "GET /playlists/{id}": "src/interfaces/http/handlers/playlists/get.handler",
+    "PUT /playlists/{id}": "src/interfaces/http/handlers/playlists/update.handler",
     "DELETE /playlists/{id}": "src/interfaces/http/handlers/playlists/delete.handler",
     "GET /playlists/{id}/songs": "src/interfaces/http/handlers/playlists/songs.listHandler",
     "POST /playlists/{id}/songs": "src/interfaces/http/handlers/playlists/songs.addHandler",
