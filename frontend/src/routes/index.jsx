@@ -21,6 +21,8 @@ import EditSongPage from '../pages/EditSongPage';
 import AdminLayout from '../pages/admin/AdminLayout';
 import PageIntro from '../pages/PageIntro';
 import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
+import JokeGeneratorPage from '../pages/JokeGeneratorPage';
+import TodoListPage from '../pages/TodoListPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -39,6 +41,8 @@ export const router = createBrowserRouter([
       { path: '/album/:id', element: <AlbumDetailPage /> },
       { path: '/category/:id', element: <CategoryPage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
+      { path: '/jokes', element: <JokeGeneratorPage /> },
+      { path: '/todos', element: <TodoListPage /> },
 
       // Protected — cần đăng nhập
       { path: '/liked', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
