@@ -5,6 +5,17 @@ import { toggleRightSidebar } from '../../store/uiSlice';
 import { clearQueue, setCurrentSong } from '../../store/playerSlice';
 import { getPlayHistory } from '../../services/UserService';
 
+const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+
+const normalizeHistoryItem = (item) => ({
+  song_id: item.songId || item.song_id,
+  title: item.songTitle || item.title,
+  artist_name: item.artistName || item.artist_name || '',
+  image_url: item.coverUrl || item.image_url || null,
+  duration: item.duration || 0,
+  played_at: item.playedAt || item.played_at,
+});
+
 export default function QueueSidebar() {
   const dispatch = useDispatch();
   const { isRightSidebarOpen } = useSelector(state => state.ui);
@@ -15,11 +26,29 @@ export default function QueueSidebar() {
   const [history, setHistory] = useState([]);
 
   // Tự động tải lịch sử khi chuyển sang tab "Đã nghe gần đây"
-  useEffect(() => {
-    if (activeTab === 'history' && user?.user_id) {
-       getPlayHistory(user.user_id).then(data => setHistory(data));
+  const loadHistory = () => {
+    if (!user?.user_id) {
+      try {
+        const raw = localStorage.getItem('spotify_play_history');
+        const local = raw ? JSON.parse(raw) : [];
+        setHistory(local.slice(0, 20));
+      } catch { setHistory([]); }
+      return;
     }
-  }, [activeTab, user]);
+    getPlayHistory(user.user_id, { limit: 20 })
+      .then((res) => {
+        const items = (res?.items || []).map(normalizeHistoryItem);
+        setHistory(items);
+      })
+      .catch(() => setHistory([]));
+  };
+
+  useEffect(() => {
+    if (activeTab !== 'history') return;
+    // Delay nhỏ để đợi recordPlay ghi xong vào DB
+    const t = setTimeout(loadHistory, 2000);
+    return () => clearTimeout(t);
+  }, [activeTab, user, currentSong]);
 
   // Nếu Redux bảo đóng thì ẩn component này đi
   if (!isRightSidebarOpen) return null;
@@ -104,9 +133,10 @@ export default function QueueSidebar() {
             /* --- C. Đã nghe gần đây (Recently Played) --- */
             <div className="flex flex-col gap-1">
                {history.length > 0 ? history.map((song, idx) => (
-                  <div key={idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] group cursor-pointer transition" onClick={() => dispatch(setCurrentSong(song))}>
+                  <div key={song.song_id || idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-[#2a2a2a] group cursor-pointer transition" onClick={() => dispatch(setCurrentSong(song))}>
                      <div className="relative w-12 h-12 flex-shrink-0">
-                        <img src={song.image_url} className="w-full h-full rounded shadow-md object-cover" alt="cover"/>
+                        <img src={song.image_url || IMG_FALLBACK} className="w-full h-full rounded shadow-md object-cover" alt="cover"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }} />
                         <div className="absolute inset-0 bg-black/60 hidden group-hover:flex items-center justify-center rounded">
                            <Play fill="white" size={16} className="ml-0.5"/>
                         </div>

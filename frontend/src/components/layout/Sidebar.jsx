@@ -236,6 +236,21 @@ export default function Sidebar() {
               <><SkeletonCard variant="row" /><SkeletonCard variant="row" /><SkeletonCard variant="row" /></>
             ) : (
               <div className="flex flex-col gap-0.5">
+                {/* Mục cố định: Bài hát đã thích */}
+                <div
+                  className={`relative flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer transition overflow-hidden ${location.pathname === '/liked-songs' ? 'bg-white/10' : 'hover:bg-white/5'}`}
+                  onClick={() => navigate('/liked-songs')}
+                >
+                  {location.pathname === '/liked-songs' && <div className="absolute left-0 top-0 w-1 h-full bg-green-400 rounded-l" />}
+                  <div className="w-11 h-11 rounded flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-500 flex items-center justify-center">
+                    <Heart size={20} className="text-white" fill="currentColor" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-medium truncate ${location.pathname === '/liked-songs' ? 'text-green-400' : 'text-white'}`}>Bài hát đã thích</p>
+                    <p className="text-xs text-neutral-400">Danh sách phát</p>
+                  </div>
+                </div>
+
                 {playlists.map((playlist) => {
                   const isActive = location.pathname === `/playlist/${playlist.id}`;
                   return (
