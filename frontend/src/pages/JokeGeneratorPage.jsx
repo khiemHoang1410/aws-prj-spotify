@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import { Laugh, RefreshCw, Copy, CheckCheck, Globe } from 'lucide-react';
 
 const JOKE_API_URL = 'https://v2.jokeapi.dev/joke/Any?safe-mode';
-const JOKE_API_VN_URL = 'https://v2.jokeapi.dev/joke/Any?safe-mode&lang=cs'; // fallback: tiếng Anh khi không có VN
 
 // Bộ câu đùa tiếng Việt tích hợp sẵn (dự phòng)
 const VIETNAMESE_JOKES = [
@@ -52,6 +51,8 @@ const VIETNAMESE_JOKES = [
     delivery: 'Tôi đã kể rồi đó, bạn có nhận được không?',
   },
 ];
+
+const LANGUAGES = ['vi', 'en'];
 
 const LANG = {
   vi: {
@@ -158,7 +159,7 @@ export default function JokeGeneratorPage() {
 
       {/* Language toggle */}
       <div className="flex bg-neutral-800 rounded-full p-1 mb-8 gap-1">
-        {(['vi', 'en']).map((l) => (
+        {LANGUAGES.map((l) => (
           <button
             key={l}
             onClick={() => { setLang(l); setJoke(null); setError(''); }}
