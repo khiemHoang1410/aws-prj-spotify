@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2 } from 'lucide-react';
+import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2, Edit3, Globe, Lock, X } from 'lucide-react';
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
 import { getPlaylistById, addSongToPlaylist, removeSongFromPlaylist } from '../services/PlaylistService';
+import api from '../services/apiClient';
+import { uploadCoverImage } from '../services/UploadService';
 import { searchSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
 import SkeletonCard from '../components/ui/SkeletonCard';
+
+const PLAYLIST_DEFAULT_IMG = '/pictures/playlistDefault.jpg';
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);
@@ -28,6 +32,54 @@ export default function PlaylistDetailPage() {
   const [isAddingSongs, setIsAddingSongs] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResult, setSearchResult] = useState([]);
+
+  // Edit playlist state
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editName, setEditName] = useState('');
+  const [editIsPublic, setEditIsPublic] = useState(false);
+  const [editCoverPreview, setEditCoverPreview] = useState(null);
+  const [editCoverFile, setEditCoverFile] = useState(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const coverInputRef = useRef(null);
+
+  const openEditModal = () => {
+    setEditName(playlist?.name || '');
+    setEditIsPublic(playlist?.is_public || false);
+    setEditCoverPreview(playlist?.image_url || null);
+    setEditCoverFile(null);
+    setIsEditModalOpen(true);
+  };
+
+  const handleCoverFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setEditCoverFile(file);
+    setEditCoverPreview(URL.createObjectURL(file));
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editName.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      let coverUrl = playlist.image_url || null;
+      if (editCoverFile) {
+        const result = await uploadCoverImage(editCoverFile);
+        coverUrl = result.url;
+      }
+      await api.put(`/playlists/${activePlaylistId}`, {
+        name: editName.trim(),
+        isPublic: editIsPublic,
+        coverUrl,
+      });
+      setPlaylist((prev) => ({ ...prev, name: editName.trim(), is_public: editIsPublic, image_url: coverUrl }));
+      dispatch(showToast({ message: 'Đã cập nhật playlist', type: 'success' }));
+      setIsEditModalOpen(false);
+    } catch {
+      dispatch(showToast({ message: 'Không thể cập nhật playlist', type: 'error' }));
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
   const [addedIds, setAddedIds] = useState([]);
 
   // [S7-005.2] Shuffle state
@@ -133,16 +185,30 @@ export default function PlaylistDetailPage() {
     <div>
       {/* Gradient header */}
       <div className="flex items-end gap-6 h-64 px-2 pb-6 bg-gradient-to-b from-purple-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
-        <img
-          src={playlist.image_url}
-          alt={playlist.name}
-          className="w-44 h-44 rounded-md shadow-2xl object-cover flex-shrink-0"
-        />
+        <div className="relative group flex-shrink-0">
+          <img
+            src={playlist.image_url || PLAYLIST_DEFAULT_IMG}
+            alt={playlist.name}
+            className="w-44 h-44 rounded-md shadow-2xl object-cover"
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = PLAYLIST_DEFAULT_IMG; }}
+          />
+          <button
+            onClick={openEditModal}
+            className="absolute inset-0 rounded-md bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+          >
+            <Edit3 size={24} className="text-white" />
+          </button>
+        </div>
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white uppercase mb-1">Danh sách phát</p>
-          <h1 className="text-4xl font-extrabold text-white truncate mb-2">{playlist.name}</h1>
+          <h1
+            className="text-4xl font-extrabold text-white truncate mb-2 cursor-pointer hover:underline"
+            onClick={openEditModal}
+          >
+            {playlist.name}
+          </h1>
           <p className="text-sm text-neutral-300">
-            {playlist.owner} • {playlist.songs?.length ?? 0} bài hát
+            {playlist.owner} • {playlist.songs?.length ?? 0} bài hát • {playlist.is_public ? <span className="inline-flex items-center gap-1"><Globe size={12} /> Công khai</span> : <span className="inline-flex items-center gap-1"><Lock size={12} /> Riêng tư</span>}
           </p>
         </div>
       </div>
@@ -295,6 +361,65 @@ export default function PlaylistDetailPage() {
           ) : searchTerm.trim().length > 0 ? (
             <p className="text-sm text-neutral-500 px-4">Không tìm thấy bài hát nào</p>
           ) : null}
+        </div>
+      )}
+
+      {/* Edit Playlist Modal */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#282828] rounded-xl p-6 w-96 shadow-2xl">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-white font-bold text-lg">Chỉnh sửa playlist</h3>
+              <button onClick={() => setIsEditModalOpen(false)} className="text-neutral-400 hover:text-white transition">
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Cover image */}
+            <div className="flex justify-center mb-5">
+              <div className="relative group cursor-pointer" onClick={() => coverInputRef.current?.click()}>
+                <img
+                  src={editCoverPreview || PLAYLIST_DEFAULT_IMG}
+                  className="w-32 h-32 rounded-lg object-cover shadow-lg"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = PLAYLIST_DEFAULT_IMG; }}
+                />
+                <div className="absolute inset-0 rounded-lg bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                  <Edit3 size={20} className="text-white mb-1" />
+                  <span className="text-white text-xs">Chọn ảnh</span>
+                </div>
+              </div>
+              <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverFileChange} />
+            </div>
+
+            {/* Name */}
+            <input
+              type="text"
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Tên playlist..."
+              className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-green-500 mb-4"
+            />
+
+            {/* Privacy toggle */}
+            <button
+              onClick={() => setEditIsPublic((v) => !v)}
+              className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm mb-5 transition ${editIsPublic ? 'bg-green-500/20 text-green-400' : 'bg-neutral-700 text-neutral-300'}`}
+            >
+              {editIsPublic ? <Globe size={16} /> : <Lock size={16} />}
+              {editIsPublic ? 'Công khai' : 'Riêng tư'}
+            </button>
+
+            <div className="flex gap-2 justify-end">
+              <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm text-neutral-300 hover:text-white transition">Huỷ</button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={!editName.trim() || isSavingEdit}
+                className="px-4 py-2 text-sm bg-green-500 text-black font-semibold rounded-full hover:bg-green-400 transition disabled:opacity-50"
+              >
+                {isSavingEdit ? 'Đang lưu...' : 'Lưu'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
