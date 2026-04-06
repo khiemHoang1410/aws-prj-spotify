@@ -17,5 +17,23 @@ export const handler = makeAuthHandler(async (body, _params, auth) => {
     const fieldsResult = requireAtLeastOneField(v.data);
     if (!fieldsResult.success) return fieldsResult;
 
+    // Kiểm tra user có tồn tại không, nếu chưa thì tạo mới (upsert)
+    const existing = await userRepo.findByUserId(auth.userId);
+    if (!existing.success) return existing;
+
+    if (!existing.data) {
+        // User chưa có record trong DB (đăng ký qua Cognito trực tiếp hoặc seed)
+        await userRepo.save({
+            id: auth.userId,
+            email: auth.email,
+            displayName: fieldsResult.data.displayName || auth.email,
+            role: auth.role as any,
+            avatarUrl: fieldsResult.data.avatarUrl ?? undefined,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+        });
+        return userRepo.findByUserId(auth.userId);
+    }
+
     return userRepo.update(auth.userId, fieldsResult.data);
 });

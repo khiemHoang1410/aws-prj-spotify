@@ -11,7 +11,7 @@ function Trending() {
   };
 
   useEffect(() => {
-    setTrendingImages(IntroMockData.trending);
+    setTrendingImages(IntroMockData.trending || [] || undefined || null);
   }, []);
 
   return (
