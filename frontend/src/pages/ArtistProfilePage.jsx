@@ -5,7 +5,7 @@ import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getArtistById, followArtist } from '../services/ArtistService';
+import { getArtistById, followArtist, getRelatedArtists } from '../services/ArtistService';
 import { getSongs } from '../services/SongService';
 import { getAlbumsByArtist } from '../services/AlbumService';
 import EmptyState from '../components/ui/EmptyState';
@@ -28,6 +28,7 @@ export default function ArtistProfilePage() {
   const [artist, setArtist] = useState(null);
   const [artistSongs, setArtistSongs] = useState([]);
   const [artistAlbums, setArtistAlbums] = useState([]);
+  const [relatedArtists, setRelatedArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -42,6 +43,7 @@ export default function ArtistProfilePage() {
       if (artistData) {
         setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
         getAlbumsByArtist(artistData.name).then((albums) => setArtistAlbums(albums));
+        getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
       }
     }).finally(() => setIsLoading(false));
   }, [activeArtistId]);
@@ -215,6 +217,38 @@ export default function ArtistProfilePage() {
                 />
                 <p className="text-sm font-medium text-white mt-2 truncate">{album.title}</p>
                 <p className="text-xs text-neutral-400">{album.release_date} • {album.songIds?.length || 0} bài</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Related Artists */}
+      {relatedArtists.length > 0 && (
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-white mb-3">Nghệ sĩ tương tự</h3>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-neutral-700">
+            {relatedArtists.map((a) => (
+              <div
+                key={a.id}
+                className="flex-shrink-0 w-36 cursor-pointer group text-center"
+                onClick={() => navigate(`/artist/${a.id}`)}
+              >
+                {a.photo_url || a.image_url ? (
+                  <img
+                    src={a.photo_url || a.image_url}
+                    alt={a.name}
+                    className="w-36 h-36 rounded-full object-cover shadow-lg group-hover:opacity-80 transition mx-auto"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.nextSibling.style.display = 'flex'; }}
+                  />
+                ) : null}
+                <div
+                  className="w-36 h-36 rounded-full shadow-lg mx-auto items-center justify-center bg-gradient-to-br from-purple-600 to-blue-500 group-hover:opacity-80 transition"
+                  style={{ display: (a.photo_url || a.image_url) ? 'none' : 'flex' }}
+                >
+                  <span className="text-white text-4xl font-bold">{a.name?.[0]?.toUpperCase()}</span>
+                </div>
+                <p className="text-sm font-medium text-white mt-2 truncate">{a.name}</p>
+                <p className="text-xs text-neutral-400">Nghệ sĩ</p>
               </div>
             ))}
           </div>
