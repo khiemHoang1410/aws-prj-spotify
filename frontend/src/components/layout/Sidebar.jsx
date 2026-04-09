@@ -193,7 +193,13 @@ export default function Sidebar() {
                       {isActive && <div className="absolute left-0 top-0 w-1 h-full bg-green-400 rounded-l" />}
                       <img src={artist.image_url || artist.photo_url} alt={artist.name}
                         className="w-11 h-11 rounded-full object-cover flex-shrink-0"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }} />
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          e.currentTarget.nextSibling.style.display = 'flex';
+                        }} />
+                      <div className="w-11 h-11 rounded-full flex-shrink-0 bg-gradient-to-br from-purple-600 to-blue-500 items-center justify-center text-white font-bold text-sm hidden">
+                        {artist.name?.[0]?.toUpperCase()}
+                      </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1">
                           <p className={`text-sm font-medium truncate ${isActive ? 'text-green-400' : 'text-white'}`}>{artist.name}</p>

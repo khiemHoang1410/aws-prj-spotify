@@ -30,9 +30,11 @@ export const adaptSong = (song) => {
 
 export const adaptArtist = (artist) => {
   if (!artist) return null;
+  // Extract id từ pk nếu id không có trực tiếp (pk = ARTIST#uuid)
+  const id = artist.id || (artist.pk ? artist.pk.replace(/^ARTIST#/, '') : null);
   return {
-    id: artist.id,
-    artist_id: artist.id,
+    id,
+    artist_id: id,
     name: artist.name,
     bio: artist.bio || null,
     photo_url: artist.photoUrl || artist.photo_url || null,

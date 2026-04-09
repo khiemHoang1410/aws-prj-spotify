@@ -31,7 +31,12 @@ export const handler = makeHandler(async (_body, params) => {
     }
 
     if (categories.length === 0) {
-        return Success([]);
+        // Fallback: lấy random artists khác khi không có categories
+        const allResult = await artistRepo.findAll();
+        if (!allResult.success) return Success([]);
+        const others = allResult.data.filter((a) => a.id !== idResult.data);
+        const shuffled = others.sort(() => Math.random() - 0.5).slice(0, 6);
+        return Success(shuffled);
     }
 
     // Find songs in same categories, collect unique artistIds
