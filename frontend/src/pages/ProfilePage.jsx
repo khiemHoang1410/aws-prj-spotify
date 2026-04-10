@@ -9,19 +9,19 @@ import { uploadCoverImage } from '../services/UploadService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
-import { getHistory, clearHistory } from '../services/HistoryService';
+import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
+  const historyEntries = useSelector((state) => state.history?.entries?.slice(0, 10) || []);
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.name || user?.username || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
-  const [playHistory, setPlayHistory] = useState([]);
   const avatarInputRef = useRef(null);
 
   const handleAvatarUpload = async (e) => {
@@ -41,10 +41,6 @@ export default function ProfilePage() {
       setIsUploadingAvatar(false);
     }
   };
-
-  useEffect(() => {
-    getHistory().then((h) => setPlayHistory(h.slice(0, 10)));
-  }, []);
 
   useEffect(() => {
     if (user?.role !== ROLES.ARTIST) return;
@@ -242,11 +238,10 @@ export default function ProfilePage() {
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Clock size={20} /> Lịch sử nghe nhạc
           </h2>
-          {playHistory.length > 0 && (
+          {historyEntries.length > 0 && (
             <button
               onClick={async () => {
-                await clearHistory();
-                setPlayHistory([]);
+                dispatch(clearAllHistory());
                 dispatch(showToast({ message: 'Đã xóa lịch sử nghe nhạc', type: 'success' }));
               }}
               className="flex items-center gap-1.5 text-xs text-neutral-400 hover:text-red-400 transition"
@@ -255,12 +250,19 @@ export default function ProfilePage() {
             </button>
           )}
         </div>
-        {playHistory.length === 0 ? (
+        {historyEntries.length === 0 ? (
           <p className="text-neutral-400 text-sm">Bạn chưa nghe bài hát nào gần đây.</p>
         ) : (
           <div className="grid grid-cols-5 gap-4">
-            {playHistory.map((song) => (
-              <CardSong key={`${song.song_id}-${song.played_at || song.playedAt}`} song={song} onPlay={handlePlayLiked} />
+            {historyEntries.map((entry) => (
+              <CardSong key={`${entry.songId}-${entry.played_at}`} song={{
+                song_id: entry.songId,
+                title: entry.title,
+                artist_name: entry.artist_name,
+                artist_id: entry.artist_id,
+                image_url: entry.image_url,
+                duration: entry.duration,
+              }} onPlay={handlePlayLiked} />
             ))}
           </div>
         )}
