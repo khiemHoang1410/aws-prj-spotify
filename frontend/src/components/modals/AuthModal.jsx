@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { closeModal, loginSuccess, openModal } from '../../store/authSlice';
+import { closeModal, loginSuccess, openModal, openForgotPasswordModal, setLoginPrefillEmail } from '../../store/authSlice';
 import { login, register, confirmRegister } from '../../services/AuthService';
 import { X } from 'lucide-react';
 
 export default function AuthModal() {
   const dispatch = useDispatch();
-  const { isModalOpen, modalType } = useSelector((state) => state.auth);
+  const { isModalOpen, modalType, loginPrefillEmail } = useSelector((state) => state.auth);
 
   const [formData, setFormData] = useState({ username: '', email: '', password: '' });
   const [error, setError] = useState('');
@@ -14,6 +14,14 @@ export default function AuthModal() {
   // Bước confirm OTP sau khi register
   const [pendingEmail, setPendingEmail] = useState('');
   const [confirmCode, setConfirmCode] = useState('');
+
+  // Pre-fill email from forgot password flow
+  useEffect(() => {
+    if (isModalOpen && modalType === 'login' && loginPrefillEmail) {
+      setFormData((prev) => ({ ...prev, email: loginPrefillEmail }));
+      dispatch(setLoginPrefillEmail(''));
+    }
+  }, [isModalOpen, modalType, loginPrefillEmail, dispatch]);
 
   if (!isModalOpen) return null;
 
@@ -115,6 +123,7 @@ export default function AuthModal() {
                   type="email" name="email" required
                   className="bg-[#121212] border border-[#727272] text-white p-3 rounded hover:border-white focus:border-white focus:outline-none transition"
                   placeholder="Email của bạn"
+                  value={formData.email}
                   onChange={handleChange}
                 />
               </div>
@@ -127,7 +136,20 @@ export default function AuthModal() {
                   onChange={handleChange}
                 />
               </div>
-            </>
+              {isLogin && !isConfirm && (
+                <div className="text-right -mt-2">
+                  <button
+                    type="button"
+                    className="text-sm text-[#b3b3b3] hover:text-white transition"
+                    onClick={() => {
+                      dispatch(closeModal());
+                      dispatch(openForgotPasswordModal());
+                    }}
+                  >
+                    Quên mật khẩu?
+                  </button>
+                </div>
+              )}            </>
           )}
 
           <button
