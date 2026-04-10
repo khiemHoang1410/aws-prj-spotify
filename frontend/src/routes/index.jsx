@@ -21,6 +21,7 @@ import EditSongPage from '../pages/EditSongPage';
 import AdminLayout from '../pages/admin/AdminLayout';
 import PageIntro from '../pages/PageIntro';
 import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
+import PlayHistoryPage from '../pages/PlayHistoryPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -42,6 +43,7 @@ export const router = createBrowserRouter([
 
       // Protected — cần đăng nhập
       { path: '/liked-songs', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
+      { path: '/play-history', element: <ProtectedRoute><PlayHistoryPage /></ProtectedRoute> },
       { path: '/profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
       { path: '/settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
       { path: '/artist-verify', element: <ProtectedRoute><ArtistVerifyPage /></ProtectedRoute> },

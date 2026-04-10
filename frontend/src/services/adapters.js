@@ -98,3 +98,17 @@ export const adaptPaginatedResponse = (data, adaptFn) => {
   if (data?.items) return data.items.map(adaptFn);
   return [];
 };
+
+export const normalizeHistoryEntry = (item) => {
+  if (!item) return null;
+  return {
+    entryId: item.entryId || null,
+    songId: item.songId || item.song_id || null,
+    title: item.songTitle || item.title || '',
+    artist_name: item.artistName || item.artist_name || '',
+    artist_id: item.artistId || item.artist_id || null,
+    image_url: item.coverUrl || item.image_url || null,
+    duration: item.duration || 0,
+    played_at: item.playedAt || item.played_at || null,
+  };
+};

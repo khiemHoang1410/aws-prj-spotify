@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus } from 'lucide-react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
+import { setCurrentSong } from '../../store/playerSlice';
 import { getMyPlaylists, createPlaylist, deletePlaylist, isLikedPlaylistName } from '../../services/PlaylistService';
 import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
@@ -27,6 +28,9 @@ export default function Sidebar() {
   const [isLoadingArtists, setIsLoadingArtists] = useState(false);
   const [contextMenu, setContextMenu] = useState(null); // { playlistId, playlistName, x, y }
   const contextMenuRef = useRef(null);
+
+  // Lấy 5 bài gần nhất từ historySlice
+  const recentEntries = useSelector((s) => s.history?.entries?.slice(0, 5) || []);
 
   const reloadPlaylists = async () => {
     setIsLoading(true);
@@ -234,6 +238,52 @@ export default function Sidebar() {
                     <p className="text-xs text-neutral-400">Danh sách phát</p>
                   </div>
                 </div>
+
+                {/* Mục: Nghe gần đây */}
+                {recentEntries.length > 0 && (
+                  <div className="mt-1 mb-1">
+                    <div className="flex items-center justify-between px-2 py-1">
+                      <button
+                        className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider transition ${location.pathname === '/play-history' ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}
+                        onClick={() => navigate('/play-history')}
+                      >
+                        <Clock size={12} />
+                        Nghe gần đây
+                      </button>
+                      <button
+                        className="text-xs text-neutral-500 hover:text-white transition"
+                        onClick={() => navigate('/play-history')}
+                      >
+                        Xem tất cả
+                      </button>
+                    </div>
+                    {recentEntries.map((entry, idx) => (
+                      <div
+                        key={entry.entryId || idx}
+                        className="flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5 transition overflow-hidden"
+                        onClick={() => dispatch(setCurrentSong({
+                          song_id: entry.songId,
+                          title: entry.title,
+                          artist_name: entry.artist_name,
+                          artist_id: entry.artist_id,
+                          image_url: entry.image_url,
+                          duration: entry.duration,
+                        }))}
+                      >
+                        <img
+                          src={entry.image_url || '/pictures/whiteBackground.jpg'}
+                          alt={entry.title}
+                          className="w-11 h-11 rounded object-cover flex-shrink-0"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                        />
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-white truncate">{entry.title}</p>
+                          <p className="text-xs text-neutral-400 truncate">{entry.artist_name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
 
                 {playlists.map((playlist) => {
                   const isActive = location.pathname === `/playlist/${playlist.id}`;

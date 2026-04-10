@@ -6,7 +6,6 @@ import { toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
-import { getHistory } from '../../services/HistoryService';
 import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
 import { REPEAT_MODE } from '../../constants/enums';
@@ -34,6 +33,7 @@ export default function PlayerBar() {
   const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
+  const historyEntries = useSelector((state) => state.history?.entries || []);
 
   const initialVolumeRef = useRef(readInitialVolume());
   
@@ -185,7 +185,7 @@ export default function PlayerBar() {
 
   const getTrendingFallbackSong = async () => {
     const allSongs = await getSongs();
-    const historyIds = new Set(getHistory().map((song) => song.song_id));
+    const historyIds = new Set(historyEntries.map((entry) => entry.songId || entry.song_id));
     if (currentSong?.song_id) historyIds.add(currentSong.song_id);
 
     const trendingSongs = getTrendingSongs(allSongs);

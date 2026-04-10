@@ -9,8 +9,9 @@ export const PlayHistorySchema = z.object({
     coverUrl: z.string().optional().nullable(),
     duration: z.number().int().min(0).optional().nullable(),
     playedAt: z.string().optional(),
+    entryId: z.string().optional(),
     ttl: z.number().int().optional(),
 });
 
 export type PlayHistoryInput = z.infer<typeof PlayHistorySchema>;
-export type PlayHistory = PlayHistoryInput & { playedAt: string };
+export type PlayHistory = PlayHistoryInput & { playedAt: string; entryId: string };
