@@ -23,6 +23,7 @@ import PageIntro from '../pages/PageIntro';
 import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
 import PlayHistoryPage from '../pages/PlayHistoryPage';
 import MyLibraryPage from '../pages/MyLibraryPage';
+import SongDetailPage from '../pages/SongDetailPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -37,6 +38,7 @@ export const router = createBrowserRouter([
       { path: '/search', element: <SearchPage /> },
       { path: '/lyrics', element: <LyricsPage /> },
       { path: '/playlist/:id', element: <PlaylistDetailPage /> },
+      { path: '/song/:songSlug', element: <SongDetailPage /> },
       { path: '/artist/:id', element: <ArtistProfilePage /> },      { path: '/album/:id', element: <AlbumDetailPage /> },
       { path: '/category/:id', element: <CategoryPage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
