@@ -28,6 +28,7 @@ import JokeGeneratorPage from '../pages/JokeGeneratorPage';
 import TodoListPage from '../pages/TodoListPage';
 import PlayHistoryPage from '../pages/PlayHistoryPage';
 import MyLibraryPage from '../pages/MyLibraryPage';
+import SongDetailPage from '../pages/SongDetailPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
