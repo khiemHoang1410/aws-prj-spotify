@@ -23,6 +23,14 @@ import PageIntro from '../pages/PageIntro';
 import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
 import JokeGeneratorPage from '../pages/JokeGeneratorPage';
 import TodoListPage from '../pages/TodoListPage';
+import PlayHistoryPage from '../pages/PlayHistoryPage';
+import MyLibraryPage from '../pages/MyLibraryPage';
+import SongDetailPage from '../pages/SongDetailPage';
+import JokeGeneratorPage from '../pages/JokeGeneratorPage';
+import TodoListPage from '../pages/TodoListPage';
+import PlayHistoryPage from '../pages/PlayHistoryPage';
+import MyLibraryPage from '../pages/MyLibraryPage';
+import SongDetailPage from '../pages/SongDetailPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -37,8 +45,8 @@ export const router = createBrowserRouter([
       { path: '/search', element: <SearchPage /> },
       { path: '/lyrics', element: <LyricsPage /> },
       { path: '/playlist/:id', element: <PlaylistDetailPage /> },
-      { path: '/artist/:id', element: <ArtistProfilePage /> },
-      { path: '/album/:id', element: <AlbumDetailPage /> },
+      { path: '/song/:songSlug', element: <SongDetailPage /> },
+      { path: '/artist/:id', element: <ArtistProfilePage /> },      { path: '/album/:id', element: <AlbumDetailPage /> },
       { path: '/category/:id', element: <CategoryPage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
       { path: '/jokes', element: <JokeGeneratorPage /> },
@@ -46,6 +54,8 @@ export const router = createBrowserRouter([
 
       // Protected — cần đăng nhập
       { path: '/liked-songs', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
+      { path: '/play-history', element: <ProtectedRoute><PlayHistoryPage /></ProtectedRoute> },
+      { path: '/my-library', element: <ProtectedRoute><MyLibraryPage /></ProtectedRoute> },
       { path: '/profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },
       { path: '/settings', element: <ProtectedRoute><SettingsPage /></ProtectedRoute> },
       { path: '/artist-verify', element: <ProtectedRoute><ArtistVerifyPage /></ProtectedRoute> },

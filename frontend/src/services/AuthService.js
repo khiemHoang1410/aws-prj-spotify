@@ -243,3 +243,43 @@ export const logoutUser = async () => {
   }
   clearSession();
 };
+
+// ─── Forgot Password ──────────────────────────────────────────────────────────
+
+export const forgotPassword = async (email) => {
+  if (!API_URL) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (!email.includes('@')) { reject(new Error('Email không hợp lệ')); return; }
+        resolve({ message: 'Nếu email tồn tại trong hệ thống, mã OTP đã được gửi đến email của bạn' });
+      }, 800);
+    });
+  }
+  const res = await fetch(`${API_URL}/auth/forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Đã có lỗi xảy ra, vui lòng thử lại');
+  return data;
+};
+
+export const confirmForgotPassword = async (email, code, newPassword) => {
+  if (!API_URL) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        if (newPassword.length < 8) { reject(new Error('Mật khẩu tối thiểu 8 ký tự')); return; }
+        resolve({ message: 'Đặt lại mật khẩu thành công' });
+      }, 800);
+    });
+  }
+  const res = await fetch(`${API_URL}/auth/confirm-forgot-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email, code, newPassword }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Đã có lỗi xảy ra, vui lòng thử lại');
+  return data;
+};

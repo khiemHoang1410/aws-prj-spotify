@@ -30,9 +30,11 @@ export const adaptSong = (song) => {
 
 export const adaptArtist = (artist) => {
   if (!artist) return null;
+  // Extract id từ pk nếu id không có trực tiếp (pk = ARTIST#uuid)
+  const id = artist.id || (artist.pk ? artist.pk.replace(/^ARTIST#/, '') : null);
   return {
-    id: artist.id,
-    artist_id: artist.id,
+    id,
+    artist_id: id,
     name: artist.name,
     bio: artist.bio || null,
     photo_url: artist.photoUrl || artist.photo_url || null,
@@ -95,4 +97,18 @@ export const adaptPaginatedResponse = (data, adaptFn) => {
   if (Array.isArray(data)) return data.map(adaptFn);
   if (data?.items) return data.items.map(adaptFn);
   return [];
+};
+
+export const normalizeHistoryEntry = (item) => {
+  if (!item) return null;
+  return {
+    entryId: item.entryId || null,
+    songId: item.songId || item.song_id || null,
+    title: item.songTitle || item.title || '',
+    artist_name: item.artistName || item.artist_name || '',
+    artist_id: item.artistId || item.artist_id || null,
+    image_url: item.coverUrl || item.image_url || null,
+    duration: item.duration || 0,
+    played_at: item.playedAt || item.played_at || null,
+  };
 };

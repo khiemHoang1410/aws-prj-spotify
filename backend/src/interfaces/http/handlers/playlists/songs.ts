@@ -20,7 +20,7 @@ const AddSongSchema = z.object({
 export const listHandler = makeAuthHandler(async (_body, params) => {
     const idResult = validateUUID(params.id, "playlist ID");
     if (!idResult.success) return idResult;
-    return playlistService.getPlaylistSongs(idResult.data);
+    return playlistService.getPlaylistSongsSorted(idResult.data);
 });
 
 // POST /playlists/{id}/songs
