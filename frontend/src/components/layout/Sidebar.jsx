@@ -261,9 +261,24 @@ export default function Sidebar() {
                   </div>
                 </div>
 
-                {/* Mục: Nghe gần đây */}
+                {/* Redux-driven playlist list */}
+                {playlistIds.length === 0 && status === 'succeeded' ? (
+                  <p className="text-xs text-neutral-500 px-2 py-4">Chưa có playlist nào</p>
+                ) : (
+                  playlistIds.map((id) => (
+                    <div
+                      key={id}
+                      onContextMenu={(e) => handleContextMenu(e, id)}
+                    >
+                      <SidebarPlaylistItem playlistId={id} />
+                    </div>
+                  ))
+                )}
+
+                {/* Mục: Nghe gần đây — đặt sau playlist */}
                 {recentEntries.length > 0 && (
-                  <div className="mt-1 mb-1">
+                  <div className="mt-2">
+                    <div className="h-[1px] bg-neutral-800 mb-2" />
                     <div className="flex items-center justify-between px-2 py-1">
                       <button
                         className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-wider transition ${location.pathname === '/play-history' ? 'text-green-400' : 'text-neutral-400 hover:text-white'}`}
@@ -305,20 +320,6 @@ export default function Sidebar() {
                       </div>
                     ))}
                   </div>
-                )}
-
-                {/* Redux-driven playlist list */}
-                {playlistIds.length === 0 && status === 'succeeded' ? (
-                  <p className="text-xs text-neutral-500 px-2 py-4">Chưa có playlist nào</p>
-                ) : (
-                  playlistIds.map((id) => (
-                    <div
-                      key={id}
-                      onContextMenu={(e) => handleContextMenu(e, id)}
-                    >
-                      <SidebarPlaylistItem playlistId={id} />
-                    </div>
-                  ))
                 )}
               </div>
             )
