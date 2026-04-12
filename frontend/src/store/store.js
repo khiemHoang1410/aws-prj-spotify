@@ -5,6 +5,7 @@ import uiReducer from './uiSlice';
 import settingsReducer from './settingsSlice';
 import notificationReducer from './notificationSlice';
 import editorialReducer from './editorialSlice';
+import playlistsReducer from './playlistSlice';
 import historyReducer, {
   addEntryOptimistic,
   confirmEntry,
@@ -14,6 +15,7 @@ import historyReducer, {
 import { syncOnLogin, loadHistory } from './historySlice';
 import { logout, loginSuccess } from './authSlice';
 import { showToast } from './uiSlice';
+import { fetchMyPlaylists } from './playlistSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
 
 const PLAYER_STATE_STORAGE_KEY = 'spotify_player_state_v1';
@@ -28,6 +30,7 @@ export const store = configureStore({
     notification: notificationReducer,
     editorial: editorialReducer,
     history: historyReducer,
+    playlists: playlistsReducer,
   },
 });
 
@@ -133,6 +136,7 @@ store.subscribe(() => {
   if (!prevAuth.isAuthenticated && state.auth.isAuthenticated) {
     store.dispatch(loadHistory());
     store.dispatch(syncOnLogin());
+    store.dispatch(fetchMyPlaylists());
   }
 });
 

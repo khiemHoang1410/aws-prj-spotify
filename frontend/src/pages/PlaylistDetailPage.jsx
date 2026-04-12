@@ -1,102 +1,69 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
-import { Play, Shuffle, Clock, Music, Search, PlusCircle, Check, Trash2, Edit3, Globe, Lock, X } from 'lucide-react';
+import { DragDropContext, Droppable } from '@hello-pangea/dnd';
+import { useVirtualizer } from '@tanstack/react-virtual';
+import { Play, Shuffle, Clock, Music, Search, Globe, Lock, Edit3 } from 'lucide-react';
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getPlaylistById, addSongToPlaylist, removeSongFromPlaylist } from '../services/PlaylistService';
-import api from '../services/apiClient';
-import { uploadCoverImage } from '../services/UploadService';
-import { searchSongs } from '../services/SongService';
+import {
+  selectPlaylistById,
+  selectPlaylistSongs,
+  selectPlaylistCover,
+  selectIsReordering,
+  fetchPlaylistSongs,
+  removeSong,
+  reorderSongs,
+} from '../store/playlistSlice';
+import { reorderArray } from '../store/playlistUtils';
+import PlaylistSongRow from '../components/playlists/PlaylistSongRow';
+import AddSongPanel from '../components/playlists/AddSongPanel';
+import PlaylistRenameModal from '../components/playlists/PlaylistRenameModal';
+import PlaylistDeleteConfirm from '../components/playlists/PlaylistDeleteConfirm';
 import EmptyState from '../components/ui/EmptyState';
-import ErrorMessage from '../components/ui/ErrorMessage';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
 const PLAYLIST_DEFAULT_IMG = '/pictures/playlistDefault.jpg';
-
-function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
-  return `${m}:${s.toString().padStart(2, '0')}`;
-}
+const VIRTUAL_THRESHOLD = 100;
 
 export default function PlaylistDetailPage() {
   const dispatch = useDispatch();
-  const { id: activePlaylistId } = useParams();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { id: playlistId } = useParams();
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
 
-  const [playlist, setPlaylist] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const playlist = useSelector((state) => selectPlaylistById(state, playlistId));
+  const songs = useSelector((state) => selectPlaylistSongs(state, playlistId));
+  const cover = useSelector((state) => selectPlaylistCover(state, playlistId));
+  const isReordering = useSelector(selectIsReordering);
+
   const [isAddingSongs, setIsAddingSongs] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchResult, setSearchResult] = useState([]);
-
-  // Edit playlist state
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editIsPublic, setEditIsPublic] = useState(false);
-  const [editCoverPreview, setEditCoverPreview] = useState(null);
-  const [editCoverFile, setEditCoverFile] = useState(null);
-  const [isSavingEdit, setIsSavingEdit] = useState(false);
-  const coverInputRef = useRef(null);
-
-  const openEditModal = () => {
-    setEditName(playlist?.name || '');
-    setEditIsPublic(playlist?.is_public || false);
-    setEditCoverPreview(playlist?.image_url || null);
-    setEditCoverFile(null);
-    setIsEditModalOpen(true);
-  };
-
-  const handleCoverFileChange = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setEditCoverFile(file);
-    setEditCoverPreview(URL.createObjectURL(file));
-  };
-
-  const handleSaveEdit = async () => {
-    if (!editName.trim()) return;
-    setIsSavingEdit(true);
-    try {
-      let coverUrl = playlist.image_url || null;
-      if (editCoverFile) {
-        const result = await uploadCoverImage(editCoverFile);
-        coverUrl = result.url;
-      }
-      await api.put(`/playlists/${activePlaylistId}`, {
-        name: editName.trim(),
-        isPublic: editIsPublic,
-        coverUrl,
-      });
-      setPlaylist((prev) => ({ ...prev, name: editName.trim(), is_public: editIsPublic, image_url: coverUrl }));
-      dispatch(showToast({ message: 'Đã cập nhật playlist', type: 'success' }));
-      setIsEditModalOpen(false);
-    } catch {
-      dispatch(showToast({ message: 'Không thể cập nhật playlist', type: 'error' }));
-    } finally {
-      setIsSavingEdit(false);
-    }
-  };
-  const [addedIds, setAddedIds] = useState([]);
-
-  // [S7-005.2] Shuffle state
+  const [isRenameOpen, setIsRenameOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isShuffleActive, setIsShuffleActive] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
+  const parentRef = useRef(null);
+
+  const isOwner = isAuthenticated && user?.user_id && playlist?.userId === user.user_id;
+
+  // Fetch songs on mount if not already loaded
   useEffect(() => {
-    if (!activePlaylistId) return;
-    setIsLoading(true);
-    setError('');
-    getPlaylistById(activePlaylistId)
-      .then((data) => {
-        if (!data) setError('Không tìm thấy playlist này.');
-        else setPlaylist(data);
-      })
-      .catch(() => setError('Không thể tải playlist. Vui lòng thử lại.'))
-      .finally(() => setIsLoading(false));
-  }, [activePlaylistId]);
+    if (!playlistId) return;
+    if (songs.length === 0) {
+      setIsLoading(true);
+      dispatch(fetchPlaylistSongs(playlistId)).finally(() => setIsLoading(false));
+    }
+  }, [playlistId, dispatch]);
+
+  // Virtual scroll setup (only when > VIRTUAL_THRESHOLD songs)
+  const useVirtual = songs.length > VIRTUAL_THRESHOLD;
+  const rowVirtualizer = useVirtualizer({
+    count: useVirtual ? songs.length : 0,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => 56,
+    enabled: useVirtual,
+  });
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {
@@ -107,46 +74,15 @@ export default function PlaylistDetailPage() {
   };
 
   const handlePlayAll = () => {
-    if (!playlist?.songs?.length) return;
-    handlePlaySong(playlist.songs[0]);
+    if (!songs.length) return;
+    handlePlaySong(songs[0]);
   };
 
-  useEffect(() => {
-    if (searchTerm.trim().length < 1) { setSearchResult([]); return; }
-    const t = setTimeout(async () => {
-      const results = await searchSongs(searchTerm.trim());
-      setSearchResult(results.slice(0, 8));
-    }, 300);
-    return () => clearTimeout(t);
-  }, [searchTerm]);
-
-  const handleAddSong = async (song) => {
-    if (addedIds.includes(song.song_id)) return;
-    await addSongToPlaylist(playlist.id, song);
-    setAddedIds((prev) => [...prev, song.song_id]);
-    setPlaylist((prev) => ({
-      ...prev,
-      songs: [...(prev.songs || []), song],
-    }));
-    dispatch(showToast({ message: `Đã thêm "${song.title}" vào playlist`, type: 'success' }));
-  };
-
-  // [S6-001.5] handleRemoveSong
-  const handleRemoveSong = async (songId) => {
-    await removeSongFromPlaylist(playlist.id, songId);
-    setPlaylist((prev) => ({
-      ...prev,
-      songs: prev.songs.filter((s) => s.song_id !== songId),
-    }));
-    dispatch(showToast({ message: 'Đã xoá bài hát khỏi playlist', type: 'success' }));
-  };
-
-  // [S7-005.3] Fisher-Yates shuffle play
   const handleShuffle = () => {
-    if (!playlist?.songs?.length) return;
+    if (!songs.length) return;
     if (!isShuffleActive) {
       dispatch(clearQueue());
-      const shuffled = [...playlist.songs];
+      const shuffled = [...songs];
       for (let i = shuffled.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -161,9 +97,21 @@ export default function PlaylistDetailPage() {
     }
   };
 
-  if (!activePlaylistId) return null;
+  // Stable onRemove reference for React.memo
+  const handleRemove = useCallback((songId) => {
+    dispatch(removeSong({ playlistId, songId }));
+  }, [dispatch, playlistId]);
 
-  if (isLoading) {
+  const handleDragEnd = (result) => {
+    if (!result.destination) return;
+    if (result.source.index === result.destination.index) return;
+    if (isReordering) return;
+
+    const newSongs = reorderArray(songs, result.source.index, result.destination.index);
+    dispatch(reorderSongs({ playlistId, newSongs }));
+  };
+
+  if (isLoading && songs.length === 0) {
     return (
       <div className="space-y-3 mt-4">
         <SkeletonCard variant="row" />
@@ -173,65 +121,67 @@ export default function PlaylistDetailPage() {
     );
   }
 
-  if (error) {
-    return (
-      <div className="mt-10">
-        <ErrorMessage message={error} />
-      </div>
-    );
-  }
+  // Fallback: if playlist not in Redux (e.g. public playlist not owned by user)
+  const displayName = playlist?.name || 'Playlist';
+  const displayCover = cover || playlist?.image_url || PLAYLIST_DEFAULT_IMG;
+  const displayOwner = playlist?.owner || 'Bạn';
+  const isPublic = playlist?.is_public ?? false;
 
   return (
     <div>
       {/* Gradient header */}
-      <div className="flex items-end gap-6 h-64 px-2 pb-6 bg-gradient-to-b from-purple-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
+      <div className="flex items-end gap-6 h-64 pb-6 bg-gradient-to-b from-purple-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
         <div className="relative group flex-shrink-0">
           <img
-            src={playlist.image_url || PLAYLIST_DEFAULT_IMG}
-            alt={playlist.name}
+            src={displayCover}
+            alt={displayName}
             className="w-44 h-44 rounded-md shadow-2xl object-cover"
             onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = PLAYLIST_DEFAULT_IMG; }}
           />
-          <button
-            onClick={openEditModal}
-            className="absolute inset-0 rounded-md bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
-          >
-            <Edit3 size={24} className="text-white" />
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => setIsRenameOpen(true)}
+              className="absolute inset-0 rounded-md bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition"
+            >
+              <Edit3 size={24} className="text-white" />
+            </button>
+          )}
         </div>
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white uppercase mb-1">Danh sách phát</p>
           <h1
-            className="text-4xl font-extrabold text-white truncate mb-2 cursor-pointer hover:underline"
-            onClick={openEditModal}
+            className={`text-4xl font-extrabold text-white truncate mb-2 ${isOwner ? 'cursor-pointer hover:underline' : ''}`}
+            onClick={isOwner ? () => setIsRenameOpen(true) : undefined}
           >
-            {playlist.name}
+            {displayName}
           </h1>
           <p className="text-sm text-neutral-300">
-            {playlist.owner} • {playlist.songs?.length ?? 0} bài hát • {playlist.is_public ? <span className="inline-flex items-center gap-1"><Globe size={12} /> Công khai</span> : <span className="inline-flex items-center gap-1"><Lock size={12} /> Riêng tư</span>}
+            {displayOwner} • {songs.length} bài hát •{' '}
+            {isPublic
+              ? <span className="inline-flex items-center gap-1"><Globe size={12} /> Công khai</span>
+              : <span className="inline-flex items-center gap-1"><Lock size={12} /> Riêng tư</span>
+            }
           </p>
         </div>
       </div>
 
-      {/* Action bar — [S7-003.1] Disable Play khi playlist rỗng */}
+      {/* Action bar */}
       <div className="flex items-center gap-4 mb-6">
         <button
           onClick={handlePlayAll}
-          disabled={!playlist?.songs?.length}
+          disabled={!songs.length}
           className={`w-14 h-14 bg-green-500 rounded-full flex items-center justify-center shadow-lg ${
-            playlist?.songs?.length
-              ? 'hover:bg-green-400 hover:scale-105 transition'
-              : 'bg-green-500/50 cursor-not-allowed'
+            songs.length ? 'hover:bg-green-400 hover:scale-105 transition' : 'bg-green-500/50 cursor-not-allowed'
           }`}
         >
           <Play size={24} className="text-black fill-black ml-1" />
         </button>
-        {/* [S7-005.4] Nút Shuffle */}
+
         <button
           onClick={handleShuffle}
-          disabled={!playlist?.songs?.length}
+          disabled={!songs.length}
           className={`transition relative ${
-            !playlist?.songs?.length
+            !songs.length
               ? 'text-neutral-400 opacity-50 cursor-not-allowed'
               : isShuffleActive
                 ? 'text-green-500 hover:text-green-400'
@@ -243,184 +193,124 @@ export default function PlaylistDetailPage() {
             <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full" />
           )}
         </button>
-        <button
-          onClick={() => setIsAddingSongs((v) => !v)}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
-            isAddingSongs ? 'bg-white text-black hover:bg-neutral-200' : 'border border-neutral-600 text-neutral-300 hover:border-white hover:text-white'
-          }`}
-        >
-          <Search size={16} />
-          Tìm bài hát để thêm vào
-        </button>
+
+        {isOwner && (
+          <>
+            <button
+              onClick={() => setIsAddingSongs((v) => !v)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
+                isAddingSongs
+                  ? 'bg-white text-black hover:bg-neutral-200'
+                  : 'border border-neutral-600 text-neutral-300 hover:border-white hover:text-white'
+              }`}
+            >
+              <Search size={16} />
+              Tìm bài hát để thêm vào
+            </button>
+
+            <button
+              onClick={() => setIsDeleteOpen(true)}
+              className="ml-auto px-4 py-2 rounded-full text-sm font-semibold border border-neutral-600 text-neutral-300 hover:border-red-400 hover:text-red-400 transition"
+            >
+              Xóa playlist
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Song table header — [S6-001.3] thêm cột actions */}
-      {playlist.songs?.length > 0 && (
-        <div className="grid grid-cols-[24px_1fr_1fr_56px_40px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
+      {/* Song table header */}
+      {songs.length > 0 && (
+        <div className="grid grid-cols-[32px_24px_1fr_1fr_56px_40px] gap-3 px-2 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
+          <span />
           <span>#</span>
           <span>Tiêu đề</span>
           <span>Nghệ sĩ</span>
           <span className="flex justify-center"><Clock size={14} /></span>
-          <span></span>
+          <span />
         </div>
       )}
 
-      {/* Song rows */}
-      {playlist.songs?.length > 0 ? (
-        <div className="flex flex-col">
-          {playlist.songs.map((song, idx) => (
-            <div
-              key={song.song_id}
-              className="grid grid-cols-[24px_1fr_1fr_56px_40px] gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition"
-              onClick={() => handlePlaySong(song)}
-            >
-              <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-              <Play
-                size={16}
-                className="text-white hidden group-hover:flex items-center fill-white cursor-pointer"
-                onClick={() => handlePlaySong(song)}
-              />
-              <div className="flex items-center gap-3 min-w-0">
-                <img src={song.image_url} alt={song.title} className="w-10 h-10 rounded object-cover flex-shrink-0"
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }} />
-                <span className="text-sm font-medium text-white truncate">{song.title}</span>
-              </div>
-              <span className="text-sm text-neutral-400 flex items-center truncate">{song.artist_name}</span>
-              <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
-              {/* [S6-001.4] Nút xoá bài hát */}
-              <button
-                onClick={(e) => { e.stopPropagation(); handleRemoveSong(song.song_id); }}
-                className="flex items-center justify-center text-neutral-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition"
-                title="Xoá khỏi playlist"
-              >
-                <Trash2 size={16} />
-              </button>
-            </div>
-          ))}
-        </div>
+      {/* Song rows — DnD */}
+      {songs.length > 0 ? (
+        <DragDropContext onDragEnd={handleDragEnd}>
+          <Droppable droppableId={`playlist-${playlistId}`} isDropDisabled={isReordering || !isOwner}>
+            {(provided) => (
+              useVirtual ? (
+                <div
+                  ref={(el) => {
+                    provided.innerRef(el);
+                    parentRef.current = el;
+                  }}
+                  {...provided.droppableProps}
+                  className="overflow-auto"
+                  style={{ height: Math.min(songs.length * 56, 600) }}
+                >
+                  <div style={{ height: rowVirtualizer.getTotalSize(), position: 'relative' }}>
+                    {rowVirtualizer.getVirtualItems().map((virtualRow) => {
+                      const song = songs[virtualRow.index];
+                      return (
+                        <div
+                          key={song.song_id}
+                          style={{
+                            position: 'absolute',
+                            top: 0,
+                            left: 0,
+                            width: '100%',
+                            transform: `translateY(${virtualRow.start}px)`,
+                          }}
+                          onClick={() => handlePlaySong(song)}
+                        >
+                          <PlaylistSongRow
+                            song={song}
+                            index={virtualRow.index}
+                            onRemove={handleRemove}
+                            isOwner={isOwner}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {provided.placeholder}
+                </div>
+              ) : (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="flex flex-col"
+                >
+                  {songs.map((song, idx) => (
+                    <div key={song.song_id} onClick={() => handlePlaySong(song)}>
+                      <PlaylistSongRow
+                        song={song}
+                        index={idx}
+                        onRemove={handleRemove}
+                        isOwner={isOwner}
+                      />
+                    </div>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )
+            )}
+          </Droppable>
+        </DragDropContext>
       ) : (
         <div className="mt-10">
           <EmptyState icon={Music} title="Playlist trống" description="Playlist này chưa có bài hát nào." />
         </div>
       )}
 
-      {/* PANEL THÊM BÀI HÁT (TASK-005) */}
-      {isAddingSongs && (
-        <div className="mt-8 border-t border-neutral-800 pt-6">
-          <h3 className="text-lg font-semibold text-white mb-3">Tìm bài hát để thêm</h3>
-          <div className="relative mb-4">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-            <input
-              type="text"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Tìm kiếm bài hát..."
-              className="w-full bg-neutral-800 text-white rounded-full pl-9 pr-4 py-2 text-sm outline-none focus:ring-1 focus:ring-white"
-              autoFocus
-            />
-          </div>
-          {searchResult.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              {searchResult.map((song) => {
-                const alreadyAdded =
-                  addedIds.includes(song.song_id) ||
-                  playlist.songs?.some((s) => s.song_id === song.song_id);
-                return (
-                  <div
-                    key={song.song_id}
-                    className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-white/5 transition"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <img
-                        src={song.image_url || '/pictures/whiteBackground.jpg'}
-                        alt={song.title}
-                        className="w-10 h-10 rounded object-cover flex-shrink-0"
-                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
-                      />
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{song.title}</p>
-                        <p className="text-xs text-neutral-400 truncate">{song.artist_name}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleAddSong(song)}
-                      disabled={alreadyAdded}
-                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition flex-shrink-0 ${
-                        alreadyAdded
-                          ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                          : 'border border-neutral-500 text-white hover:border-white hover:bg-white/10'
-                      }`}
-                    >
-                      {alreadyAdded ? <Check size={13} /> : <PlusCircle size={13} />}
-                      {alreadyAdded ? 'Đã thêm' : 'Thêm'}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          ) : searchTerm.trim().length > 0 ? (
-            <p className="text-sm text-neutral-500 px-4">Không tìm thấy bài hát nào</p>
-          ) : null}
-        </div>
+      {/* Add song panel */}
+      {isAddingSongs && isOwner && (
+        <AddSongPanel playlistId={playlistId} currentSongs={songs} />
       )}
 
-      {/* Edit Playlist Modal */}
-      {isEditModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-          <div className="bg-[#282828] rounded-xl p-6 w-96 shadow-2xl">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-white font-bold text-lg">Chỉnh sửa playlist</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-neutral-400 hover:text-white transition">
-                <X size={20} />
-              </button>
-            </div>
-
-            {/* Cover image */}
-            <div className="flex justify-center mb-5">
-              <div className="relative group cursor-pointer" onClick={() => coverInputRef.current?.click()}>
-                <img
-                  src={editCoverPreview || PLAYLIST_DEFAULT_IMG}
-                  className="w-32 h-32 rounded-lg object-cover shadow-lg"
-                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = PLAYLIST_DEFAULT_IMG; }}
-                />
-                <div className="absolute inset-0 rounded-lg bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition">
-                  <Edit3 size={20} className="text-white mb-1" />
-                  <span className="text-white text-xs">Chọn ảnh</span>
-                </div>
-              </div>
-              <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverFileChange} />
-            </div>
-
-            {/* Name */}
-            <input
-              type="text"
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              placeholder="Tên playlist..."
-              className="w-full bg-neutral-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-green-500 mb-4"
-            />
-
-            {/* Privacy toggle */}
-            <button
-              onClick={() => setEditIsPublic((v) => !v)}
-              className={`flex items-center gap-2 w-full px-3 py-2 rounded-lg text-sm mb-5 transition ${editIsPublic ? 'bg-green-500/20 text-green-400' : 'bg-neutral-700 text-neutral-300'}`}
-            >
-              {editIsPublic ? <Globe size={16} /> : <Lock size={16} />}
-              {editIsPublic ? 'Công khai' : 'Riêng tư'}
-            </button>
-
-            <div className="flex gap-2 justify-end">
-              <button onClick={() => setIsEditModalOpen(false)} className="px-4 py-2 text-sm text-neutral-300 hover:text-white transition">Huỷ</button>
-              <button
-                onClick={handleSaveEdit}
-                disabled={!editName.trim() || isSavingEdit}
-                className="px-4 py-2 text-sm bg-green-500 text-black font-semibold rounded-full hover:bg-green-400 transition disabled:opacity-50"
-              >
-                {isSavingEdit ? 'Đang lưu...' : 'Lưu'}
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Modals */}
+      {isRenameOpen && playlist && (
+        <PlaylistRenameModal playlistId={playlistId} onClose={() => setIsRenameOpen(false)} />
+      )}
+      {isDeleteOpen && playlist && (
+        <PlaylistDeleteConfirm playlistId={playlistId} onClose={() => setIsDeleteOpen(false)} />
       )}
     </div>
   );
