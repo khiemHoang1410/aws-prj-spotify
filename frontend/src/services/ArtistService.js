@@ -80,3 +80,13 @@ export const searchArtists = async (query) => {
     return [];
   }
 };
+
+export const getRelatedArtists = async (artistId) => {
+  try {
+    const data = await api.get(`/artists/${artistId}/related`);
+    const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
+    return arr.map(adaptArtist).filter(Boolean);
+  } catch {
+    return [];
+  }
+};

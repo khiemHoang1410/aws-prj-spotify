@@ -258,6 +258,25 @@ export const deletePlaylist = async (id, playlistName) => {
   }
 };
 
+export const reorderPlaylistSongs = async (playlistId, songIds) => {
+  try {
+    await api.put(`/playlists/${encodeURIComponent(playlistId)}`, { songIds });
+    return { success: true };
+  } catch {
+    return { success: false };
+  }
+};
+
+export const updatePlaylistName = async (playlistId, name) => {
+  try {
+    const data = await api.put(`/playlists/${encodeURIComponent(playlistId)}`, { name });
+    const normalized = normalizePlaylist(data?.data || data);
+    return { success: true, data: normalized };
+  } catch {
+    return { success: false };
+  }
+};
+
 export const addSongToPlaylist = async (playlistId, song) => {
   if (!playlistId || !song?.song_id) return { success: false };
   try {

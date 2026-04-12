@@ -1,4 +1,5 @@
 import { v7 as uuidv7 } from "uuid";
+import { z } from "zod";
 import { Playlist, PlaylistSchema } from "../../domain/entities/Playlist";
 import { PlaylistRepository } from "../../infrastructure/database/PlaylistRepository";
 import { SongRepository } from "../../infrastructure/database/SongRepository";
@@ -54,8 +55,14 @@ export class PlaylistService {
         return await this.playlistRepo.findById(id);
     }
 
-    async getMyPlaylists(userId: string): Promise<Result<Playlist[]>> {
-        return await this.playlistRepo.findByUserId(userId);
+    async getMyPlaylists(userId: string): Promise<Result<any[]>> {
+        const result = await this.playlistRepo.findByUserId(userId);
+        if (!result.success) return result;
+        const playlists = result.data.map((p: any) => ({
+            ...p,
+            isSystem: p.isSystem === true || p.type === "LIKED_SONGS",
+        }));
+        return Success(playlists);
     }
 
     async getPublicPlaylists(limit: number, cursor?: string): Promise<Result<any>> {
@@ -95,11 +102,23 @@ export class PlaylistService {
         return await this.playlistRepo.getSongs(playlistId);
     }
 
+    async getPlaylistSongsSorted(playlistId: string): Promise<Result<any[]>> {
+        return await this.playlistRepo.getSongsSorted(playlistId);
+    }
+
     async updatePlaylist(playlistId: string, userId: string, rawData: any): Promise<Result<Playlist>> {
         try {
             const playlistResult = await this.playlistRepo.findById(playlistId);
             if (!playlistResult.success || !playlistResult.data) return Failure("Playlist không tồn tại", 404);
             if (playlistResult.data.userId !== userId) return Failure("Không có quyền chỉnh sửa playlist này", 403);
+
+            // Handle songIds reorder separately — single UpdateItem on METADATA
+            if (rawData.songIds !== undefined) {
+                const songIdsValidation = z.array(z.uuid()).safeParse(rawData.songIds);
+                if (!songIdsValidation.success) return Failure("songIds phải là mảng UUID hợp lệ", 400);
+                return await this.playlistRepo.updateSongOrder(playlistId, songIdsValidation.data)
+                    .then(r => r.success ? Success(playlistResult.data!) : r as any);
+            }
 
             const validation = PlaylistSchema
                 .pick({ name: true, description: true, coverUrl: true, isPublic: true })

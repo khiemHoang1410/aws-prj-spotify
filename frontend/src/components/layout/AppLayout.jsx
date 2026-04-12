@@ -10,6 +10,7 @@ import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
 import QueueSidebar from './QueueSidebar';
 import AuthModal from '../modals/AuthModal';
+import ForgotPasswordModal from '../modals/ForgotPasswordModal';
 import ReportModal from '../modals/ReportModal';
 import Toast from '../ui/Toast';
 import MiniLyricsPanel from '../Lyrics/MiniLyricsPanel';
@@ -150,6 +151,7 @@ export default function AppLayout() {
       </footer>
 
       <AuthModal />
+      <ForgotPasswordModal />
       <Toast />
       {isPiP && currentSong && <MiniLyricsPanel />}
       {isReportModalOpen && <ReportModal />}

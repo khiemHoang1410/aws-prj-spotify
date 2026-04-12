@@ -5,13 +5,21 @@ import uiReducer from './uiSlice';
 import settingsReducer from './settingsSlice';
 import notificationReducer from './notificationSlice';
 import editorialReducer from './editorialSlice';
-import { logout } from './authSlice';
+import playlistsReducer from './playlistSlice';
+import historyReducer, {
+  addEntryOptimistic,
+  confirmEntry,
+  saveLocal,
+  loadLocal,
+} from './historySlice';
+import { syncOnLogin, loadHistory } from './historySlice';
+import { logout, loginSuccess } from './authSlice';
 import { showToast } from './uiSlice';
+import { fetchMyPlaylists } from './playlistSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
-import { addToHistoryLocal } from '../services/HistoryService';
-import { recordPlay } from '../services/UserService';
 
 const PLAYER_STATE_STORAGE_KEY = 'spotify_player_state_v1';
+const API_DEBOUNCE_MS = 3000;
 
 export const store = configureStore({
   reducer: {
@@ -21,10 +29,12 @@ export const store = configureStore({
     settings: settingsReducer,
     notification: notificationReducer,
     editorial: editorialReducer,
+    history: historyReducer,
+    playlists: playlistsReducer,
   },
 });
 
-// Khi token hết hạn và không refresh được → tự động logout khỏi Redux
+// Khi token hết hạn → tự động logout
 setAuthExpiredCallback(() => {
   store.dispatch(logout());
   store.dispatch(showToast({ message: 'Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', type: 'error' }));
@@ -41,33 +51,66 @@ setRequestFailedCallback((message) => {
   store.dispatch(showToast({ message, type: 'error' }));
 });
 
-// ─── Single subscriber — gộp tất cả side effects vào 1 chỗ ──────────────────
-// Init với bài đang restore từ localStorage để tránh ghi history khi app load
+// ─── Play History — debounce 3 giây ─────────────────────────────────────────
+// Optimistic update: ngay lập tức vào Redux + localStorage
+// API call: chỉ gọi nếu bài vẫn đang phát sau 3 giây
+
 let _lastHistorySongId = store.getState().player.currentSong?.song_id ?? null;
 let _debounceTimer = null;
+let _apiCalledForCurrentSong = false;
 
 store.subscribe(() => {
   const state = store.getState();
+  const { currentSong } = state.player;
 
   // 1. Track play history khi song thay đổi
-  const { currentSong } = state.player;
   if (currentSong && currentSong.song_id !== _lastHistorySongId) {
     _lastHistorySongId = currentSong.song_id;
+    _apiCalledForCurrentSong = false;
 
-    // localStorage: immediate (không debounce)
-    addToHistoryLocal(currentSong);
+    // Optimistic update ngay lập tức
+    store.dispatch(addEntryOptimistic(currentSong));
 
-    // API: debounce 1500ms để chống spam khi skip liên tục
+    // Lưu localStorage ngay (cho guest + fallback)
+    const currentEntries = store.getState().history.entries;
+    saveLocal(currentEntries);
+
+    // Hủy timer cũ (bài trước chưa đủ 3 giây)
     clearTimeout(_debounceTimer);
-    _debounceTimer = setTimeout(() => {
+
+    // Set timer 3 giây — chỉ gọi API nếu bài không đổi
+    const songIdAtDispatch = currentSong.song_id;
+    const tempId = `temp-${Date.now()}`;
+
+    _debounceTimer = setTimeout(async () => {
+      // Kiểm tra bài vẫn là bài này
+      const latestSong = store.getState().player.currentSong;
+      if (latestSong?.song_id !== songIdAtDispatch) return;
+      if (_apiCalledForCurrentSong) return;
+
       const { isAuthenticated } = store.getState().auth;
-      if (isAuthenticated && import.meta.env.VITE_API_URL) {
-        recordPlay(currentSong).catch(() => {});
-      }
-    }, 1500);
+      if (!isAuthenticated || !import.meta.env.VITE_API_URL) return;
+
+      _apiCalledForCurrentSong = true;
+
+      try {
+        const { default: apiClient } = await import('../services/apiClient');
+        const serverEntry = await apiClient.post('/me/play-history', {
+          songId: currentSong.song_id,
+          songTitle: currentSong.title,
+          artistId: currentSong.artist_id || null,
+          artistName: currentSong.artist_name || null,
+          coverUrl: currentSong.image_url || null,
+          duration: currentSong.duration || null,
+        });
+        if (serverEntry?.entryId) {
+          store.dispatch(confirmEntry({ tempId: `temp-${Date.now() - API_DEBOUNCE_MS}`, serverEntry }));
+        }
+      } catch { /* giữ nguyên optimistic entry */ }
+    }, API_DEBOUNCE_MS);
   }
 
-  // 3. Persist player state (currentSong + currentTime)
+  // 2. Persist player state
   if (typeof window !== 'undefined') {
     try {
       const { currentTime, isPlaying } = state.player;
@@ -79,3 +122,23 @@ store.subscribe(() => {
     } catch { }
   }
 });
+
+// ─── Auth events ──────────────────────────────────────────────────────────────
+
+let _prevAuthState = store.getState().auth;
+
+store.subscribe(() => {
+  const state = store.getState();
+  const prevAuth = _prevAuthState;
+  _prevAuthState = state.auth;
+
+  // loginSuccess: load history + sync localStorage
+  if (!prevAuth.isAuthenticated && state.auth.isAuthenticated) {
+    store.dispatch(loadHistory());
+    store.dispatch(syncOnLogin());
+    store.dispatch(fetchMyPlaylists());
+  }
+});
+
+// Load history khi app khởi động (guest dùng localStorage, user đã login dùng API)
+store.dispatch(loadHistory());

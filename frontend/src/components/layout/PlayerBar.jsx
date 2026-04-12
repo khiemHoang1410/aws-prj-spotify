@@ -6,7 +6,6 @@ import { toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
-import { getHistory } from '../../services/HistoryService';
 import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
 import { REPEAT_MODE } from '../../constants/enums';
@@ -34,6 +33,7 @@ export default function PlayerBar() {
   const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
+  const historyEntries = useSelector((state) => state.history?.entries || []);
 
   const initialVolumeRef = useRef(readInitialVolume());
   
@@ -185,7 +185,7 @@ export default function PlayerBar() {
 
   const getTrendingFallbackSong = async () => {
     const allSongs = await getSongs();
-    const historyIds = new Set(getHistory().map((song) => song.song_id));
+    const historyIds = new Set(historyEntries.map((entry) => entry.songId || entry.song_id));
     if (currentSong?.song_id) historyIds.add(currentSong.song_id);
 
     const trendingSongs = getTrendingSongs(allSongs);
@@ -283,8 +283,14 @@ export default function PlayerBar() {
           onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
         />
         <div className="flex flex-col">
-          <a href="#" className="text-white text-sm font-semibold hover:underline truncate">{currentSong.title}</a>
-          <a href="#" className="text-[#b3b3b3] text-xs hover:underline truncate hover:text-white">{currentSong.artist_name}</a>
+          <a
+            onClick={() => currentSong.song_id && navigate(`/songs/${currentSong.song_id}`)}
+            className="text-white text-sm font-semibold hover:underline truncate cursor-pointer"
+          >{currentSong.title}</a>
+          <a
+            onClick={() => currentSong.artist_id && navigate(`/artist/${currentSong.artist_id}`)}
+            className="text-[#b3b3b3] text-xs hover:underline truncate hover:text-white cursor-pointer"
+          >{currentSong.artist_name}</a>
         </div>
         <button
           className={`ml-2 transition hover:scale-110 ${likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}

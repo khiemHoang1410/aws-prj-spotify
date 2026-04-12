@@ -33,6 +33,8 @@ const initialState = {
   history: [],
   isShuffle: false,
   repeatMode: REPEAT_MODE.OFF,
+  currentPlaylistId: null,
+  currentPlaylistName: null,
 };
 
 const playerSlice = createSlice({
@@ -48,7 +50,14 @@ const playerSlice = createSlice({
       state.isPlaying = true;
       state.currentTime = 0;
     },
-    togglePlay: (state) => {
+    setCurrentPlaylistContext: (state, action) => {
+      state.currentPlaylistId = action.payload?.id ?? null;
+      state.currentPlaylistName = action.payload?.name ?? null;
+    },
+    clearCurrentPlaylistContext: (state) => {
+      state.currentPlaylistId = null;
+      state.currentPlaylistName = null;
+    },    togglePlay: (state) => {
       if (state.currentSong) state.isPlaying = !state.isPlaying;
     },
     updateCurrentTime: (state, action) => {
@@ -113,10 +122,25 @@ const playerSlice = createSlice({
       else state.repeatMode = 'off';
     },
   },
+  extraReducers: (builder) => {
+    // When a playlist is deleted, clear the playlist context if it was the active one
+    builder.addMatcher(
+      (action) => action.type === 'playlists/deletePlaylist/fulfilled',
+      (state, action) => {
+        const deletedId = action.payload;
+        if (state.currentPlaylistId === deletedId) {
+          state.currentPlaylistId = null;
+          state.currentPlaylistName = null;
+          // Keep queue and currentSong — do NOT clear them
+        }
+      }
+    );
+  },
 });
 
 export const {
   setCurrentSong, togglePlay, updateCurrentTime, seekToTime, clearSeekTime,
   addToQueue, clearQueue, playNextSong, playPreviousSong, toggleShuffle, setShuffleMode, cycleRepeat,
+  setCurrentPlaylistContext, clearCurrentPlaylistContext,
 } = playerSlice.actions;
 export default playerSlice.reducer;

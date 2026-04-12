@@ -6,6 +6,8 @@ import {
     GetCommand,
     QueryCommand,
     DeleteCommand,
+    UpdateCommand,
+    BatchGetCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { Playlist } from "../../domain/entities/Playlist";
 import { Song } from "../../domain/entities/Song";
@@ -173,6 +175,53 @@ export class PlaylistRepository {
             return Success(undefined);
         } catch (error: any) {
             return Failure(`Lỗi xóa playlist: ${error.message}`, 500);
+        }
+    }
+
+    async updateSongOrder(playlistId: string, songIds: string[]): Promise<Result<void>> {
+        try {
+            await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.prefix}#${playlistId}`, sk: "METADATA" },
+                UpdateExpression: "SET songOrder = :order, updatedAt = :now",
+                ExpressionAttributeValues: {
+                    ":order": songIds,
+                    ":now": new Date().toISOString(),
+                },
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            return Failure(`Lỗi cập nhật thứ tự bài hát: ${error.message}`, 500);
+        }
+    }
+
+    async getSongsSorted(playlistId: string): Promise<Result<any[]>> {
+        try {
+            // 1. Fetch METADATA to get songOrder
+            const metaResponse = await docClient.send(new GetCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.prefix}#${playlistId}`, sk: "METADATA" },
+            }));
+            const songOrder: string[] = metaResponse.Item?.songOrder ?? [];
+
+            // 2. Fetch all SONG# items via Query
+            const songsResult = await this.getSongs(playlistId);
+            if (!songsResult.success) return songsResult;
+            const songs = songsResult.data;
+
+            if (songs.length === 0) return Success([]);
+
+            // 3. Sort by songOrder; songs not in songOrder go to the end
+            const orderMap = new Map(songOrder.map((id, idx) => [id, idx]));
+            const sorted = [...songs].sort((a, b) => {
+                const ia = orderMap.has(a.songId) ? orderMap.get(a.songId)! : Infinity;
+                const ib = orderMap.has(b.songId) ? orderMap.get(b.songId)! : Infinity;
+                return ia - ib;
+            });
+
+            return Success(sorted);
+        } catch (error: any) {
+            return Failure(`Lỗi lấy bài hát đã sắp xếp: ${error.message}`, 500);
         }
     }
 }
