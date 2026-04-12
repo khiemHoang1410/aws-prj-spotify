@@ -63,8 +63,9 @@ const historySlice = createSlice({
         played_at: new Date().toISOString(),
         _isTemp: true,
       };
-      // Thêm vào đầu, giới hạn MAX_ENTRIES
-      state.entries = [tempEntry, ...state.entries].slice(0, MAX_ENTRIES);
+      // Xóa entry cũ của cùng bài hát (temp hoặc confirmed) trước khi thêm mới
+      const filtered = state.entries.filter((e) => e.songId !== song.song_id);
+      state.entries = [tempEntry, ...filtered].slice(0, MAX_ENTRIES);
     },
 
     confirmEntry(state, action) {
@@ -87,7 +88,14 @@ const historySlice = createSlice({
 
     setEntries(state, action) {
       const { items, nextCursor } = action.payload;
-      state.entries = items.map(normalizeHistoryEntry);
+      // Dedup theo songId — giữ entry mới nhất (đầu tiên trong array)
+      const seen = new Set();
+      const deduped = items.map(normalizeHistoryEntry).filter((e) => {
+        if (!e.songId || seen.has(e.songId)) return false;
+        seen.add(e.songId);
+        return true;
+      });
+      state.entries = deduped;
       state.nextCursor = nextCursor || null;
       state.hasMore = !!nextCursor;
       state.isLoading = false;
