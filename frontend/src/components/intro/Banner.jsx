@@ -22,10 +22,21 @@ function Banner() {
             onMouseLeave={() => setHoveredIndex(null)}
           >
             <div className="card-container">
-              <img src={src} alt={`Album ${index + 1}`} />
+              <img 
+                src={src || "/pictures/albumDefault.png"} 
+                alt={`Album ${index + 1}`}
+                onError={(e) => e.target.src = "/pictures/albumDefault.png"} />
               <div className="card-container">
-                <img src={src} alt={`Album ${index + 1}`} className="original-image" />
-                <img src={src} alt={`Secondary Album ${index + 1}`} className="secondary-image" />
+                <img 
+                  src={src || "/pictures/albumDefault.png"} 
+                  alt={`Album ${index + 1}`} 
+                  className="original-image"
+                  onError={(e) => e.target.src = "/pictures/albumDefault.png"} />
+                <img 
+                  src={src || "/pictures/albumDefault.png"} 
+                  alt={`Secondary Album ${index + 1}`} 
+                  className="secondary-image"
+                  onError={(e) => e.target.src = "/pictures/albumDefault.png"} />
                 <div className="glowing-elements">
                   <div className="glow-1"></div>
                   <div className="glow-2"></div>

@@ -46,9 +46,9 @@ function TopArtists() {
               <div className="top-artist-info">
                 <div className="top-artist-avatar">
                   <img 
-                    src={artist.photo_url || artist.image_url || "/placeholder.svg"} 
+                    src={artist.photo_url || artist.image_url || "/pictures/artist_default.png"} 
                     alt={artist.name} 
-                    onError={(e) => e.target.src = "/placeholder.svg"} />
+                    onError={(e) => e.target.src = "/pictures/artist_default.png"} />
                 </div>
                 <div className="top-artist-details">
                   <h3 className="top-artist-name">{artist.name}</h3>
@@ -59,9 +59,9 @@ function TopArtists() {
               </div>
               <div className="top-artist-artwork" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
                 <img 
-                  src={artist.artist_background || artist.photo_url || "/placeholder.svg"} 
+                  src={artist.artist_background || artist.photo_url || "/pictures/artworkDefault.png"} 
                   alt={`${artist.name} artwork`}
-                  onError={(e) => e.target.src = "/placeholder.svg"} />
+                  onError={(e) => e.target.src = "/pictures/artworkDefault.png"} />
               </div>
             </div>
           ))

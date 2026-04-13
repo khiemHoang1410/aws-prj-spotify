@@ -41,7 +41,10 @@ function Trending() {
         <div className="nft-grid">
           {trendingImages.map((nft) => (
             <div key={nft.id} className="nft-item">
-              <img src={nft.image || "/placeholder.svg"} alt={nft.alt} />
+              <img 
+                src={nft.image || "/pictures/whiteBackground.jpg"} 
+                alt={nft.alt}
+                onError={(e) => e.target.src = "/pictures/whiteBackground.jpg"} />
             </div>
           ))}
         </div>

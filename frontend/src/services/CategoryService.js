@@ -4,22 +4,32 @@ const API_URL = import.meta.env.VITE_API_URL;
 
 // Fallback khi chưa có API hoặc BE chưa có endpoint categories
 const MOCK_CATEGORIES = [
-  { id: 'vpop',   name: 'V-Pop',       color: 'bg-red-500',      img: 'https://i.scdn.co/image/ab67706f000000029b3524dbdf7ce11e5a5266b0' },
-  { id: 'pop',    name: 'Pop',         color: 'bg-blue-600',     img: 'https://i.scdn.co/image/ab67706f00000002b70e0223f544b1faa2e95ed0' },
-  { id: 'kpop',   name: 'K-Pop',       color: 'bg-pink-500',     img: 'https://i.scdn.co/image/ab67706f000000021bb0143a41b7123aa2e17ea4' },
-  { id: 'ballad', name: 'Ballad',      color: 'bg-orange-800',   img: 'https://i.scdn.co/image/ab67706f00000002c414e7daf34690c9f983f76e' },
-  { id: 'rap',    name: 'Rap/Hip-Hop', color: 'bg-orange-500',   img: 'https://i.scdn.co/image/ab67706f000000029bb6af539d072de34548d15c' },
-  { id: 'indie',  name: 'Indie',       color: 'bg-purple-600',   img: 'https://i.scdn.co/image/ab67706f00000002a2eb1e4eb41fdb454a8e6fcc' },
-  { id: 'rnb',    name: 'R&B',         color: 'bg-indigo-600',   img: 'https://i.scdn.co/image/ab67706f00000002f232b6e1b7db775cb5c9f564' },
-  { id: 'edm',    name: 'EDM',         color: 'bg-teal-500',     img: 'https://i.scdn.co/image/ab67706f00000002030f148419c8bf4eb3dc6da2' },
+  { id: 'vpop',   name: 'V-Pop',       color: 'bg-red-500',      img: '/pictures/CategoryDefault.png' },
+  { id: 'pop',    name: 'Pop',         color: 'bg-blue-600',     img: '/pictures/CategoryDefault.png' },
+  { id: 'kpop',   name: 'K-Pop',       color: 'bg-pink-500',     img: '/pictures/CategoryDefault.png' },
+  { id: 'ballad', name: 'Ballad',      color: 'bg-orange-800',   img: '/pictures/CategoryDefault.png' },
+  { id: 'rap',    name: 'Rap/Hip-Hop', color: 'bg-orange-500',   img: '/pictures/CategoryDefault.png' },
+  { id: 'indie',  name: 'Indie',       color: 'bg-purple-600',   img: '/pictures/CategoryDefault.png' },
+  { id: 'rnb',    name: 'R&B',         color: 'bg-indigo-600',   img: '/pictures/CategoryDefault.png' },
+  { id: 'edm',    name: 'EDM',         color: 'bg-teal-500',     img: '/pictures/CategoryDefault.png' },
 ];
 
+const normalizeCategory = (item) => ({
+  id: item?.id || item?.slug || item?.name,
+  name: item?.name || 'Category',
+  color: item?.color || 'bg-gradient-to-br from-indigo-500 to-blue-500',
+  img: item?.img || item?.image || item?.image_url || '/pictures/CategoryDefault.png',
+});
+
 export const getCategories = async () => {
-  if (!API_URL) return MOCK_CATEGORIES;
+  if (!API_URL) return MOCK_CATEGORIES.map(normalizeCategory);
   try {
-    return await api.get('/categories');
+    const data = await api.get('/categories');
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    if (!Array.isArray(items) || items.length === 0) return MOCK_CATEGORIES.map(normalizeCategory);
+    return items.map(normalizeCategory);
   } catch {
     // Graceful fallback nếu BE chưa có endpoint
-    return MOCK_CATEGORIES;
+    return MOCK_CATEGORIES.map(normalizeCategory);
   }
 };

@@ -3,6 +3,7 @@ import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlu
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
+import { openModal } from '../../store/authSlice';
 import { setCurrentSong } from '../../store/playerSlice';
 import {
   selectPlaylistIds,
@@ -136,20 +137,22 @@ export default function Sidebar() {
     setContextMenu({ playlistId, x: e.clientX, y: e.clientY });
   };
 
-  const handleDeletePlaylist = async (playlistId, playlistName) => {
-    setContextMenu(null);
-    if (isLikedPlaylistName(playlistName || '')) {
-      dispatch(showToast({ message: 'Không thể xóa playlist hệ thống', type: 'warning' }));
+  const handleOpenLibrary = () => {
+    if (!isAuthenticated) {
+      dispatch(openModal('login'));
+      dispatch(showToast({ message: 'Vui lòng đăng nhập để truy cập thư viện', type: 'info' }));
       return;
     }
-    if (!window.confirm(`Bạn có chắc muốn xoá playlist "${playlistName}"?`)) return;
-    try {
-      await dispatch(deletePlaylist(playlistId)).unwrap();
-      dispatch(showToast({ message: `Đã xoá "${playlistName}"`, type: 'success' }));
-      if (location.pathname === `/playlist/${playlistId}`) navigate('/');
-    } catch {
-      // Error toast already shown in thunk
+    navigate('/my-library');
+  };
+
+  const handleCreatePlaylistClick = () => {
+    if (!isAuthenticated) {
+      dispatch(openModal('login'));
+      dispatch(showToast({ message: 'Vui lòng đăng nhập để tạo playlist', type: 'info' }));
+      return;
     }
+    setIsCreateModalOpen(true);
   };
 
   return (
@@ -191,14 +194,14 @@ export default function Sidebar() {
         <div className="flex items-center justify-between p-2 mb-2">
           <button
             className="flex items-center gap-3 text-[#b3b3b3] font-bold hover:text-white transition duration-200"
-            onClick={() => navigate('/my-library')}
+            onClick={handleOpenLibrary}
           >
             <Library size={24} />
             <span>Thư viện</span>
           </button>
           <button
             className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
-            onClick={() => setIsCreateModalOpen(true)}
+            onClick={handleCreatePlaylistClick}
             title="Tạo playlist mới"
           >
             <Plus size={20} />
