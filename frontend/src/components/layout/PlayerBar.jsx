@@ -6,6 +6,7 @@ import { toggleLikeSongThunk } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
+import { toSongUrl } from '../../utils/songUrl';
 import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
 import { REPEAT_MODE } from '../../constants/enums';
@@ -284,7 +285,7 @@ export default function PlayerBar() {
         />
         <div className="flex flex-col">
           <a
-            onClick={() => currentSong.song_id && navigate(`/songs/${currentSong.song_id}`)}
+            onClick={() => currentSong.song_id && navigate(toSongUrl(currentSong))}
             className="text-white text-sm font-semibold hover:underline truncate cursor-pointer"
           >{currentSong.title}</a>
           <a
