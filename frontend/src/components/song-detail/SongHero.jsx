@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import ColorThief from 'colorthief';
+import * as ColorThiefModule from 'colorthief';
+
+const ColorThief = ColorThiefModule.default || ColorThiefModule;
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 

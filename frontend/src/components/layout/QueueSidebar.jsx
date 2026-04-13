@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { X, Play } from 'lucide-react';
 import { toggleRightSidebar } from '../../store/uiSlice';
@@ -10,7 +10,8 @@ export default function QueueSidebar() {
   const dispatch = useDispatch();
   const { isRightSidebarOpen } = useSelector(state => state.ui);
   const { queue, currentSong } = useSelector(state => state.player);
-  const historyEntries = useSelector(state => state.history?.entries?.slice(0, 20) || []);
+  const allHistoryEntries = useSelector(state => state.history?.entries);
+  const historyEntries = useMemo(() => allHistoryEntries?.slice(0, 20) || [], [allHistoryEntries]);
 
   const [activeTab, setActiveTab] = useState('queue');
 
