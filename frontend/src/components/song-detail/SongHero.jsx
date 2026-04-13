@@ -1,8 +1,31 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import ColorThief from 'colorthief';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+
+function extractDominantColor(imgEl) {
+  try {
+    const canvas = document.createElement('canvas');
+    const size = 50;
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, size, size);
+    const data = ctx.getImageData(0, 0, size, size).data;
+    let r = 0, g = 0, b = 0, count = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const pr = data[i], pg = data[i + 1], pb = data[i + 2];
+      const brightness = (pr + pg + pb) / 3;
+      if (brightness > 20 && brightness < 235) {
+        r += pr; g += pg; b += pb; count++;
+      }
+    }
+    if (count === 0) return null;
+    return [Math.round(r / count), Math.round(g / count), Math.round(b / count)];
+  } catch {
+    return null;
+  }
+}
 
 const FALLBACK_GRADIENT = 'linear-gradient(to bottom, #4c1d95, #312e81, #121212)';
 
@@ -25,12 +48,12 @@ export default function SongHero({ song, onColorExtracted }) {
   const handleImageLoad = () => {
     setImgLoaded(true);
     try {
-      const colorThief = new ColorThief();
-      const color = colorThief.getColor(imgRef.current);
-      setDominantColor(color);
-      onColorExtracted?.(color);
+      const color = extractDominantColor(imgRef.current);
+      if (color) {
+        setDominantColor(color);
+        onColorExtracted?.(color);
+      }
     } catch {
-      // CORS or other error — use fallback gradient
       setDominantColor(null);
     }
   };
