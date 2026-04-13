@@ -107,5 +107,14 @@ export const getLikedSongs = async () => {
   }
 };
 
+export const getTrendingSongs = async (limit = 20) => {
+  try {
+    const data = await api.get(`/songs/trending?limit=${Math.min(limit, 50)}`);
+    return Array.isArray(data) ? data.map(adaptSong) : (data?.items || []).map(adaptSong);
+  } catch {
+    return [];
+  }
+};
+
 /** Client-side relevance search — deprecated, dùng searchSongs() */
 export const searchWithRelevance = () => ({ songs: [], matchedCategories: [] });

@@ -1,10 +1,10 @@
 function PartnerLogos() {
     const partners = [
-      { name: "Megascans", logo: "/logo-megascans.png" },
-      { name: "Unreal Engine", logo: "/logo-unreal.png" },
-      { name: "Metamask", logo: "/logo-metamask.png" },
-      { name: "Binance", logo: "/logo-binance.png" },
-      { name: "Oculus", logo: "/logo-oculus.png" },
+      { name: "Megascans", logo: "../public/pictures/logo-megascans.png" },
+      { name: "Unreal Engine", logo: "../public/pictures/logo-unreal.png" },
+      { name: "Metamask", logo: "../public/pictures/logo-metamask.png" },
+      { name: "Binance", logo: "../public/pictures/logo-binance.png" },
+      { name: "Oculus", logo: "../public/pictures/logo-oculus.png" },
     ]
   
     return (

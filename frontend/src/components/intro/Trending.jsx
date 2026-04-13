@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IntroMockData } from "../../data/IntroMockData";
+import { getTrendingSongs } from "../../services/SongService";
 
 function Trending() {
   const [trendingImages, setTrendingImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
@@ -11,7 +12,27 @@ function Trending() {
   };
 
   useEffect(() => {
-    setTrendingImages(IntroMockData.trending || [] || undefined || null);
+    const fetchTrending = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch top 8 trending songs
+        const songs = await getTrendingSongs(8);
+        const trendingData = (Array.isArray(songs) ? songs : []).map((song) => ({
+          id: song.song_id,
+          image: song.image_url,
+          alt: song.title,
+          title: song.title,
+        }));
+        setTrendingImages(trendingData);
+      } catch (error) {
+        console.error('Failed to fetch trending songs:', error);
+        setTrendingImages([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrending();
   }, []);
 
   return (

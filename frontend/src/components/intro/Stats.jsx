@@ -5,7 +5,7 @@ function Stats() {
       { label: "Artist", value: "12k+" },
     ]
   
-    const avatars = Array(5).fill("/placeholder-avatar.png")
+    const avatars = Array(5).fill("../public/pictures/user_default.png");
   
     return (
       <section className="stats-section container" >

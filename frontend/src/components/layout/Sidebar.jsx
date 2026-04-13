@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock, Laugh, ListTodo } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
@@ -70,8 +70,9 @@ export default function Sidebar() {
   const playlistIds = useSelector(selectPlaylistIds);
   const status = useSelector(selectPlaylistsStatus);
 
-  // Lấy 5 bài gần nhất từ historySlice
-  const recentEntries = useSelector((s) => s.history?.entries?.slice(0, 5) || []);
+  // Lấy 5 bài gần nhất từ historySlice (memoized để tránh unnecessary rerenders)
+  const entries = useSelector((s) => s.history?.entries);
+  const recentEntries = useMemo(() => entries?.slice(0, 5) || [], [entries]);
 
   // Fetch playlists when authenticated
   useEffect(() => {
