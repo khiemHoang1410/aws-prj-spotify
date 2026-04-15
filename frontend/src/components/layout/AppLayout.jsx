@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
-import { loginSuccess, setLikedSongs } from '../../store/authSlice';
+import { getCurrentUser } from '../../services/AuthService';
+import { loginSuccess, setLikedSongs, openModal } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
+import api from '../../services/apiClient';
+import { adaptUser } from '../../services/adapters';
+import { checkAndSaveArtistProfile } from '../../services/AuthService';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -45,11 +48,6 @@ const isSameUserSnapshot = (leftUser, rightUser) => {
     && leftUser.avatar_url === rightUser.avatar_url;
 };
 
-const isSameLikedSongs = (currentLikedSongs, nextLikedSongs) => {
-  if (currentLikedSongs.length !== nextLikedSongs.length) return false;
-  return currentLikedSongs.every((song, index) => song.song_id === nextLikedSongs[index]?.song_id);
-};
-
 export default function AppLayout() {
   const dispatch = useDispatch();
   const { isPiP, isReportModalOpen } = useSelector((state) => state.ui);
@@ -58,6 +56,13 @@ export default function AppLayout() {
   const location = useLocation();
 
   const isLyricsPage = location.pathname === '/lyrics';
+
+  // Mở modal login nếu ProtectedRoute redirect về đây với state openLogin
+  useEffect(() => {
+    if (location.state?.openLogin) {
+      dispatch(openModal('login'));
+    }
+  }, [location.state]);
 
   const syncUserFromBackend = async (cachedUser) => {
     if (!import.meta.env.VITE_API_URL || !cachedUser) return;
