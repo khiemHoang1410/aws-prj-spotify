@@ -28,6 +28,7 @@ export const handler = makeAuthHandler(async (body, _params, auth) => {
             email: auth.email,
             displayName: fieldsResult.data.displayName || auth.email,
             role: auth.role as any,
+            isBanned: false,
             avatarUrl: fieldsResult.data.avatarUrl ?? undefined,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString(),

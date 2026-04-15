@@ -5,7 +5,7 @@ import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getArtistById, followArtist, getRelatedArtists } from '../services/ArtistService';
+import { getArtistById, followArtist, getRelatedArtists, getFollowedArtists } from '../services/ArtistService';
 import { getSongs } from '../services/SongService';
 import { getAlbumsByArtist } from '../services/AlbumService';
 import EmptyState from '../components/ui/EmptyState';
@@ -38,15 +38,18 @@ export default function ArtistProfilePage() {
     Promise.all([
       getArtistById(activeArtistId),
       getSongs(),
-    ]).then(([artistData, allSongs]) => {
+      isAuthenticated ? getFollowedArtists() : Promise.resolve([]),
+    ]).then(([artistData, allSongs, followedArtists]) => {
       setArtist(artistData);
       if (artistData) {
         setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
         getAlbumsByArtist(artistData.name).then((albums) => setArtistAlbums(albums));
         getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
+        // Check if current user follows this artist
+        setIsFollowing(followedArtists.some((a) => a.id === activeArtistId));
       }
     }).finally(() => setIsLoading(false));
-  }, [activeArtistId]);
+  }, [activeArtistId, isAuthenticated]);
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, HeartOff, PlusCircle, ListPlus, EyeOff, Share2, Flag, ChevronRight } from 'lucide-react';
-import { toggleLikeSong, toggleLikeSongThunk } from '../../store/authSlice';
+import { toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { showToast, openReportModal } from '../../store/uiSlice';
 import { getMyPlaylists, addSongToPlaylist } from '../../services/PlaylistService';

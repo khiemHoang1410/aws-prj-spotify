@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Globe, Lock, MoreHorizontal, Edit3, Trash2 } from 'lucide-react';
 import { selectPlaylistById, selectPlaylistCover, selectPlaylistSongs } from '../../store/playlistSlice';

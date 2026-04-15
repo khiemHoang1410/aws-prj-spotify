@@ -1,12 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react"; // Bỏ useEffect
 import { IntroMockData } from "../../data/IntroMockData";
 
 function TopArtists() {
-  const [artists, setArtists] = useState([]);
-
-  useEffect(() => {
-    setArtists(IntroMockData.topArtists);
-  }, []);
+  // Khởi tạo state trực tiếp từ dữ liệu mock
+  const [artists] = useState(IntroMockData.topArtists);
 
   return (
     <section className="top-artists-section container">
@@ -36,4 +33,5 @@ function TopArtists() {
     </section>
   );
 }
+
 export default TopArtists;
