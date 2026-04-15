@@ -170,8 +170,11 @@ export default function PlayerBar() {
       setCurrentTimeLocal(0);
       isSeeking.current = true;
       setTimeout(() => { isSeeking.current = false; }, 300);
-      setSeekTime(0);
-      setTimeout(() => setSeekTime(null), 100);
+      setSeekTime(null);
+      setTimeout(() => {
+        setSeekTime(0);
+        setTimeout(() => setSeekTime(null), 100);
+      }, 0);
     } else {
       dispatch(playPreviousSong());
     }
@@ -182,8 +185,12 @@ export default function PlayerBar() {
     dispatch(updateCurrentTime(0));
     isSeeking.current = true;
     setTimeout(() => { isSeeking.current = false; }, 300);
-    setSeekTime(0);
-    setTimeout(() => setSeekTime(null), 100);
+    // Reset qua null trước để đảm bảo effect trong Audio luôn trigger
+    setSeekTime(null);
+    setTimeout(() => {
+      setSeekTime(0);
+      setTimeout(() => setSeekTime(null), 100);
+    }, 0);
   };
 
   const getTrendingFallbackSong = async () => {

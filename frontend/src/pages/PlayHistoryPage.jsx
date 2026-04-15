@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Play, Trash2, Clock, History, X } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { deleteEntry, clearAllHistory, loadMoreHistory } from '../store/historySlice';
+import { getSongById } from '../services/SongService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
@@ -109,15 +110,21 @@ export default function PlayHistoryPage() {
     return () => observer.disconnect();
   }, [handleLoadMore]);
 
-  const handlePlay = (entry) => {
-    dispatch(setCurrentSong({
-      song_id: entry.songId,
-      title: entry.title,
-      artist_name: entry.artist_name,
-      artist_id: entry.artist_id,
-      image_url: entry.image_url,
-      duration: entry.duration,
-    }));
+  const handlePlay = async (entry) => {
+    try {
+      const song = await getSongById(entry.songId);
+      dispatch(setCurrentSong(song));
+    } catch {
+      // Fallback nếu fetch lỗi — play với metadata có sẵn (không có audio_url)
+      dispatch(setCurrentSong({
+        song_id: entry.songId,
+        title: entry.title,
+        artist_name: entry.artist_name,
+        artist_id: entry.artist_id,
+        image_url: entry.image_url,
+        duration: entry.duration,
+      }));
+    }
   };
 
   const handleDelete = (e, entryId) => {
