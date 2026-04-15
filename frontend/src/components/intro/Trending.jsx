@@ -1,18 +1,15 @@
-import { useState, useEffect } from "react";
+import { useState } from "react"; // Xóa useEffect
 import { useNavigate } from "react-router-dom";
 import { IntroMockData } from "../../data/IntroMockData";
 
 function Trending() {
-  const [trendingImages, setTrendingImages] = useState([]);
+  // Gán trực tiếp dữ liệu từ MockData vào useState
+  const [trendingImages] = useState(IntroMockData.trending || []);
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
     navigate('/');
   };
-
-  useEffect(() => {
-    setTrendingImages(IntroMockData.trending || [] || undefined || null);
-  }, []);
 
   return (
     <section className="trending-section container">
@@ -43,4 +40,5 @@ function Trending() {
     </section>
   );
 }
+
 export default Trending;

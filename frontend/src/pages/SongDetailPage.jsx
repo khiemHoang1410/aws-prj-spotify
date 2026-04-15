@@ -7,8 +7,6 @@ import { parseSongId } from '../utils/songUrl';
 import { getSongById, getLyrics, getSongs } from '../services/SongService';
 import { setCurrentSong, togglePlay } from '../store/playerSlice';
 import { toggleLikeSongThunk, openModal } from '../store/authSlice';
-import { showToast } from '../store/uiSlice';
-
 import SongHero from '../components/song-detail/SongHero';
 import LyricsSection from '../components/song-detail/LyricsSection';
 import RelatedSongs from '../components/song-detail/RelatedSongs';
@@ -16,7 +14,6 @@ import SongContextMenu from '../components/ui/SongContextMenu';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 export function filterRelatedSongs(allSongs, currentSong) {
   return allSongs
@@ -56,7 +53,6 @@ export default function SongDetailPage() {
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState('lyrics');
   const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
-  const [dominantColor, setDominantColor] = useState(null);
   const [isSticky, setIsSticky] = useState(false);
 
   const actionBarRef = useRef(null);
@@ -199,7 +195,7 @@ export default function SongDetailPage() {
 
       {/* Hero */}
       <div ref={heroRef}>
-        <SongHero song={song} onColorExtracted={setDominantColor} />
+        <SongHero song={song} onColorExtracted={() => {}} />
       </div>
 
       {/* Action Bar */}

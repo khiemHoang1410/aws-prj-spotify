@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock, Laugh, ListTodo } from 'lucide-react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
@@ -166,8 +166,7 @@ export default function Sidebar() {
       {/* Quick links */}
       <div className="bg-[#121212] rounded-lg px-3 py-2 flex flex-col gap-0.5">
         {[
-          { label: 'Câu đùa vui', path: '/jokes', renderIcon: () => <Laugh size={18} /> },
-          { label: 'Việc cần làm', path: '/todos', renderIcon: () => <ListTodo size={18} /> },
+          { label: 'Trang chủ', path: '/', renderIcon: () => <AudioLines size={18} /> },
         ].map(({ label, path, renderIcon }) => {
           const isActive = location.pathname === path;
           return (
