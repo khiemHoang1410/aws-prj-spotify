@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../services/AuthService';
-import { loginSuccess, setLikedSongs, openModal } from '../../store/authSlice';
+import { loginSuccess, setLikedSongs } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
 import api from '../../services/apiClient';
@@ -56,13 +56,6 @@ export default function AppLayout() {
   const location = useLocation();
 
   const isLyricsPage = location.pathname === '/lyrics';
-
-  // Mở modal login nếu ProtectedRoute redirect về đây với state openLogin
-  useEffect(() => {
-    if (location.state?.openLogin) {
-      dispatch(openModal('login'));
-    }
-  }, [location.state]);
 
   const syncUserFromBackend = async (cachedUser) => {
     if (!import.meta.env.VITE_API_URL || !cachedUser) return;
