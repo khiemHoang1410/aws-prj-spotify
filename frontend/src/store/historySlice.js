@@ -104,7 +104,10 @@ const historySlice = createSlice({
     appendEntries(state, action) {
       const { items, nextCursor } = action.payload;
       const normalized = items.map(normalizeHistoryEntry);
-      state.entries = [...state.entries, ...normalized];
+      // Dedup: không thêm entry có songId đã tồn tại
+      const existingSongIds = new Set(state.entries.map((e) => e.songId));
+      const newEntries = normalized.filter((e) => e.songId && !existingSongIds.has(e.songId));
+      state.entries = [...state.entries, ...newEntries];
       state.nextCursor = nextCursor || null;
       state.hasMore = !!nextCursor;
       state.isLoading = false;
