@@ -173,20 +173,19 @@ export const checkAndSaveArtistProfile = async (userId) => {
 
   try {
     const headers = await getAuthHeaders();
-    const res = await fetch(`${API_URL}/me/artist-request`, { headers });
-    
+    const res = await fetch(`${API_URL}/artists?userId=${encodeURIComponent(userId)}`, { headers });
     if (!res.ok) {
       localStorage.removeItem(`spotify_artist_${userId}`);
       return null;
     }
 
-    const artistData = await res.json();
+    const artists = await res.json();
+    const artistData = Array.isArray(artists) ? artists[0] : artists?.items?.[0] || null;
     if (!artistData || !artistData.id) {
       localStorage.removeItem(`spotify_artist_${userId}`);
       return null;
     }
 
-    // Lưu artist profile vào localStorage
     localStorage.setItem(
       `spotify_artist_${userId}`,
       JSON.stringify({
@@ -200,7 +199,6 @@ export const checkAndSaveArtistProfile = async (userId) => {
       })
     );
 
-    // Cập nhật session user: role → artist, artistId → artist profile id
     const raw = localStorage.getItem(TOKEN_KEY);
     if (raw) {
       try {

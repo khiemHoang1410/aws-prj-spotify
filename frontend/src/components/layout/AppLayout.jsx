@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../services/AuthService';
 import { loginSuccess, setLikedSongs } from '../../store/authSlice';
@@ -54,6 +54,7 @@ export default function AppLayout() {
   const { currentSong } = useSelector((state) => state.player);
   const { user: authUser } = useSelector((state) => state.auth);
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isLyricsPage = location.pathname === '/lyrics';
 
@@ -82,7 +83,7 @@ export default function AppLayout() {
       // (localStorage chỉ có data từ idToken, không có artistId)
       let adaptedProfile = null;
       try {
-        const profile = await api.get('/me');
+        const profile = await api.get('/me', { silent: true });
         if (profile) {
           adaptedProfile = adaptUser(profile);
         }
@@ -122,6 +123,14 @@ export default function AppLayout() {
 
     return () => clearInterval(interval);
   }, [authUser]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const songId = params.get('song');
+    if (!songId) return;
+
+    navigate(`/song/${songId}`, { replace: true });
+  }, [location.search, navigate]);
 
   return (
     <div className="h-screen w-full flex flex-col bg-black text-white overflow-hidden font-sans">

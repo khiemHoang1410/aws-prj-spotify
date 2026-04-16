@@ -49,7 +49,7 @@ export default function ProfilePage() {
 
     (async () => {
       try {
-        const data = await api.get('/artist-requests/me');
+        const data = await api.get('/me/artist-request');
         const status = String(data?.status || '').toLowerCase();
         const mappedStatus = status === 'approved'
           ? VERIFY_STATUS.APPROVED
@@ -58,17 +58,7 @@ export default function ProfilePage() {
             : VERIFY_STATUS.IDLE;
         dispatch(setVerifyStatus({ status: mappedStatus }));
       } catch {
-        // Fallback route for environments that expose /me/artist-request instead.
-        try {
-          const data = await api.get('/me/artist-request');
-          const status = String(data?.status || '').toLowerCase();
-          const mappedStatus = status === 'approved'
-            ? VERIFY_STATUS.APPROVED
-            : status === 'pending'
-              ? VERIFY_STATUS.PENDING
-              : VERIFY_STATUS.IDLE;
-          dispatch(setVerifyStatus({ status: mappedStatus }));
-        } catch { /* ignore */ }
+        // If the backend is unavailable or endpoint is missing, do nothing.
       }
     })();
   }, [dispatch, user?.role]);
