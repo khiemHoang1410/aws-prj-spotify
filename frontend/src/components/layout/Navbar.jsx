@@ -25,9 +25,14 @@ export default function Navbar() {
   const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
   const isHome = location.pathname === '/';
 
+  const refreshNotifications = async () => {
+    const data = await getNotifications();
+    dispatch(setNotifications(data));
+  };
+
   useEffect(() => {
     if (!isAuthenticated) return;
-    getNotifications().then((data) => dispatch(setNotifications(data)));
+    refreshNotifications();
     getFollowedArtists().then((artists) => {
       dispatch(setFollowedArtists(artists.map((a) => a.name)));
     });
@@ -39,7 +44,7 @@ export default function Navbar() {
     (async () => {
       try {
         // 1. Fetch profile cơ bản từ /me
-        const profile = await api.get('/me');
+        const profile = await api.get('/me', { silent: true });
         const adaptedUser = profile ? adaptUser(profile) : null;
 
         // 2. Kiểm tra có phải artist không qua /me/artist-request
@@ -142,7 +147,16 @@ export default function Navbar() {
                   <div className="flex items-center justify-between px-4 py-3 border-b border-[#3e3e3e]">
                     <h3 className="text-sm font-bold text-white">Thông báo</h3>
                     {unreadCount > 0 && (
-                      <button className="text-xs text-blue-400 hover:text-blue-300 font-semibold" onClick={async () => { await markAllAsRead(); dispatch(markAllRead()); }}>
+                      <button className="text-xs text-blue-400 hover:text-blue-300 font-semibold" onClick={async () => {
+                        // Truyền tất cả notification IDs để persist vào localStorage cache
+                        const allIds = notifications.map((n) => n.id).filter(Boolean);
+                        const result = await markAllAsRead(allIds);
+                        if (result.success) {
+                          dispatch(markAllRead());
+                          // Không gọi refreshNotifications() — GSI eventual consistency
+                          // sẽ trả về is_read: false ngay sau khi cập nhật
+                        }
+                      }}>
                         Đánh dấu tất cả đã đọc
                       </button>
                     )}
@@ -151,23 +165,42 @@ export default function Navbar() {
                     {notifications.length === 0 ? (
                       <div className="px-4 py-8 text-center text-neutral-400 text-sm">Không có thông báo nào</div>
                     ) : (
-                      notifications.map((notif) => (
-                        <div
-                          key={notif.id}
-                          className={`flex items-start gap-3 px-4 py-3 hover:bg-[#3e3e3e] cursor-pointer transition ${!notif.is_read ? 'bg-[#333]' : ''}`}
-                          onClick={async () => {
-                            if (!notif.is_read) { await markNotifAsRead(notif.id); dispatch(markRead(notif.id)); }
-                          }}
-                        >
-                          <img src={notif.image_url || '/pictures/whiteBackground.jpg'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }} />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-sm text-white leading-tight">{notif.message}</p>
-                            <p className="text-xs text-neutral-400 mt-1">{new Date(notif.created_at).toLocaleDateString('vi-VN')}</p>
+                      notifications.map((notif) => {
+                        const rawDate = notif.created_at || notif.createdAt;
+                        const parsedDate = new Date(rawDate);
+                        const isValidDate = !Number.isNaN(parsedDate.getTime());
+                        const displayDate = isValidDate
+                          ? parsedDate.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                          : 'Không rõ thời gian';
+
+                        return (
+                          <div
+                            key={notif.id}
+                            className={`flex items-start gap-3 px-4 py-3 hover:bg-[#3e3e3e] cursor-pointer transition ${!notif.is_read ? 'bg-[#333]' : ''}`}
+                            onClick={async () => {
+                              if (!notif.is_read) {
+                                const result = await markNotifAsRead(notif.id);
+                                if (result.success) {
+                                  dispatch(markRead(notif.id));
+                                  // Không gọi refreshNotifications() ở đây: Redux đã
+                                  // cập nhật optimistically, re-fetch ngay sẽ race với BE
+                                  // và làm notification sáng lại
+                                }
+                              }
+                            }}
+                          >
+                            <img src={notif.image_url || '/pictures/whiteBackground.jpg'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }} />
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm text-white leading-tight">
+                                {notif.message || notif.title || 'Thông báo mới'}
+                              </p>
+                              <p className="text-xs text-neutral-400 mt-1">{displayDate}</p>
+                            </div>
+                            {!notif.is_read && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />}
                           </div>
-                          {!notif.is_read && <span className="w-2 h-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />}
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 </div>

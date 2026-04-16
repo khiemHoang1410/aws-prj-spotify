@@ -74,7 +74,8 @@ export const getLyrics = async (songId) => {
 export const recordView = async (songId) => {
   if (!songId) return;
   try {
-    await api.post(`/songs/${encodeURIComponent(songId)}/view`);
+    // silent: true — lỗi 503/5xx không hiện toast vì đây là fire-and-forget
+    await api.post(`/songs/${encodeURIComponent(songId)}/view`, undefined, { silent: true });
   } catch {
     // Fire-and-forget: lỗi không được ảnh hưởng playback
   }

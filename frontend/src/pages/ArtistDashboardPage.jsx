@@ -6,7 +6,7 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats, getArtistByUserId } from '../services/ArtistService';
+import { getArtistById, getArtistByUserId } from '../services/ArtistService';
 import { getSongs, deleteSong } from '../services/SongService';
 import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
 
@@ -45,12 +45,16 @@ export default function ArtistDashboardPage() {
     
     setIsLoading(true);
 
-    // Resolve artistId: ưu tiên từ user profile, fallback lấy từ BE
-    const resolveArtistId = user.artist_id
-      ? Promise.resolve(user.artist_id)
-      : getArtistByUserId(user.user_id || user.id).then((a) => a?.id ?? null);
+    const resolveArtistProfile = async () => {
+      if (user.artist_id) {
+        const artistProfile = await getArtistById(user.artist_id);
+        if (artistProfile) return artistProfile;
+      }
+      return getArtistByUserId(user.user_id || user.id);
+    };
 
-    resolveArtistId.then((artistId) => {
+    resolveArtistProfile().then((artistProfile) => {
+      const artistId = artistProfile?.id || null;
       if (!artistId) {
         dispatch(showToast({ 
           message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
@@ -61,12 +65,20 @@ export default function ArtistDashboardPage() {
         return;
       }
       Promise.all([
-        getArtistStats(artistId),
+        Promise.resolve(artistProfile),
         getSongs(),
         getAlbumsByArtist(user.username),
-      ]).then(([statsData, allSongs, albums]) => {
-        setStats(statsData);
-        setMySongs(allSongs.filter((s) => s.artist_id === artistId));
+      ]).then(([profile, allSongs, albums]) => {
+        const songsByArtist = (Array.isArray(allSongs) ? allSongs : []).filter((s) => s.artist_id === artistId);
+        const totalPlays = songsByArtist.reduce((sum, song) => sum + (song.play_count || 0), 0);
+        setStats({
+          totalSongs: songsByArtist.length,
+          totalAlbums: Array.isArray(albums) ? albums.length : 0,
+          totalPlays,
+          followers: profile?.followers || 0,
+          monthlyListeners: Number(profile?.monthly_listeners) || 0,
+        });
+        setMySongs(songsByArtist);
         setMyAlbums(albums);
       }).finally(() => setIsLoading(false));
     });

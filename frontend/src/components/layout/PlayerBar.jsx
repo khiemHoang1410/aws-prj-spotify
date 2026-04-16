@@ -59,12 +59,13 @@ export default function PlayerBar() {
   useEffect(() => {
     const songId = currentSong?.song_id;
     if (!isAuthenticated || !songId) return;
+    if (!isPlaying) return;
     if (currentTimeLocal < 20) return;
     if (countedSongIdsRef.current.has(songId)) return;
 
     countedSongIdsRef.current.add(songId);
     void recordView(songId);
-  }, [isAuthenticated, currentSong?.song_id, currentTimeLocal]);
+  }, [isAuthenticated, currentSong?.song_id, currentTimeLocal, isPlaying]);
 
   useEffect(() => {
     if (globalSeekTime !== null) {

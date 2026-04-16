@@ -19,8 +19,12 @@ const CreateSchema = z.object({
 export const listHandler = makeAuthHandler(async (_body, _params, auth) => {
     const result = await notifRepo.findByUserId(auth.userId);
     if (!result.success) return result;
-    // Map isRead → is_read for FE compatibility
-    return Success(result.data.map((n) => ({ ...n, is_read: n.isRead })));
+    // Map camelCase → snake_case for FE compatibility
+    return Success(result.data.map((n) => ({
+        ...n,
+        is_read: n.isRead ?? false,
+        image_url: n.imageUrl ?? null,
+    })));
 });
 
 // POST /notifications

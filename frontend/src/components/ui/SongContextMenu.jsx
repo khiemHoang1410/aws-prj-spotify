@@ -5,6 +5,7 @@ import { toggleLikeSongThunk } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
 import { showToast, openReportModal } from '../../store/uiSlice';
 import { getMyPlaylists, addSongToPlaylist } from '../../services/PlaylistService';
+import { toSongUrl } from '../../utils/songUrl';
 
 const MENU_WIDTH = 224; // w-56
 const MENU_HEIGHT = 290; // approximate height
@@ -54,7 +55,7 @@ export default function SongContextMenu({ song, position, onClose }) {
   };
 
   const handleShare = () => {
-    const url = `${window.location.origin}?song=${song.song_id}`;
+    const url = `${window.location.origin}${toSongUrl(song)}`;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(() => {
         dispatch(showToast({ message: 'Đã sao chép link chia sẻ', type: 'success' }));

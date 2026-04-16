@@ -12,7 +12,8 @@ export const getArtists = async () => {
 
 export const getArtistById = async (artistId) => {
   try {
-    const data = await api.get(`/artists/${artistId}`);
+    // silent: true — hàm đã return null khi lỗi, không cần toast 404
+    const data = await api.get(`/artists/${artistId}`, { silent: true });
     return adaptArtist(data);
   } catch {
     return null;
@@ -49,9 +50,16 @@ export const getArtistByUserId = async (userId) => {
 
 export const getArtistStats = async (artistId) => {
   try {
-    return await api.get(`/artists/${artistId}/stats`);
+    const data = await getArtistById(artistId);
+    return {
+      totalSongs: 0,
+      totalAlbums: 0,
+      totalPlays: 0,
+      followers: data?.followers || 0,
+      monthlyListeners: Number(data?.monthly_listeners) || 0,
+    };
   } catch {
-    return { totalSongs: 0, totalAlbums: 0, totalPlays: 0 };
+    return { totalSongs: 0, totalAlbums: 0, totalPlays: 0, followers: 0, monthlyListeners: 0 };
   }
 };
 

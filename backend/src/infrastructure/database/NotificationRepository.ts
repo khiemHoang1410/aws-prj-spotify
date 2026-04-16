@@ -18,6 +18,8 @@ export class NotificationRepository extends BaseRepository<Notification> {
                 ExpressionAttributeValues: { ":userId": userId, ":sk": "METADATA" },
                 ScanIndexForward: false, // newest first
                 Limit: 50,
+                // ConsistentRead không được hỗ trợ trên GSI (chỉ eventually consistent)
+                // Để tránh ValidationException, KHÔNG set ConsistentRead ở đây
             }));
             return Success((response.Items as Notification[]) || []);
         } catch (error: any) {
