@@ -1,5 +1,4 @@
 import api from './apiClient';
-import { getAuthToken } from './AuthService';
 
 /**
  * Upload flow:

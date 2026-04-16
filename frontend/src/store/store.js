@@ -10,10 +10,9 @@ import historyReducer, {
   addEntryOptimistic,
   confirmEntry,
   saveLocal,
-  loadLocal,
 } from './historySlice';
 import { syncOnLogin, loadHistory } from './historySlice';
-import { logout, loginSuccess } from './authSlice';
+import { logout } from './authSlice';
 import { showToast } from './uiSlice';
 import { fetchMyPlaylists } from './playlistSlice';
 import { setAuthExpiredCallback, setRequestFailedCallback } from '../services/apiClient';
@@ -81,6 +80,7 @@ store.subscribe(() => {
     // Set timer 3 giây — chỉ gọi API nếu bài không đổi
     const songIdAtDispatch = currentSong.song_id;
     const tempId = `temp-${Date.now()}`;
+    void tempId; // used in confirmEntry below
 
     _debounceTimer = setTimeout(async () => {
       // Kiểm tra bài vẫn là bài này
@@ -119,7 +119,7 @@ store.subscribe(() => {
         currentTime: Number.isFinite(currentTime) ? currentTime : 0,
         isPlaying: !!isPlaying,
       }));
-    } catch { }
+    } catch { /* ignore */ }
   }
 });
 

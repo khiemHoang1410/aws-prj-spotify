@@ -87,6 +87,7 @@ export class AuthService {
             });
         } catch (error: any) {
             if (error.name === "NotAuthorizedException") return Failure("Email hoặc mật khẩu không đúng", 401);
+            if (error.name === "UserNotFoundException") return Failure("Email hoặc mật khẩu không đúng", 401);
             if (error.name === "UserNotConfirmedException") return Failure("Tài khoản chưa được xác nhận email", 403);
             return Failure(`Lỗi đăng nhập: ${error.message}`, 500);
         }

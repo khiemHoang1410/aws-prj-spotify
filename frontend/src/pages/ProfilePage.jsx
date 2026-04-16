@@ -11,12 +11,14 @@ import CardSong from '../components/cards/CardSong';
 import { setCurrentSong } from '../store/playerSlice';
 import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
+import { selectPlaylistIds } from '../store/playlistSlice';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
   const historyEntries = useSelector((state) => state.history?.entries?.slice(0, 10) || []);
+  const playlistIds = useSelector(selectPlaylistIds);
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.name || user?.username || '');
@@ -66,7 +68,7 @@ export default function ProfilePage() {
               ? VERIFY_STATUS.PENDING
               : VERIFY_STATUS.IDLE;
           dispatch(setVerifyStatus({ status: mappedStatus }));
-        } catch { }
+        } catch { /* ignore */ }
       }
     })();
   }, [dispatch, user?.role]);
@@ -176,7 +178,7 @@ export default function ProfilePage() {
           <p className="text-xs text-neutral-400 mt-1">Bài hát đã thích</p>
         </div>
         <div className="bg-neutral-800 rounded-xl p-4">
-          <p className="text-2xl font-bold text-white">3</p>
+          <p className="text-2xl font-bold text-white">{playlistIds.length}</p>
           <p className="text-xs text-neutral-400 mt-1">Playlist</p>
         </div>
         <div className="bg-neutral-800 rounded-xl p-4">

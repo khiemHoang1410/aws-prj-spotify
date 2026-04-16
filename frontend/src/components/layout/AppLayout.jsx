@@ -1,10 +1,13 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser, updateSessionUser } from '../../services/AuthService';
+import { getCurrentUser } from '../../services/AuthService';
 import { loginSuccess, setLikedSongs } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
+import api from '../../services/apiClient';
+import { adaptUser } from '../../services/adapters';
+import { checkAndSaveArtistProfile } from '../../services/AuthService';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -43,11 +46,6 @@ const isSameUserSnapshot = (leftUser, rightUser) => {
     && leftUser.name === rightUser.name
     && leftUser.email === rightUser.email
     && leftUser.avatar_url === rightUser.avatar_url;
-};
-
-const isSameLikedSongs = (currentLikedSongs, nextLikedSongs) => {
-  if (currentLikedSongs.length !== nextLikedSongs.length) return false;
-  return currentLikedSongs.every((song, index) => song.song_id === nextLikedSongs[index]?.song_id);
 };
 
 export default function AppLayout() {

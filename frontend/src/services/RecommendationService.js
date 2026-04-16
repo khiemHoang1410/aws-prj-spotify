@@ -3,7 +3,6 @@
 export const getPersonalizedSongs = (likedSongs, allSongs) => {
   if (!likedSongs || likedSongs.length === 0) return [];
 
-  const likedIds = new Set(likedSongs.map((s) => s.song_id));
   const likedArtists = new Set(likedSongs.map((s) => s.artist_name));
   const likedCategories = new Set(likedSongs.flatMap((s) => s.categories || []));
   const maxPlayCount = Math.max(...allSongs.map((s) => s.play_count || 0), 1);
@@ -33,8 +32,7 @@ export const getNewReleases = (allSongs) => {
     .slice(0, 10);
 };
 
-export const getDiscoverMix = (likedSongs, allSongs) => {
-  const likedIds = new Set((likedSongs || []).map((s) => s.song_id));
+export const getDiscoverMix = (_likedSongs, allSongs) => {
   const candidates = [...allSongs];
   if (candidates.length === 0) return [];
 
