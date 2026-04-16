@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import AppLayout from '../components/layout/AppLayout';
 import ProtectedRoute from './ProtectedRoute';
 import RouteError from '../components/ui/RouteError';
@@ -49,6 +49,7 @@ export const router = createBrowserRouter([
 
       // Protected — cần đăng nhập
       { path: '/liked-songs', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
+      { path: '/likesong', element: <Navigate to="/liked-songs" replace /> },
       { path: '/play-history', element: <ProtectedRoute><PlayHistoryPage /></ProtectedRoute> },
       { path: '/my-library', element: <ProtectedRoute><MyLibraryPage /></ProtectedRoute> },
       { path: '/profile', element: <ProtectedRoute><ProfilePage /></ProtectedRoute> },

@@ -114,7 +114,7 @@ const getLikedPlaylistCacheKey = async () => {
   try {
     const user = await getCurrentUser();
     if (user?.user_id) return `${LIKED_PLAYLIST_KEY}_${user.user_id}`;
-  } catch { }
+  } catch { /* ignore */ }
   return LIKED_PLAYLIST_KEY;
 };
 
@@ -132,12 +132,12 @@ const clearLikedStateAfterDelete = async () => {
       import('../store/authSlice'),
     ]);
     store.dispatch(setLikedSongs([]));
-  } catch { }
+  } catch { /* ignore */ }
 
   if (typeof window !== 'undefined') {
     try {
       window.dispatchEvent(new CustomEvent('liked-songs-updated', { detail: { likedSongs: [] } }));
-    } catch { }
+    } catch { /* ignore */ }
   }
 };
 

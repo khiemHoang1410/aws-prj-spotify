@@ -30,24 +30,26 @@ export default function PlayerBar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
-  
+
   const { currentSong, isPlaying, currentTime, globalSeekTime, queue, history, isShuffle, repeatMode } = useSelector((state) => state.player);
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
   const historyEntries = useSelector((state) => state.history?.entries || []);
 
   const initialVolumeRef = useRef(readInitialVolume());
-  
+
   const isLyricsPage = location.pathname === '/lyrics';
-  
+
   const [currentTimeLocal, setCurrentTimeLocal] = useState(currentTime || 0);
-  const [volume, setVolume] = useState(initialVolumeRef.current);
-  const [seekTime, setSeekTime] = useState(null); 
+  const [volume, setVolume] = useState(() => initialVolumeRef.current);
+  const [seekTime, setSeekTime] = useState(null);
   const [isDraggingProgress, setIsDraggingProgress] = useState(false);
   const [dragTime, setDragTime] = useState(0);
   const [isDraggingVolume, setIsDraggingVolume] = useState(false);
-  const [isMuted, setIsMuted] = useState(initialVolumeRef.current === 0);
-  const [volumeBeforeMute, setVolumeBeforeMute] = useState(initialVolumeRef.current === 0 ? 1 : initialVolumeRef.current);
+  const [isMuted, setIsMuted] = useState(() => initialVolumeRef.current === 0);
+  const [volumeBeforeMute, setVolumeBeforeMute] = useState(() =>
+    initialVolumeRef.current === 0 ? 1 : initialVolumeRef.current
+  );
   const isSeeking = useRef(false); // block onTimeUpdate ngay sau seek
 
   const progressBarRef = useRef(null);
@@ -114,7 +116,7 @@ export default function PlayerBar() {
         isSeeking.current = true;
         setTimeout(() => { isSeeking.current = false; }, 300);
         setSeekTime(dragTime);
-        setTimeout(() => setSeekTime(null), 100); 
+        setTimeout(() => setSeekTime(null), 100);
       };
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
@@ -168,8 +170,11 @@ export default function PlayerBar() {
       setCurrentTimeLocal(0);
       isSeeking.current = true;
       setTimeout(() => { isSeeking.current = false; }, 300);
-      setSeekTime(0);
-      setTimeout(() => setSeekTime(null), 100);
+      setSeekTime(null);
+      setTimeout(() => {
+        setSeekTime(0);
+        setTimeout(() => setSeekTime(null), 100);
+      }, 0);
     } else {
       dispatch(playPreviousSong());
     }
@@ -180,8 +185,12 @@ export default function PlayerBar() {
     dispatch(updateCurrentTime(0));
     isSeeking.current = true;
     setTimeout(() => { isSeeking.current = false; }, 300);
-    setSeekTime(0);
-    setTimeout(() => setSeekTime(null), 100);
+    // Reset qua null trước để đảm bảo effect trong Audio luôn trigger
+    setSeekTime(null);
+    setTimeout(() => {
+      setSeekTime(0);
+      setTimeout(() => setSeekTime(null), 100);
+    }, 0);
   };
 
   const getTrendingFallbackSong = async () => {
@@ -260,23 +269,23 @@ export default function PlayerBar() {
 
   return (
     <div className="h-full px-4 flex items-center justify-between relative">
-      
-      <Audio 
+
+      <Audio
         currentSong={currentSong}
         isPlaying={isPlaying}
         volume={volume}
         seekTime={seekTime}
         onTimeUpdate={(time) => {
           if (!isDraggingProgress && !isSeeking.current) {
-             setCurrentTimeLocal(time);
-             dispatch(updateCurrentTime(time));
+            setCurrentTimeLocal(time);
+            dispatch(updateCurrentTime(time));
           }
-        }} 
-          onEnded={() => { void handleSongEnded(); }}
+        }}
+        onEnded={() => { void handleSongEnded(); }}
       />
 
       {/* 1. KHU VỰC BÊN TRÁI */}
-        <div className="flex items-center gap-4 w-[30%] min-w-[180px]">
+      <div className="flex items-center gap-4 w-[30%] min-w-[180px]">
         <img
           src={currentSong.image_url}
           alt="cover"
@@ -313,11 +322,11 @@ export default function PlayerBar() {
             <Shuffle size={16} />
           </button>
           <button className="text-[#b3b3b3] hover:text-white" onClick={handleSkipBack} title="Trước"><SkipBack size={20} fill="currentColor" /></button>
-          
+
           <button className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition" onClick={() => dispatch(togglePlay())}>
             {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
           </button>
-          
+
           <button className="text-[#b3b3b3] hover:text-white" onClick={() => dispatch(playNextSong())} title="Tiếp theo"><SkipForward size={20} fill="currentColor" /></button>
           <button
             className={`transition hover:scale-105 ${repeatMode !== REPEAT_MODE.OFF ? 'text-green-400' : 'text-[#b3b3b3] hover:text-white'}`}
@@ -330,48 +339,48 @@ export default function PlayerBar() {
 
         <div className="flex items-center gap-2 w-full text-xs text-[#b3b3b3]">
           <span className="w-8 text-right">{formatTime(displayTime)}</span>
-          
+
           <div ref={progressBarRef} onMouseDown={(e) => { setIsDraggingProgress(true); updateProgress(e); }} className="flex-1 h-4 group cursor-pointer flex items-center relative">
             <div className="w-full h-1 bg-[#4d4d4d] rounded-full">
               <div className="h-1 bg-white group-hover:bg-green-500 rounded-full relative pointer-events-none" style={{ width: `${progressPercent}%` }}>
-                 <div className="hidden group-hover:block absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
+                <div className="hidden group-hover:block absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
               </div>
             </div>
           </div>
-          
+
           <span className="w-8">{formatTime(currentSong.duration)}</span>
         </div>
       </div>
 
       {/* 3. KHU VỰC BÊN PHẢI */}
       <div className="flex items-center justify-end gap-3 w-[30%] min-w-[180px] text-[#b3b3b3]">
-        <button 
-           className={`hover:scale-105 transition ${isLyricsPage || isPiP ? 'text-green-500' : 'hover:text-white'}`}
-           onClick={() => {
-             if (isPiP) {
-               dispatch(setPiP(false));
-               navigate('/lyrics');
-             } else if (isLyricsPage) {
-               navigate(-1);
-             } else {
-               navigate('/lyrics');
-             }
-           }}
-           title="Lời bài hát"
+        <button
+          className={`hover:scale-105 transition ${isLyricsPage || isPiP ? 'text-green-500' : 'hover:text-white'}`}
+          onClick={() => {
+            if (isPiP) {
+              dispatch(setPiP(false));
+              navigate('/lyrics');
+            } else if (isLyricsPage) {
+              navigate(-1);
+            } else {
+              navigate('/lyrics');
+            }
+          }}
+          title="Lời bài hát"
         >
-           <Mic2 size={16} />
+          <Mic2 size={16} />
         </button>
 
-        <button 
-           className={`hover:scale-105 transition ${isRightSidebarOpen ? 'text-green-500' : 'hover:text-white'}`}
-           onClick={() => dispatch(toggleRightSidebar())}
-           title="Hàng chờ"
+        <button
+          className={`hover:scale-105 transition ${isRightSidebarOpen ? 'text-green-500' : 'hover:text-white'}`}
+          onClick={() => dispatch(toggleRightSidebar())}
+          title="Hàng chờ"
         >
-           <ListMusic size={16} />
+          <ListMusic size={16} />
         </button>
 
-        <button className="hover:text-white"><MonitorSpeaker size={16} /></button>
-        
+        <button className="hover:text-white opacity-40 cursor-not-allowed" title="Kết nối thiết bị (sắp ra mắt)"><MonitorSpeaker size={16} /></button>
+
         <div className="flex items-center gap-2 w-24 group cursor-pointer">
           <button
             className="hover:text-white"
@@ -381,14 +390,14 @@ export default function PlayerBar() {
             {isMuted || volume === 0 ? <VolumeX size={16} /> : volume < 0.5 ? <Volume1 size={16} /> : <Volume2 size={16} />}
           </button>
           <div ref={volumeBarRef} onMouseDown={(e) => { setIsDraggingVolume(true); updateVolume(e); }} className="flex-1 h-4 group cursor-pointer flex items-center relative">
-             <div className="w-full h-1 bg-[#4d4d4d] rounded-full">
-               <div className="h-1 bg-white group-hover:bg-green-500 rounded-full relative pointer-events-none" style={{ width: `${volumePercent}%` }}>
-                  <div className="hidden group-hover:block absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
-               </div>
-             </div>
+            <div className="w-full h-1 bg-[#4d4d4d] rounded-full">
+              <div className="h-1 bg-white group-hover:bg-green-500 rounded-full relative pointer-events-none" style={{ width: `${volumePercent}%` }}>
+                <div className="hidden group-hover:block absolute right-0 top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow"></div>
+              </div>
+            </div>
           </div>
         </div>
-        
+
         {/* NÚt NAVIGATE TO LYRICS / THU NHỎ */}
         <button
           onClick={handleNavigateLyrics}

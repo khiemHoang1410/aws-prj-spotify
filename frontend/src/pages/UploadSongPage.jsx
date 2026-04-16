@@ -82,7 +82,7 @@ export default function UploadSongPage() {
         });
         dispatch(showToast({ message: 'Đã tự động điền lời bài hát', type: 'info' }));
         setAutoLyricsFetchedKey(fetchKey);
-      } catch { }
+      } catch { /* ignore lyrics fetch error */ }
     }, 450);
 
     return () => clearTimeout(timer);

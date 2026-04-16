@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { getSongs } from '../services/SongService';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getSongs } from '../services/SongService';
 import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
 import CardSong from '../components/cards/CardSong';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -11,7 +10,6 @@ import FeaturedPlaylists from '../components/editorial/FeaturedPlaylists';
 
 export default function HomePage() {
   const dispatch = useDispatch();
-  const navigate = useNavigate();
   const { isAuthenticated, likedSongs } = useSelector((state) => state.auth);
 
   const [songs, setSongs] = useState([]);

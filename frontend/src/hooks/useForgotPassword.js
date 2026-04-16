@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useDispatch } from 'react-redux';
-import { openModal, openForgotPasswordModal, closeForgotPasswordModal, setLoginPrefillEmail } from '../store/authSlice';
+import { openModal, closeForgotPasswordModal, setLoginPrefillEmail } from '../store/authSlice';
 import { forgotPassword, confirmForgotPassword } from '../services/AuthService';
 
 const SESSION_KEY = 'forgotPassword_email';

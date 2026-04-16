@@ -1,14 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { IntroMockData } from "../../data/IntroMockData";
 
 function Banner() {
-  const [albumImages, setAlbumImages] = useState([]);
+  const albumImages = IntroMockData.bannerAlbums;
   const [hoveredIndex, setHoveredIndex] = useState(null);
-
-  useEffect(() => {
-    // Không cần loading nữa vì data ở local
-    setAlbumImages(IntroMockData.bannerAlbums);
-  }, []);
 
   return (
     <div className="container banner">

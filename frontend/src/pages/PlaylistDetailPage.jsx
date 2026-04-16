@@ -6,7 +6,6 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Play, Shuffle, Clock, Music, Search, Globe, Lock, Edit3 } from 'lucide-react';
 import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { showToast } from '../store/uiSlice';
 import {
   selectPlaylistById,
   selectPlaylistSongs,
