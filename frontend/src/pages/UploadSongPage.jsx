@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Music, Upload, X, Video, ImagePlus, CheckCircle } from 'lucide-react';
+import { Music, Upload, X, Video, ImagePlus, CheckCircle, FileText, Loader2, Search } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { uploadSong } from '../services/UploadService';
 import { createNotification } from '../services/NotificationService';
@@ -42,6 +42,9 @@ export default function UploadSongPage() {
   const [artistId, setArtistId] = useState(null);
   const [artistLoading, setArtistLoading] = useState(true);
   const [autoLyricsFetchedKey, setAutoLyricsFetchedKey] = useState('');
+  // 'idle' | 'fetching' | 'found' | 'notFound'
+  const [lyricsStatus, setLyricsStatus] = useState('idle');
+  const lrcInputRef = useRef(null);
 
   // Lấy artistId từ BE khi mount — bắt buộc có trước khi cho upload
   React.useEffect(() => {
@@ -57,6 +60,33 @@ export default function UploadSongPage() {
       .finally(() => setArtistLoading(false));
   }, [user]);
 
+  // Fetch lyrics from lrclib.net — shared by auto-fetch (debounced) + manual trigger
+  const fetchLyricsFromLrclib = async (songTitle, artistName, { silent = false } = {}) => {
+    if (!songTitle || !artistName) return;
+    setLyricsStatus('fetching');
+    try {
+      const res = await fetch(
+        `https://lrclib.net/api/get?track_name=${encodeURIComponent(songTitle)}&artist_name=${encodeURIComponent(artistName)}`
+      );
+      if (!res.ok) { setLyricsStatus('notFound'); return; }
+      const data = await res.json();
+      const autoLyrics = data?.syncedLyrics || data?.plainLyrics || '';
+      if (!autoLyrics) { setLyricsStatus('notFound'); return; }
+
+      setLyrics((prev) => {
+        if (String(prev || '').trim()) return prev; // never overwrite user input
+        return autoLyrics;
+      });
+      setLyricsStatus('found');
+      if (!silent) dispatch(showToast({ message: 'Đã tự động điền lời bài hát', type: 'info' }));
+      const fetchKey = `${songTitle}__${artistName}__${audioFile?.name || ''}`;
+      setAutoLyricsFetchedKey(fetchKey);
+    } catch {
+      setLyricsStatus('notFound');
+    }
+  };
+
+  // Auto-fetch when title + audioFile are set (debounced 450ms, only if lyrics blank)
   React.useEffect(() => {
     const artistName = String(user?.name || user?.username || '').trim();
     const songTitle = String(title || '').trim();
@@ -66,27 +96,29 @@ export default function UploadSongPage() {
     const fetchKey = `${songTitle}__${artistName}__${audioFile?.name || ''}`;
     if (fetchKey === autoLyricsFetchedKey) return;
 
-    const timer = setTimeout(async () => {
-      try {
-        const res = await fetch(
-          `https://lrclib.net/api/get?track_name=${encodeURIComponent(songTitle)}&artist_name=${encodeURIComponent(artistName)}`
-        );
-        if (!res.ok) return;
-        const data = await res.json();
-        const autoLyrics = data?.syncedLyrics || data?.plainLyrics || '';
-        if (!autoLyrics) return;
-
-        setLyrics((prev) => {
-          if (String(prev || '').trim()) return prev;
-          return autoLyrics;
-        });
-        dispatch(showToast({ message: 'Đã tự động điền lời bài hát', type: 'info' }));
-        setAutoLyricsFetchedKey(fetchKey);
-      } catch { /* ignore lyrics fetch error */ }
+    const timer = setTimeout(() => {
+      fetchLyricsFromLrclib(songTitle, artistName, { silent: true });
     }, 450);
 
     return () => clearTimeout(timer);
-  }, [audioFile, title, user?.name, user?.username, lyrics, autoLyricsFetchedKey, dispatch]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioFile, title, user?.name, user?.username, lyrics, autoLyricsFetchedKey]);
+
+  // Handler for LRC file upload
+  const handleLrcFileChange = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result || '';
+      setLyrics(text);
+      setLyricsStatus('found');
+      dispatch(showToast({ message: 'Đã tải file LRC thành công', type: 'success' }));
+    };
+    reader.readAsText(file, 'utf-8');
+    // Reset input so same file can be re-selected
+    e.target.value = '';
+  };
 
   if (!user || user.role !== ROLES.ARTIST) {
     return (
@@ -292,13 +324,67 @@ export default function UploadSongPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-1">Lời bài hát (tùy chọn)</label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-sm text-neutral-300">Lời bài hát (tùy chọn)</label>
+              <div className="flex items-center gap-2">
+                {/* Lyrics status indicator */}
+                {lyricsStatus === 'fetching' && (
+                  <span className="flex items-center gap-1 text-xs text-blue-400">
+                    <Loader2 size={12} className="animate-spin" /> Đang tìm lời...
+                  </span>
+                )}
+                {lyricsStatus === 'found' && (
+                  <span className="flex items-center gap-1 text-xs text-green-400">
+                    <CheckCircle size={12} /> Đã tìm thấy lời
+                  </span>
+                )}
+                {lyricsStatus === 'notFound' && (
+                  <span className="text-xs text-neutral-500">Không tìm thấy lời</span>
+                )}
+
+                {/* LRC file upload */}
+                <button
+                  type="button"
+                  title="Upload file .lrc"
+                  onClick={() => lrcInputRef.current?.click()}
+                  className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-2 py-1 rounded transition"
+                >
+                  <FileText size={12} /> Upload .lrc
+                </button>
+                <input
+                  ref={lrcInputRef}
+                  type="file"
+                  accept=".lrc,.txt"
+                  className="hidden"
+                  onChange={handleLrcFileChange}
+                />
+
+                {/* Manual lyrics fetch trigger */}
+                <button
+                  type="button"
+                  disabled={lyricsStatus === 'fetching' || !title.trim()}
+                  onClick={() => {
+                    const artistName = String(user?.name || user?.username || '').trim();
+                    const songTitle = String(title || '').trim();
+                    // Clear key so fetch runs even if previously attempted
+                    setAutoLyricsFetchedKey('');
+                    // Also clear lyrics so we don't skip due to existing content
+                    setLyrics('');
+                    fetchLyricsFromLrclib(songTitle, artistName);
+                  }}
+                  className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-2 py-1 rounded transition disabled:opacity-40 disabled:cursor-not-allowed"
+                  title="Tìm lời tự động từ lrclib.net"
+                >
+                  <Search size={12} /> Tìm lời
+                </button>
+              </div>
+            </div>
             <textarea
               value={lyrics}
-              onChange={(e) => setLyrics(e.target.value)}
+              onChange={(e) => { setLyrics(e.target.value); setLyricsStatus('idle'); }}
               rows={8}
               className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm font-mono outline-none resize-none focus:ring-1 focus:ring-green-500"
-              placeholder={"00:00 Dòng đầu tiên\n00:05 Dòng tiếp theo"}
+              placeholder={"[00:00.00] Dòng đầu tiên\n[00:05.00] Dòng tiếp theo\n\nHoặc nhập lời thường (không có timestamp)"}
             />
           </div>
 

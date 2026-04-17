@@ -5,7 +5,7 @@ import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2 } from 'luci
 import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getAlbumById, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
+import { getAlbumById, getAlbumSongs, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
 import { getSongs } from '../services/SongService';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -25,17 +25,27 @@ export default function AlbumDetailPage() {
   const { isAuthenticated, user } = useSelector((state) => state.auth);
 
   const [album, setAlbum] = useState(null);
+  const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [availableSongs, setAvailableSongs] = useState([]);
 
-  const isOwner = user?.username === album?.artist_name || user?.name === album?.artist_name;
+  // So sánh theo artist_id — chính xác hơn so sánh tên
+  const isOwner = !!(user?.artist_id && album?.artist_id && user.artist_id === album.artist_id);
+
+  const refreshSongs = async (albumId) => {
+    const data = await getAlbumSongs(albumId);
+    setSongs(data);
+  };
 
   useEffect(() => {
     if (!activeAlbumId) return;
     setIsLoading(true);
-    getAlbumById(activeAlbumId)
-      .then((data) => setAlbum(data))
+    Promise.all([getAlbumById(activeAlbumId), getAlbumSongs(activeAlbumId)])
+      .then(([albumData, songData]) => {
+        setAlbum(albumData);
+        setSongs(songData);
+      })
       .finally(() => setIsLoading(false));
   }, [activeAlbumId]);
 
@@ -48,7 +58,7 @@ export default function AlbumDetailPage() {
   };
 
   const handlePlayAll = () => {
-    if (album?.songs?.length > 0) handlePlaySong(album.songs[0]);
+    if (songs.length > 0) handlePlaySong(songs[0]);
   };
 
   const handleToggleSongPicker = async () => {
@@ -57,34 +67,38 @@ export default function AlbumDetailPage() {
       return;
     }
     const allSongs = await getSongs();
-    const albumSongIds = (album?.songs || []).map((s) => s.song_id);
-    const artistName = album?.artist_name;
+    const albumSongIds = songs.map((s) => s.song_id);
+    // Lọc theo artist_id — chính xác hơn so sánh tên
     setAvailableSongs(
-      allSongs.filter((s) => s.artist_name === artistName && !albumSongIds.includes(s.song_id))
+      allSongs.filter((s) => s.artist_id === album?.artist_id && !albumSongIds.includes(s.song_id))
     );
     setShowSongPicker(true);
   };
 
   const handleAddSong = async (songId) => {
-    try {
-      await addSongToAlbum(activeAlbumId, songId);
+    const result = await addSongToAlbum(activeAlbumId, songId);
+    if (result.success) {
       dispatch(showToast({ message: 'Đã thêm bài hát vào album', type: 'success' }));
-      const updated = await getAlbumById(activeAlbumId);
-      setAlbum(updated);
       setAvailableSongs((prev) => prev.filter((s) => s.song_id !== songId));
-    } catch (err) {
-      dispatch(showToast({ message: err?.message || 'Lỗi khi thêm bài hát', type: 'error' }));
+      await refreshSongs(activeAlbumId);
+    } else {
+      dispatch(showToast({ message: 'Lỗi khi thêm bài hát', type: 'error' }));
     }
   };
 
   const handleRemoveSong = async (songId) => {
-    try {
-      await removeSongFromAlbum(activeAlbumId, songId);
+    const result = await removeSongFromAlbum(activeAlbumId, songId);
+    if (result.success) {
       dispatch(showToast({ message: 'Đã xóa bài hát khỏi album', type: 'success' }));
-      const updated = await getAlbumById(activeAlbumId);
-      setAlbum(updated);
-    } catch (err) {
-      dispatch(showToast({ message: err?.message || 'Lỗi khi xóa bài hát', type: 'error' }));
+      await refreshSongs(activeAlbumId);
+      // Nếu song picker đang mở, cập nhật lại danh sách available
+      if (showSongPicker) {
+        const allSongs = await getSongs();
+        const updatedIds = songs.filter((s) => s.song_id !== songId).map((s) => s.song_id);
+        setAvailableSongs(allSongs.filter((s) => s.artist_id === album?.artist_id && !updatedIds.includes(s.song_id)));
+      }
+    } else {
+      dispatch(showToast({ message: 'Lỗi khi xóa bài hát', type: 'error' }));
     }
   };
 
@@ -110,7 +124,7 @@ export default function AlbumDetailPage() {
     );
   }
 
-  const songs = album.songs || [];
+  // songs state đã được load riêng từ /albums/{id}/songs
 
   return (
     <div>

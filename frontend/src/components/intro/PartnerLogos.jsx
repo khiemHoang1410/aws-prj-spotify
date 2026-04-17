@@ -1,10 +1,10 @@
 function PartnerLogos() {
     const partners = [
-      { name: "Megascans", logo: "/logo-megascans.png" },
-      { name: "Unreal Engine", logo: "/logo-unreal.png" },
-      { name: "Metamask", logo: "/logo-metamask.png" },
-      { name: "Binance", logo: "/logo-binance.png" },
-      { name: "Oculus", logo: "/logo-oculus.png" },
+      { name: "Megascans", logo: "/pictures/logo-megascans.png" },
+      { name: "Unreal Engine", logo: "/pictures/logo-unreal.png" },
+      { name: "Metamask", logo: "/pictures/logo-metamask.png" },
+      { name: "Binance", logo: "/pictures/logo-binance.png" },
+      { name: "Oculus", logo: "/pictures/logo-oculus.png" },
     ]
   
     return (
@@ -12,7 +12,10 @@ function PartnerLogos() {
         <div className="partners-grid">
           {partners.map((partner, index) => (
             <div key={index} className="partner-logo">
-              <img src={partner.logo || "/placeholder.svg"} alt={partner.name} />
+              <img 
+                src={partner.logo} 
+                alt={partner.name}
+                onError={(e) => e.target.src = "/pictures/user_default.png"} />
             </div>
           ))}
         </div>

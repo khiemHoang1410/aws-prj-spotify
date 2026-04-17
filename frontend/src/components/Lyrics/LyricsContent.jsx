@@ -3,10 +3,12 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { getLyrics } from '../../services/SongService';
 import { getMyPlaylists, addSongToPlaylist } from '../../services/PlaylistService';
+import { getArtistInfo, followArtist } from '../../services/ArtistService';
 import { setPiP, openReportModal, showToast } from '../../store/uiSlice';
-import { toggleLikeSongThunk } from '../../store/authSlice';
+import { toggleLikeSongThunk, toggleFollowArtist } from '../../store/authSlice';
 import { addToQueue } from '../../store/playerSlice';
-import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, PictureInPicture2,  PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag, Minimize } from 'lucide-react';
+import { adjustLyricsOffset, resetLyricsOffset } from '../../store/playerSlice';
+import { Disc, PlayCircle, UserSquare2, Mic2, MoreHorizontal, Maximize, PictureInPicture2, PlusCircle, Heart, HeartOff, ListPlus, EyeOff, Share2, Flag, Minimize, BadgeCheck, ExternalLink, Music2, Minus, Plus, RotateCcw } from 'lucide-react';
 
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
@@ -20,6 +22,7 @@ const toggleFullscreen = () => {
 import LyricsMode from './LyricsMode';
 import BottomInfo from './BottomInfo';
 import VideoPlayer from '../VideoPlayer';
+import { parseLrc, normalizeLyrics } from '../../utils/lrcParser';
 
 const waitForFullscreenExit = () => new Promise((resolve) => {
   if (!document.fullscreenElement) {
@@ -56,10 +59,126 @@ const minimizeToPiP = async (dispatch, navigate) => {
   navigate(-1);
 };
 
+// ─── ArtistInfoPanel ───────────────────────────────────────────────────────────
+function ArtistInfoPanel({ song }) {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { followedArtists } = useSelector((state) => state.auth);
+  const [artist, setArtist] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!song?.artist_name) return;
+    setLoading(true);
+    getArtistInfo(song.artist_name)
+      .then(setArtist)
+      .finally(() => setLoading(false));
+  }, [song?.artist_name]);
+
+  const artistId = artist?.id || null;
+  const isFollowing = Array.isArray(followedArtists) && artistId
+    ? followedArtists.includes(artistId)
+    : false;
+
+  const handleFollow = async () => {
+    if (!artistId) return;
+    dispatch(toggleFollowArtist(artistId));
+    const res = await followArtist(artistId);
+    if (res?.success === false) {
+      dispatch(toggleFollowArtist(artistId));
+      dispatch(showToast({ message: 'Không thể cập nhật theo dõi', type: 'error' }));
+    } else {
+      dispatch(showToast({ message: isFollowing ? 'Đã bỏ theo dõi' : 'Đã theo dõi nghệ sĩ', type: 'success' }));
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center w-full mt-20">
+        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!artist) {
+    return (
+      <div className="flex flex-col items-center justify-center mt-20 gap-3 text-neutral-500">
+        <Music2 size={48} className="opacity-30" />
+        <p className="text-lg">Không tìm thấy thông tin nghệ sĩ</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="w-full max-w-2xl mt-8 px-4">
+      {/* Hero card */}
+      <div
+        className="relative rounded-2xl overflow-hidden cursor-pointer group h-72 shadow-2xl"
+        onClick={() => artistId && navigate(`/artist/${artistId}`)}
+      >
+        <img
+          src={artist.photo_url || artist.image_url || '/pictures/whiteBackground.jpg'}
+          alt={artist.name}
+          className="absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-105"
+          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+        <div className="absolute bottom-0 left-0 right-0 p-6">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-semibold text-neutral-300 uppercase tracking-widest mb-1">Nghệ sĩ</p>
+              <h2 className="text-4xl font-extrabold text-white leading-tight flex items-center gap-2">
+                {artist.name}
+                {artist.isVerified && <BadgeCheck size={24} className="text-blue-400 flex-shrink-0" />}
+              </h2>
+              {artist.monthly_listeners && (
+                <p className="text-sm text-neutral-300 mt-1">
+                  {Number(artist.monthly_listeners).toLocaleString('vi-VN')} người nghe hàng tháng
+                </p>
+              )}
+            </div>
+            <ExternalLink size={20} className="text-white/50 group-hover:text-white transition flex-shrink-0 mb-1" />
+          </div>
+        </div>
+      </div>
+
+      {/* Bio + Follow */}
+      <div className="mt-5 bg-white/5 rounded-2xl p-6 space-y-4 backdrop-blur-sm border border-white/10">
+        {artist.bio ? (
+          <p className="text-neutral-300 text-sm leading-relaxed line-clamp-5">{artist.bio}</p>
+        ) : (
+          <p className="text-neutral-500 text-sm italic">Nghệ sĩ chưa có thông tin giới thiệu.</p>
+        )}
+
+        <div className="flex items-center gap-3 pt-1">
+          <button
+            onClick={handleFollow}
+            className={`px-6 py-2 rounded-full text-sm font-bold border transition hover:scale-105 ${
+              isFollowing
+                ? 'border-green-500 text-green-400 hover:border-green-400'
+                : 'border-white text-white hover:bg-white hover:text-black'
+            }`}
+          >
+            {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+          </button>
+          {artistId && (
+            <button
+              onClick={() => navigate(`/artist/${artistId}`)}
+              className="px-6 py-2 rounded-full text-sm font-semibold text-neutral-300 hover:text-white transition flex items-center gap-1.5"
+            >
+              Xem trang nghệ sĩ <ExternalLink size={13} />
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function LyricsContent() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { currentSong, currentTime } = useSelector((state) => state.player);
+  const { currentSong, currentTime, lyricsOffset } = useSelector((state) => state.player);
   const { likedSongs } = useSelector((state) => state.auth);
   
   const [lyrics, setLyrics] = useState([]);
@@ -81,7 +200,9 @@ export default function LyricsContent() {
 
   useEffect(() => {
     if (currentSong?.song_id) {
-      getLyrics(currentSong.song_id).then(data => setLyrics(data));
+      getLyrics(currentSong.song_id).then((data) => {
+        setLyrics(normalizeLyrics(data));
+      });
       setDisplayMode('lyrics');
     }
   }, [currentSong]);
@@ -148,6 +269,20 @@ export default function LyricsContent() {
           <button className={`hover:text-white transition ${displayMode === 'artist' ? 'text-green-500' : ''}`} onClick={() => setDisplayMode('artist')} title="Thông tin nghệ sĩ"><UserSquare2 size={22} /></button>
           <button className={`transition ${displayMode === 'lyrics' ? 'text-green-500' : 'hover:text-white'}`} onClick={() => setDisplayMode('lyrics')} title="Xem lời bài hát"><Mic2 size={22} /></button>
           
+          {/* Lyrics offset controls */}
+          {displayMode === 'lyrics' && lyrics.some((l) => l.time > 0) && (
+            <div className="flex items-center gap-1 text-xs">
+              <button onClick={() => dispatch(adjustLyricsOffset(-0.5))} className="p-1 rounded hover:bg-white/10 hover:text-white transition" title="Lời chậm hơn 0.5s"><Minus size={13} /></button>
+              <button onClick={() => dispatch(resetLyricsOffset())} className="px-1.5 py-0.5 rounded hover:bg-white/10 hover:text-white transition min-w-[50px] text-center" title="Reset offset">
+                {lyricsOffset === 0 ? 'Sync' : `${lyricsOffset > 0 ? '+' : ''}${lyricsOffset.toFixed(1)}s`}
+              </button>
+              <button onClick={() => dispatch(adjustLyricsOffset(0.5))} className="p-1 rounded hover:bg-white/10 hover:text-white transition" title="Lời nhanh hơn 0.5s"><Plus size={13} /></button>
+              {lyricsOffset !== 0 && (
+                <button onClick={() => dispatch(resetLyricsOffset())} className="p-1 rounded hover:bg-white/10 hover:text-white transition" title="Reset"><RotateCcw size={12} /></button>
+              )}
+            </div>
+          )}
+
           <span className="text-[#333]">|</span>
 
           {/* Dropdown (TASK-007: ref bọc ngoài toàn bộ) */}
@@ -254,13 +389,10 @@ export default function LyricsContent() {
       {/* KHU VỰC HIỂN THỊ CHÍNH */}
       <div className="flex flex-col items-center w-full min-h-screen">
         
-        {displayMode === 'lyrics' && <LyricsMode lyrics={lyrics} currentTime={currentTime} duration={currentSong.duration} />}
+        {displayMode === 'lyrics' && <LyricsMode lyrics={lyrics} currentTime={currentTime} duration={currentSong.duration} offset={lyricsOffset} />}
         
-        {/* TASK-001-B1: onError fallback về songDefault.jpg */}
+        {/* Artwork: luôn hiện spinning album art */}
         {displayMode === 'artwork' && (
-          currentSong.mv_url ? (
-            <VideoPlayer src={currentSong.mv_url} />
-          ) : (
           <div className="relative mt-10">
             <div className="w-[400px] h-[400px] rounded-full animate-[spin_20s_linear_infinite] shadow-2xl ring-4 ring-neutral-700 overflow-hidden">
               <img
@@ -274,10 +406,21 @@ export default function LyricsContent() {
               <div className="w-16 h-16 rounded-full bg-[#1e1e1e] ring-2 ring-neutral-600" />
             </div>
           </div>
+        )}
+
+        {/* Canvas: hiện MV video nếu có, fallback về thông báo */}
+        {displayMode === 'canvas' && (
+          currentSong.mv_url ? (
+            <VideoPlayer src={currentSong.mv_url} />
+          ) : (
+            <div className="flex flex-col items-center justify-center mt-24 gap-4 text-neutral-400">
+              <PlayCircle size={56} className="opacity-30" />
+              <p className="text-lg font-semibold">Bài hát này chưa có video MV</p>
+            </div>
           )
         )}
-        {displayMode === 'canvas' && <div className="text-white mt-20">Giao diện Canvas Video...</div>}
-        {displayMode === 'artist' && <div className="text-white mt-20">Giao diện Artist Image...</div>}
+
+        {displayMode === 'artist' && <ArtistInfoPanel song={currentSong} />}
 
         <BottomInfo currentSong={currentSong} />
       </div>

@@ -81,7 +81,7 @@ const notifyRequestFailed = (message) => {
   _onRequestFailed?.(message);
 };
 
-const request = async (method, path, { body, headers: extraHeaders = {}, timeout = DEFAULT_TIMEOUT_MS, _retry = 0 } = {}) => {
+const request = async (method, path, { body, headers: extraHeaders = {}, timeout = DEFAULT_TIMEOUT_MS, _retry = 0, silent = false } = {}) => {
   if (!API_URL) throw new NetworkError('VITE_API_URL chưa được cấu hình');
 
   const session = await getValidSession();
@@ -103,10 +103,10 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
     // Retry on network failure
     if (_retry < MAX_RETRIES) {
       await delay(300 * (_retry + 1));
-      return request(method, path, { body, headers: extraHeaders, timeout, _retry: _retry + 1 });
+      return request(method, path, { body, headers: extraHeaders, timeout, _retry: _retry + 1, silent });
     }
     const networkError = new NetworkError(err.message || 'Network error');
-    notifyRequestFailed(networkError.message);
+    if (!silent) notifyRequestFailed(networkError.message);
     throw networkError;
   }
   clearTimeout(timer);
@@ -139,7 +139,7 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
       res.status,
       errBody.code,
     );
-    notifyRequestFailed(apiError.message);
+    if (!silent) notifyRequestFailed(apiError.message);
     throw apiError;
   }
 

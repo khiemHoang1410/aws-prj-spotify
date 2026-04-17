@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock } from 'lucide-react';
+import { useState, useEffect, useRef, useMemo } from 'react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock, Laugh, ListTodo } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
-import { setCurrentSong } from '../../store/playerSlice';
 import { openModal } from '../../store/authSlice';
+import { setCurrentSong } from '../../store/playerSlice';
+import { getSongById } from '../../services/SongService';
 import {
   selectPlaylistIds,
   selectPlaylistsStatus,
@@ -71,8 +72,9 @@ export default function Sidebar() {
   const playlistIds = useSelector(selectPlaylistIds);
   const status = useSelector(selectPlaylistsStatus);
 
-  // Lấy 5 bài gần nhất từ historySlice
-  const recentEntries = useSelector((s) => s.history?.entries?.slice(0, 5) || []);
+  // Lấy 5 bài gần nhất từ historySlice (memoized để tránh unnecessary rerenders)
+  const entries = useSelector((s) => s.history?.entries);
+  const recentEntries = useMemo(() => entries?.slice(0, 5) || [], [entries]);
 
   // Fetch playlists when authenticated
   useEffect(() => {
@@ -136,20 +138,22 @@ export default function Sidebar() {
     setContextMenu({ playlistId, x: e.clientX, y: e.clientY });
   };
 
-  const handleDeletePlaylist = async (playlistId, playlistName) => {
-    setContextMenu(null);
-    if (isLikedPlaylistName(playlistName || '')) {
-      dispatch(showToast({ message: 'Không thể xóa playlist hệ thống', type: 'warning' }));
+  const handleOpenLibrary = () => {
+    if (!isAuthenticated) {
+      dispatch(openModal('login'));
+      dispatch(showToast({ message: 'Vui lòng đăng nhập để truy cập thư viện', type: 'info' }));
       return;
     }
-    if (!window.confirm(`Bạn có chắc muốn xoá playlist "${playlistName}"?`)) return;
-    try {
-      await dispatch(deletePlaylist(playlistId)).unwrap();
-      dispatch(showToast({ message: `Đã xoá "${playlistName}"`, type: 'success' }));
-      if (location.pathname === `/playlist/${playlistId}`) navigate('/');
-    } catch {
-      // Error toast already shown in thunk
+    navigate('/my-library');
+  };
+
+  const handleCreatePlaylistClick = () => {
+    if (!isAuthenticated) {
+      dispatch(openModal('login'));
+      dispatch(showToast({ message: 'Vui lòng đăng nhập để tạo playlist', type: 'info' }));
+      return;
     }
+    setIsCreateModalOpen(true);
   };
 
   return (
@@ -167,7 +171,8 @@ export default function Sidebar() {
       {/* Quick links */}
       <div className="bg-[#121212] rounded-lg px-3 py-2 flex flex-col gap-0.5">
         {[
-          { label: 'Trang chủ', path: '/', renderIcon: () => <AudioLines size={18} /> },
+          { label: 'Câu đùa vui', path: '/jokes', renderIcon: () => <Laugh size={18} /> },
+          { label: 'Việc cần làm', path: '/todos', renderIcon: () => <ListTodo size={18} /> },
         ].map(({ label, path, renderIcon }) => {
           const isActive = location.pathname === path;
           return (
@@ -190,61 +195,33 @@ export default function Sidebar() {
         <div className="flex items-center justify-between p-2 mb-2">
           <button
             className="flex items-center gap-3 text-[#b3b3b3] font-bold hover:text-white transition duration-200"
-            onClick={() => isAuthenticated ? navigate('/my-library') : dispatch(openModal('login'))}
+            onClick={handleOpenLibrary}
           >
             <Library size={24} />
             <span>Thư viện</span>
           </button>
-          {isAuthenticated && (
-            <button
-              className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
-              onClick={() => setIsCreateModalOpen(true)}
-              title="Tạo playlist mới"
-            >
-              <Plus size={20} />
-            </button>
-          )}
+          <button
+            className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
+            onClick={handleCreatePlaylistClick}
+            title="Tạo playlist mới"
+          >
+            <Plus size={20} />
+          </button>
         </div>
 
-        {/* Khi chưa đăng nhập: hiện CTA, không fetch gì */}
-        {!isAuthenticated ? (
-          <div className="mx-2 mt-1 flex flex-col gap-2">
-            <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col gap-3">
-              <p className="text-sm font-bold text-white">Tạo playlist đầu tiên của bạn</p>
-              <p className="text-xs text-neutral-400">Đăng nhập để tạo và chia sẻ playlist của bạn.</p>
-              <button
-                onClick={() => dispatch(openModal('login'))}
-                className="self-start text-sm font-bold text-black bg-white rounded-full px-4 py-1.5 hover:bg-neutral-200 transition"
-              >
-                Đăng nhập
-              </button>
-            </div>
-            <div className="bg-[#1a1a1a] rounded-lg p-4 flex flex-col gap-3">
-              <p className="text-sm font-bold text-white">Theo dõi nghệ sĩ yêu thích</p>
-              <p className="text-xs text-neutral-400">Đăng nhập để theo dõi nghệ sĩ và cập nhật nhạc mới.</p>
-              <button
-                onClick={() => dispatch(openModal('register'))}
-                className="self-start text-sm font-bold text-black bg-white rounded-full px-4 py-1.5 hover:bg-neutral-200 transition"
-              >
-                Đăng ký
-              </button>
-            </div>
-          </div>
-        ) : (
-          <>
-            <div className="flex gap-2 px-2 mb-3">
-              {FILTER_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-                    filter === option ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
-                  }`}
-                  onClick={() => setFilter(option)}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
+        <div className="flex gap-2 px-2 mb-3">
+          {FILTER_OPTIONS.map((option) => (
+            <button
+              key={option}
+              className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                filter === option ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
+              }`}
+              onClick={() => setFilter(option)}
+            >
+              {option}
+            </button>
+          ))}
+        </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {/* Nghệ sĩ */}
@@ -348,14 +325,43 @@ export default function Sidebar() {
                       <div
                         key={entry.entryId || idx}
                         className="flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5 transition overflow-hidden"
-                        onClick={() => dispatch(setCurrentSong({
-                          song_id: entry.songId,
-                          title: entry.title,
-                          artist_name: entry.artist_name,
-                          artist_id: entry.artist_id,
-                          image_url: entry.image_url,
-                          duration: entry.duration,
-                        }))}
+                        onClick={async () => {
+                          // audio_url không được lưu trong history entries từ backend.
+                          // Nếu entry có sẵn audio_url (vừa phát gần đây trong session này)
+                          // → dùng luôn. Nếu không → fetch đầy đủ từ API.
+                          if (entry.audio_url) {
+                            dispatch(setCurrentSong({
+                              song_id: entry.songId,
+                              title: entry.title,
+                              artist_name: entry.artist_name,
+                              artist_id: entry.artist_id,
+                              image_url: entry.image_url,
+                              audio_url: entry.audio_url,
+                              duration: entry.duration,
+                            }));
+                          } else {
+                            try {
+                              const fullSong = await getSongById(entry.songId);
+                              dispatch(setCurrentSong(fullSong || {
+                                song_id: entry.songId,
+                                title: entry.title,
+                                artist_name: entry.artist_name,
+                                artist_id: entry.artist_id,
+                                image_url: entry.image_url,
+                                duration: entry.duration,
+                              }));
+                            } catch {
+                              dispatch(setCurrentSong({
+                                song_id: entry.songId,
+                                title: entry.title,
+                                artist_name: entry.artist_name,
+                                artist_id: entry.artist_id,
+                                image_url: entry.image_url,
+                                duration: entry.duration,
+                              }));
+                            }
+                          }
+                        }}
                       >
                         <img
                           src={entry.image_url || '/pictures/whiteBackground.jpg'}
@@ -375,8 +381,6 @@ export default function Sidebar() {
             )
           )}
         </div>
-          </>
-        )}
       </div>
 
       {/* Context menu cho playlist (chuột phải) */}

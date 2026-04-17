@@ -5,7 +5,7 @@ function Stats() {
       { label: "Artist", value: "12k+" },
     ]
   
-    const avatars = Array(5).fill("/placeholder-avatar.png")
+    const avatars = Array(5).fill("/pictures/user_default.png");
   
     return (
       <section className="stats-section container" >
@@ -23,7 +23,10 @@ function Stats() {
             <div className="avatar-group">
               {avatars.map((avatar, index) => (
                 <div key={index} className="avatar">
-                  <img src={avatar || "/placeholder.svg"} alt={`User ${index + 1}`} />
+                  <img 
+                    src={avatar || "/pictures/user_default.png"} 
+                    alt={`User ${index + 1}`}
+                    onError={(e) => e.target.src = "/pictures/user_default.png"} />
                 </div>
               ))}
             </div>

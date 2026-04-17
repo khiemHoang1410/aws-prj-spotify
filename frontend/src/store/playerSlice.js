@@ -33,6 +33,7 @@ const initialState = {
   history: [],
   isShuffle: false,
   repeatMode: REPEAT_MODE.OFF,
+  lyricsOffset: 0,
   currentPlaylistId: null,
   currentPlaylistName: null,
 };
@@ -121,6 +122,12 @@ const playerSlice = createSlice({
       else if (state.repeatMode === 'all') state.repeatMode = 'one';
       else state.repeatMode = 'off';
     },
+    adjustLyricsOffset: (state, action) => {
+      state.lyricsOffset = Math.round((state.lyricsOffset + action.payload) * 10) / 10;
+    },
+    resetLyricsOffset: (state) => {
+      state.lyricsOffset = 0;
+    },
   },
   extraReducers: (builder) => {
     // When a playlist is deleted, clear the playlist context if it was the active one
@@ -142,5 +149,6 @@ export const {
   setCurrentSong, togglePlay, updateCurrentTime, seekToTime, clearSeekTime,
   addToQueue, clearQueue, playNextSong, playPreviousSong, toggleShuffle, setShuffleMode, cycleRepeat,
   setCurrentPlaylistContext, clearCurrentPlaylistContext,
+  adjustLyricsOffset, resetLyricsOffset,
 } = playerSlice.actions;
 export default playerSlice.reducer;

@@ -6,9 +6,9 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistStats, getArtistByUserId } from '../services/ArtistService';
+import { getArtistById, getArtistByUserId } from '../services/ArtistService';
 import { getSongs, deleteSong } from '../services/SongService';
-import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
+import { getAlbumsByArtist, getAllAlbums, createAlbum, deleteAlbum } from '../services/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
@@ -45,12 +45,16 @@ export default function ArtistDashboardPage() {
     
     setIsLoading(true);
 
-    // Resolve artistId: ưu tiên từ user profile, fallback lấy từ BE
-    const resolveArtistId = user.artist_id
-      ? Promise.resolve(user.artist_id)
-      : getArtistByUserId(user.user_id || user.id).then((a) => a?.id ?? null);
+    const resolveArtistProfile = async () => {
+      if (user.artist_id) {
+        const artistProfile = await getArtistById(user.artist_id);
+        if (artistProfile) return artistProfile;
+      }
+      return getArtistByUserId(user.user_id || user.id);
+    };
 
-    resolveArtistId.then((artistId) => {
+    resolveArtistProfile().then((artistProfile) => {
+      const artistId = artistProfile?.id || null;
       if (!artistId) {
         dispatch(showToast({ 
           message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
@@ -61,13 +65,30 @@ export default function ArtistDashboardPage() {
         return;
       }
       Promise.all([
-        getArtistStats(artistId),
+        Promise.resolve(artistProfile),
         getSongs(),
-        getAlbumsByArtist(user.username),
-      ]).then(([statsData, allSongs, albums]) => {
-        setStats(statsData);
-        setMySongs(allSongs.filter((s) => s.artist_id === artistId));
-        setMyAlbums(albums);
+        getAllAlbums(),
+      ]).then(([profile, allSongs, rawAlbums]) => {
+        const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter(
+          (a) => a.artist_id === artistId
+        );
+        const songsByArtist = (Array.isArray(allSongs) ? allSongs : []).filter((s) => s.artist_id === artistId);
+        const totalPlays = songsByArtist.reduce((sum, song) => sum + (song.play_count || 0), 0);
+
+        // Đếm số bài hát mỗi album từ songs đã có — tránh N+1 queries
+        const albumsWithCount = albums.map((a) => ({
+          ...a,
+          songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
+        }));
+        setStats({
+          totalSongs: songsByArtist.length,
+          totalAlbums: albumsWithCount.length,
+          totalPlays,
+          followers: profile?.followers || 0,
+          monthlyListeners: Number(profile?.monthly_listeners) || 0,
+        });
+        setMySongs(songsByArtist);
+        setMyAlbums(albumsWithCount);
       }).finally(() => setIsLoading(false));
     });
   }, [user, dispatch]);
@@ -98,11 +119,8 @@ export default function ArtistDashboardPage() {
     if (!newAlbumTitle.trim()) return;
     const result = await createAlbum({
       title: newAlbumTitle.trim(),
-      artist_id: user.artist_id || user.user_id,
-      artist_name: user.username,
-      image_url: IMG_FALLBACK,
-      release_date: new Date().toISOString().slice(0, 10),
-      songIds: [],
+      artistId: user.artist_id,
+      releaseDate: new Date().toISOString().slice(0, 10),
     });
     if (result.success && result.data?.id) {
       setMyAlbums((prev) => [...prev, result.data]);
@@ -281,7 +299,7 @@ export default function ArtistDashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{album.title}</p>
-                  <p className="text-xs text-neutral-400">{album.songIds?.length || 0} bài hát • {album.release_date}</p>
+                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} bài hát • {album.release_date}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Disc3 size={16} className="text-neutral-500" />

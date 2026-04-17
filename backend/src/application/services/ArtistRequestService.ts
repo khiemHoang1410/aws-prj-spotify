@@ -10,7 +10,6 @@ import { Resource } from "sst";
 import {
     CognitoIdentityProviderClient,
     AdminAddUserToGroupCommand,
-    AdminGetUserCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
 const cognitoClient = new CognitoIdentityProviderClient({});
@@ -79,16 +78,22 @@ export class ArtistRequestService {
             // 3. Cập nhật request status
             await this.requestRepo.updateStatus(requestId, "approved", adminNote);
 
-            // 4. Update User record với artistId
-            await this.userRepo.update(request.userId, { artistId: artist.id } as any);
+            // 4. Update User record: set artistId + promote role + mark verified
+            // Lấy user từ DynamoDB trước để có email (dùng cho Cognito group add)
+            const userResult = await this.userRepo.findById(request.userId);
+            if (!userResult.success || !userResult.data) {
+                return Failure("Không tìm thấy user để cập nhật", 404);
+            }
+            await this.userRepo.update(request.userId, {
+                artistId: artist.id,
+                role: "artist",
+                isVerified: true,
+            } as any);
 
             // 5. Thêm user vào Cognito group "artist"
-            // Lấy email từ Cognito bằng userId (sub)
-            const cognitoUser = await cognitoClient.send(new AdminGetUserCommand({
-                UserPoolId: Resource.SpotifyUserPool.id,
-                Username: request.userId,
-            }));
-            const email = cognitoUser.UserAttributes?.find(a => a.Name === "email")?.Value;
+            // Dùng email từ DynamoDB — Cognito pool dùng email làm username,
+            // KHÔNG phải UUID sub. AdminGetUserCommand({ Username: sub }) sẽ throw.
+            const email = userResult.data.email;
             if (email) {
                 await cognitoClient.send(new AdminAddUserToGroupCommand({
                     UserPoolId: Resource.SpotifyUserPool.id,
