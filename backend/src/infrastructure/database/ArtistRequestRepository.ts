@@ -15,7 +15,15 @@ export class ArtistRequestRepository extends BaseRepository<ArtistRequest> {
                 TableName: this.tableName,
                 IndexName: "UserIdIndex",
                 KeyConditionExpression: "userId = :userId AND sk = :sk",
-                ExpressionAttributeValues: { ":userId": userId, ":sk": "METADATA" },
+                // CRITICAL: filter entityType — UserIdIndex là shared table.
+                // PLAYLIST, ARTIST, NOTIFICATION,... đều có userId + sk="METADATA"
+                // nên phải filter để chỉ lấy đúng ARTIST_REQUEST.
+                FilterExpression: "entityType = :entityType",
+                ExpressionAttributeValues: {
+                    ":userId": userId,
+                    ":sk": "METADATA",
+                    ":entityType": this.entityPrefix, // "ARTIST_REQUEST"
+                },
                 Limit: 1,
             }));
             const item = response.Items?.[0] as ArtistRequest | undefined;

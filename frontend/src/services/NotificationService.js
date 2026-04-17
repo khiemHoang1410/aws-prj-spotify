@@ -72,6 +72,12 @@ export const getNotifications = async () => {
         image_url: item.image_url || item.imageUrl || null,
         created_at: item.created_at || item.createdAt || null,
       };
+    // GSI UserIdIndex không sort được theo thời gian (tất cả sk đều = "METADATA")
+    // → ScanIndexForward:false không có tác dụng → phải sort ở client.
+    }).sort((a, b) => {
+      const ta = new Date(a.created_at || 0).getTime();
+      const tb = new Date(b.created_at || 0).getTime();
+      return tb - ta; // newest first
     });
 
     // Lưu lại cache sau khi đã dọn các entry backend đã confirm

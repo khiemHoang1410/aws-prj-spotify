@@ -8,7 +8,7 @@ import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
 import { getArtistById, getArtistByUserId } from '../services/ArtistService';
 import { getSongs, deleteSong } from '../services/SongService';
-import { getAlbumsByArtist, createAlbum, deleteAlbum } from '../services/AlbumService';
+import { getAlbumsByArtist, getAllAlbums, createAlbum, deleteAlbum } from '../services/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
@@ -67,19 +67,28 @@ export default function ArtistDashboardPage() {
       Promise.all([
         Promise.resolve(artistProfile),
         getSongs(),
-        getAlbumsByArtist(user.username),
-      ]).then(([profile, allSongs, albums]) => {
+        getAllAlbums(),
+      ]).then(([profile, allSongs, rawAlbums]) => {
+        const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter(
+          (a) => a.artist_id === artistId
+        );
         const songsByArtist = (Array.isArray(allSongs) ? allSongs : []).filter((s) => s.artist_id === artistId);
         const totalPlays = songsByArtist.reduce((sum, song) => sum + (song.play_count || 0), 0);
+
+        // Đếm số bài hát mỗi album từ songs đã có — tránh N+1 queries
+        const albumsWithCount = albums.map((a) => ({
+          ...a,
+          songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
+        }));
         setStats({
           totalSongs: songsByArtist.length,
-          totalAlbums: Array.isArray(albums) ? albums.length : 0,
+          totalAlbums: albumsWithCount.length,
           totalPlays,
           followers: profile?.followers || 0,
           monthlyListeners: Number(profile?.monthly_listeners) || 0,
         });
         setMySongs(songsByArtist);
-        setMyAlbums(albums);
+        setMyAlbums(albumsWithCount);
       }).finally(() => setIsLoading(false));
     });
   }, [user, dispatch]);
@@ -110,11 +119,8 @@ export default function ArtistDashboardPage() {
     if (!newAlbumTitle.trim()) return;
     const result = await createAlbum({
       title: newAlbumTitle.trim(),
-      artist_id: user.artist_id || user.user_id,
-      artist_name: user.username,
-      image_url: IMG_FALLBACK,
-      release_date: new Date().toISOString().slice(0, 10),
-      songIds: [],
+      artistId: user.artist_id,
+      releaseDate: new Date().toISOString().slice(0, 10),
     });
     if (result.success && result.data?.id) {
       setMyAlbums((prev) => [...prev, result.data]);
@@ -293,7 +299,7 @@ export default function ArtistDashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{album.title}</p>
-                  <p className="text-xs text-neutral-400">{album.songIds?.length || 0} bài hát • {album.release_date}</p>
+                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} bài hát • {album.release_date}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <Disc3 size={16} className="text-neutral-500" />

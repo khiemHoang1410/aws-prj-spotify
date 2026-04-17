@@ -5,6 +5,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
 import { openModal } from '../../store/authSlice';
 import { setCurrentSong } from '../../store/playerSlice';
+import { getSongById } from '../../services/SongService';
 import {
   selectPlaylistIds,
   selectPlaylistsStatus,
@@ -324,14 +325,43 @@ export default function Sidebar() {
                       <div
                         key={entry.entryId || idx}
                         className="flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5 transition overflow-hidden"
-                        onClick={() => dispatch(setCurrentSong({
-                          song_id: entry.songId,
-                          title: entry.title,
-                          artist_name: entry.artist_name,
-                          artist_id: entry.artist_id,
-                          image_url: entry.image_url,
-                          duration: entry.duration,
-                        }))}
+                        onClick={async () => {
+                          // audio_url không được lưu trong history entries từ backend.
+                          // Nếu entry có sẵn audio_url (vừa phát gần đây trong session này)
+                          // → dùng luôn. Nếu không → fetch đầy đủ từ API.
+                          if (entry.audio_url) {
+                            dispatch(setCurrentSong({
+                              song_id: entry.songId,
+                              title: entry.title,
+                              artist_name: entry.artist_name,
+                              artist_id: entry.artist_id,
+                              image_url: entry.image_url,
+                              audio_url: entry.audio_url,
+                              duration: entry.duration,
+                            }));
+                          } else {
+                            try {
+                              const fullSong = await getSongById(entry.songId);
+                              dispatch(setCurrentSong(fullSong || {
+                                song_id: entry.songId,
+                                title: entry.title,
+                                artist_name: entry.artist_name,
+                                artist_id: entry.artist_id,
+                                image_url: entry.image_url,
+                                duration: entry.duration,
+                              }));
+                            } catch {
+                              dispatch(setCurrentSong({
+                                song_id: entry.songId,
+                                title: entry.title,
+                                artist_name: entry.artist_name,
+                                artist_id: entry.artist_id,
+                                image_url: entry.image_url,
+                                duration: entry.duration,
+                              }));
+                            }
+                          }
+                        }}
                       >
                         <img
                           src={entry.image_url || '/pictures/whiteBackground.jpg'}
