@@ -194,6 +194,7 @@ export const checkAndSaveArtistProfile = async (userId) => {
         name: artistData.name,
         bio: artistData.bio || '',
         photoUrl: artistData.photoUrl || null,
+        isVerified: artistData.isVerified ?? false, // lưu để ProfilePage biết trạng thái xác minh
         createdAt: artistData.createdAt,
         updatedAt: artistData.updatedAt,
       })
@@ -207,6 +208,7 @@ export const checkAndSaveArtistProfile = async (userId) => {
           ...session.user,
           role: ROLES.ARTIST,
           artist_id: artistData.id,
+          isVerified: artistData.isVerified ?? false,
         };
         saveSession(session);
       } catch { /* ignore */ }

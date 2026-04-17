@@ -33,6 +33,7 @@ export const normalizeHistoryEntry = (item) => ({
   artist_name: item.artistName || item.artist_name || '',
   artist_id: item.artistId || item.artist_id || null,
   image_url: item.coverUrl || item.image_url || null,
+  audio_url: item.audioUrl || item.audio_url || null, // cần để Sidebar phát lại đúng bài
   duration: item.duration || 0,
   played_at: item.playedAt || item.played_at || new Date().toISOString(),
 });
@@ -59,6 +60,7 @@ const historySlice = createSlice({
         artist_name: song.artist_name || '',
         artist_id: song.artist_id || null,
         image_url: song.image_url || null,
+        audio_url: song.audio_url || null, // phải lưu để Sidebar có thể phát lại
         duration: song.duration || 0,
         played_at: new Date().toISOString(),
         _isTemp: true,

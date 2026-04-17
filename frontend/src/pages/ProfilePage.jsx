@@ -5,6 +5,7 @@ import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2, Camera } from '
 import { showToast } from '../store/uiSlice';
 import api from '../services/apiClient';
 import { updateProfile } from '../services/UserService';
+import { getArtistById } from '../services/ArtistService';
 import { uploadCoverImage } from '../services/UploadService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
@@ -48,6 +49,17 @@ export default function ProfilePage() {
     if (user?.role !== ROLES.ARTIST) return;
 
     (async () => {
+      // Ưu tiên: check isVerified trực tiếp từ artist record (admin xác minh)
+      const artistId = user.artist_id;
+      if (artistId) {
+        const artistData = await getArtistById(artistId);
+        if (artistData?.isVerified) {
+          dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
+          return;
+        }
+      }
+
+      // Fallback: check artist-request flow
       try {
         const data = await api.get('/me/artist-request');
         const status = String(data?.status || '').toLowerCase();
@@ -61,7 +73,7 @@ export default function ProfilePage() {
         // If the backend is unavailable or endpoint is missing, do nothing.
       }
     })();
-  }, [dispatch, user?.role]);
+  }, [dispatch, user?.role, user?.artist_id]);
 
   const handleSave = async () => {
     if (!displayName.trim()) return;
@@ -202,8 +214,10 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-white font-semibold">Trạng thái xác minh</p>
-                <p className={`text-xs mt-0.5 ${verifyStatus === VERIFY_STATUS.APPROVED ? 'text-green-400' : verifyStatus === VERIFY_STATUS.PENDING ? 'text-yellow-400' : 'text-neutral-400'}`}>
-                  {verifyStatus === VERIFY_STATUS.APPROVED ? 'Đã xác minh' : verifyStatus === VERIFY_STATUS.PENDING ? 'Đang chờ duyệt' : 'Chưa xác minh'}
+                {/* isVerified trên artist record (admin xác minh từ panel) HOẶC
+                    verifyStatus từ artist-request (approve qua luồng request) */}
+                <p className={`text-xs mt-0.5 ${(verifyStatus === VERIFY_STATUS.APPROVED || user.isVerified) ? 'text-green-400' : verifyStatus === VERIFY_STATUS.PENDING ? 'text-yellow-400' : 'text-neutral-400'}`}>
+                  {(verifyStatus === VERIFY_STATUS.APPROVED || user.isVerified) ? 'Đã xác minh' : verifyStatus === VERIFY_STATUS.PENDING ? 'Đang chờ duyệt' : 'Chưa xác minh'}
                 </p>
               </div>
             </div>
@@ -253,6 +267,7 @@ export default function ProfilePage() {
                 artist_name: entry.artist_name,
                 artist_id: entry.artist_id,
                 image_url: entry.image_url,
+                audio_url: entry.audio_url,
                 duration: entry.duration,
               }} onPlay={handlePlayLiked} />
             ))}

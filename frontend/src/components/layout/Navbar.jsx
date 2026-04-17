@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3, User } from 'lucide-react';
 import { openModal, logout, setFollowedArtists, loginSuccess } from '../../store/authSlice';
 import { toggleBrowse } from '../../store/uiSlice';
 import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
@@ -55,6 +55,7 @@ export default function Navbar() {
         if (artistData?.id) {
           finalUser.role = 'artist';
           finalUser.artist_id = artistData.id;
+          finalUser.isVerified = artistData.isVerified ?? false;
         }
 
         dispatch(loginSuccess(finalUser));
@@ -211,7 +212,10 @@ export default function Navbar() {
             <div ref={userMenuRef} className="relative">
             <div className="flex items-center justify-center cursor-pointer bg-black/50 hover:bg-[#282828] p-1 rounded-full transition border-[3px] border-transparent hover:border-[#282828]"
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} title={user.username}>
-              <img src={user.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+              {user.avatar_url
+                ? <img src={user.avatar_url} alt="avatar" className="w-8 h-8 rounded-full object-cover" />
+                : <User size={20} className="text-neutral-300" />
+              }
             </div>
 
             {isUserMenuOpen && (

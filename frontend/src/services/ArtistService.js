@@ -73,7 +73,7 @@ export const followArtist = async (artistId) => {
 
 export const getFollowedArtists = async () => {
   try {
-    const data = await api.get('/artists/followed');
+    const data = await api.get('/artists/followed', { silent: true });
     return adaptPaginatedResponse(data, adaptArtist);
   } catch {
     return [];

@@ -1,5 +1,5 @@
 import api from './apiClient';
-import { adaptAlbum, adaptPaginatedResponse } from './adapters';
+import { adaptAlbum, adaptSong, adaptPaginatedResponse } from './adapters';
 
 export const getAllAlbums = async () => {
   try {
@@ -50,6 +50,17 @@ export const deleteAlbum = async (albumId) => {
     return await api.delete(`/albums/${encodeURIComponent(albumId)}`);
   } catch {
     return { success: false };
+  }
+};
+
+export const getAlbumSongs = async (albumId) => {
+  try {
+    const data = await api.get(`/albums/${encodeURIComponent(albumId)}/songs`);
+    const list = Array.isArray(data) ? data : (data?.items || []);
+    // Dùng adaptSong để đảm bảo đủ fields kể cả mv_url
+    return list.map(adaptSong);
+  } catch {
+    return [];
   }
 };
 
