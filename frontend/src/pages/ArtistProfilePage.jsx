@@ -7,7 +7,7 @@ import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
 import { getArtistById, followArtist, getRelatedArtists, getFollowedArtists } from '../services/ArtistService';
 import { getSongs } from '../services/SongService';
-import { getAlbumsByArtist } from '../services/AlbumService';
+import { getAlbumsByArtist, getAllAlbums } from '../services/AlbumService';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
@@ -43,7 +43,9 @@ export default function ArtistProfilePage() {
       setArtist(artistData);
       if (artistData) {
         setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
-        getAlbumsByArtist(artistData.name).then((albums) => setArtistAlbums(albums));
+        getAllAlbums().then((albums) => {
+          setArtistAlbums(albums.filter((a) => a.artist_id === activeArtistId));
+        });
         getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
         // Check if current user follows this artist
         setIsFollowing(followedArtists.some((a) => a.id === activeArtistId));
@@ -219,7 +221,7 @@ export default function ArtistProfilePage() {
                   onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
                 />
                 <p className="text-sm font-medium text-white mt-2 truncate">{album.title}</p>
-                <p className="text-xs text-neutral-400">{album.release_date} • {album.songIds?.length || 0} bài</p>
+                <p className="text-xs text-neutral-400">{album.release_date}</p>
               </div>
             ))}
           </div>

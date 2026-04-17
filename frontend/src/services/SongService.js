@@ -74,7 +74,8 @@ export const getLyrics = async (songId) => {
 export const recordView = async (songId) => {
   if (!songId) return;
   try {
-    await api.post(`/songs/${encodeURIComponent(songId)}/view`);
+    // silent: true — lỗi 503/5xx không hiện toast vì đây là fire-and-forget
+    await api.post(`/songs/${encodeURIComponent(songId)}/view`, undefined, { silent: true });
   } catch {
     // Fire-and-forget: lỗi không được ảnh hưởng playback
   }
@@ -102,6 +103,15 @@ export const getLikedSongs = async () => {
   try {
     const data = await api.get('/me/liked-songs?limit=100');
     return (data?.items || []).map(adaptSong);
+  } catch {
+    return [];
+  }
+};
+
+export const getTrendingSongs = async (limit = 20) => {
+  try {
+    const data = await api.get(`/songs/trending?limit=${Math.min(limit, 50)}`);
+    return Array.isArray(data) ? data.map(adaptSong) : (data?.items || []).map(adaptSong);
   } catch {
     return [];
   }

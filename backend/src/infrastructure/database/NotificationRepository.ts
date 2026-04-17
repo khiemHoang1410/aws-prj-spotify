@@ -15,7 +15,15 @@ export class NotificationRepository extends BaseRepository<Notification> {
                 TableName: this.tableName,
                 IndexName: "UserIdIndex",
                 KeyConditionExpression: "userId = :userId AND sk = :sk",
-                ExpressionAttributeValues: { ":userId": userId, ":sk": "METADATA" },
+                // CRITICAL: phải filter entityType vì UserIdIndex là shared table —
+                // PLAYLIST, ARTIST_REQUEST, ARTIST,... đều có userId field và sk = "METADATA"
+                // nên sẽ bị trả về cùng nếu không filter.
+                FilterExpression: "entityType = :entityType",
+                ExpressionAttributeValues: {
+                    ":userId": userId,
+                    ":sk": "METADATA",
+                    ":entityType": this.entityPrefix, // "NOTIFICATION"
+                },
                 ScanIndexForward: false, // newest first
                 Limit: 50,
             }));

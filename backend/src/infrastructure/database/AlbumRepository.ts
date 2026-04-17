@@ -15,7 +15,15 @@ export class AlbumRepository extends BaseRepository<Album> {
                 TableName: this.tableName,
                 IndexName: "ArtistIdIndex",
                 KeyConditionExpression: "artistId = :artistId AND sk = :sk",
-                ExpressionAttributeValues: { ":artistId": artistId, ":sk": "METADATA" },
+                // CRITICAL: filter entityType — User records cũng có artistId sau khi được
+                // approve → sẽ lẫn vào kết quả nếu không filter, hiển thị "album" giả
+                // với id = userId, bấm vào sẽ nhận 404.
+                FilterExpression: "entityType = :entityType",
+                ExpressionAttributeValues: {
+                    ":artistId": artistId,
+                    ":sk": "METADATA",
+                    ":entityType": this.entityPrefix, // "ALBUM"
+                },
             }));
             return Success((response.Items as Album[]) || []);
         } catch (error: any) {

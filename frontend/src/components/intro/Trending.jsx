@@ -1,15 +1,39 @@
-import { useState } from "react"; // Xóa useEffect
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { IntroMockData } from "../../data/IntroMockData";
+import { getTrendingSongs } from "../../services/SongService";
 
 function Trending() {
-  // Gán trực tiếp dữ liệu từ MockData vào useState
-  const [trendingImages] = useState(IntroMockData.trending || []);
+  const [trendingImages, setTrendingImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
     navigate('/');
   };
+
+  useEffect(() => {
+    const fetchTrending = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch top 8 trending songs
+        const songs = await getTrendingSongs(8);
+        const trendingData = (Array.isArray(songs) ? songs : []).map((song) => ({
+          id: song.song_id,
+          image: song.image_url,
+          alt: song.title,
+          title: song.title,
+        }));
+        setTrendingImages(trendingData);
+      } catch (error) {
+        console.error('Failed to fetch trending songs:', error);
+        setTrendingImages([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchTrending();
+  }, []);
 
   return (
     <section className="trending-section container">
@@ -17,7 +41,10 @@ function Trending() {
         <div className="nft-grid">
           {trendingImages.map((nft) => (
             <div key={nft.id} className="nft-item">
-              <img src={nft.image || "/placeholder.svg"} alt={nft.alt} />
+              <img 
+                src={nft.image || "/pictures/whiteBackground.jpg"} 
+                alt={nft.alt}
+                onError={(e) => e.target.src = "/pictures/whiteBackground.jpg"} />
             </div>
           ))}
         </div>
@@ -40,5 +67,4 @@ function Trending() {
     </section>
   );
 }
-
 export default Trending;

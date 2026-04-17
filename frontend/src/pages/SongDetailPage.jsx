@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { Play, Pause, Heart, MoreHorizontal, Music, MessageCircle, Info, ArrowLeft } from 'lucide-react';
 
 import { parseSongId } from '../utils/songUrl';
+import { normalizeLyrics } from '../utils/lrcParser';
 import { getSongById, getLyrics, getSongs } from '../services/SongService';
 import { setCurrentSong, togglePlay } from '../store/playerSlice';
 import { toggleLikeSongThunk, openModal } from '../store/authSlice';
@@ -87,7 +88,7 @@ export default function SongDetailPage() {
           setNotFound(true);
         } else {
           setSong(songData);
-          setLyrics(lyricsData || []);
+          setLyrics(normalizeLyrics(lyricsData));
         }
       } catch {
         if (!cancelled) setNotFound(true);

@@ -28,9 +28,18 @@ export default function CategoryPage() {
   useEffect(() => {
     if (!activeCategoryId) return;
     setIsLoading(true);
-    const result = getSongsByCategory(activeCategoryId);
-    setSongs(result);
-    setIsLoading(false);
+    const fetchSongs = async () => {
+      try {
+        const result = await getSongsByCategory(activeCategoryId);
+        setSongs(Array.isArray(result) ? result : []);
+      } catch (error) {
+        console.error('Failed to fetch songs by category:', error);
+        setSongs([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchSongs();
   }, [activeCategoryId]);
 
   const sortedSongs = useMemo(() => {

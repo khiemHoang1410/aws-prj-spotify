@@ -37,7 +37,7 @@ export default function VideoPlayer({ src }) {
       ref={videoRef}
       src={src}
       controls={false}
-      muted={false}
+      muted={true}
       loop={false}
       playsInline
       className="w-full max-w-4xl max-h-[70vh] rounded-xl bg-black object-contain"

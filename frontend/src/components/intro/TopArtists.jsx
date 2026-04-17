@@ -1,9 +1,28 @@
-import { useState } from "react"; // Bỏ useEffect
-import { IntroMockData } from "../../data/IntroMockData";
+import { useState, useEffect } from "react";
+import { getArtists } from "../../services/ArtistService";
 
 function TopArtists() {
-  // Khởi tạo state trực tiếp từ dữ liệu mock
-  const [artists] = useState(IntroMockData.topArtists);
+  const [artists, setArtists] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArtists = async () => {
+      try {
+        setIsLoading(true);
+        // Fetch từ service và lấy top 8 artists
+        const data = await getArtists();
+        const topArtists = (Array.isArray(data) ? data : []).slice(0, 8);
+        setArtists(topArtists);
+      } catch (error) {
+        console.error('Failed to fetch artists:', error);
+        setArtists([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchArtists();
+  }, []);
 
   return (
     <section className="top-artists-section container">
@@ -13,25 +32,42 @@ function TopArtists() {
         <p className="section-description">We have dozens of artists who contribute to create amazing works</p>
       </div>
       <div className="top-artists-grid">
-        {artists.map((artist) => (
-          <div key={artist.id} className="top-artist-card">
-            <div className="top-artist-info">
-              <div className="top-artist-avatar">
-                <img src={artist.avatar || "/placeholder.svg"} alt={artist.name} />
-              </div>
-              <div className="top-artist-details">
-                <h3 className="top-artist-name">{artist.name}</h3>
-                <p className="top-artist-followers">{artist.followers}</p>
-              </div>
-            </div>
-            <div className={`top-artist-artwork ${artist.gradientClass}`}>
-              <img src={artist.artwork || "/placeholder.svg"} alt={`Artwork by ${artist.name}`} />
-            </div>
+        {isLoading ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#ccc' }}>Loading artists...</p>
           </div>
-        ))}
+        ) : artists.length === 0 ? (
+          <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px' }}>
+            <p style={{ color: '#ccc' }}>No artists found</p>
+          </div>
+        ) : (
+          artists.map((artist) => (
+            <div key={artist.id} className="top-artist-card">
+              <div className="top-artist-info">
+                <div className="top-artist-avatar">
+                  <img 
+                    src={artist.photo_url || artist.image_url || "/pictures/artist_default.png"} 
+                    alt={artist.name} 
+                    onError={(e) => e.target.src = "/pictures/artist_default.png"} />
+                </div>
+                <div className="top-artist-details">
+                  <h3 className="top-artist-name">{artist.name}</h3>
+                  <p className="top-artist-followers">
+                    {artist.followers ? `${(artist.followers / 1000).toFixed(0)}K followers` : 'Artist'}
+                  </p>
+                </div>
+              </div>
+              <div className="top-artist-artwork" style={{ background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+                <img 
+                  src={artist.artist_background || artist.photo_url || "/pictures/artworkDefault.png"} 
+                  alt={`${artist.name} artwork`}
+                  onError={(e) => e.target.src = "/pictures/artworkDefault.png"} />
+              </div>
+            </div>
+          ))
+        )}
       </div>
     </section>
   );
 }
-
 export default TopArtists;

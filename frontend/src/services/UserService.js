@@ -21,7 +21,7 @@ export const getUserProfile = async (userId) => {
 
 export const getProfile = async () => {
   if (!API_URL) return mockDelay(MOCK_PROFILE);
-  const data = await api.get('/me');
+  const data = await api.get('/me', { silent: true });
   return adaptUser(data);
 };
 
