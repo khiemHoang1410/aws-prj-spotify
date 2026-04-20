@@ -13,6 +13,7 @@ export const SongSchema = z.object({
     mvUrl: z.url().optional().nullable(),
     lyrics: z.string().optional().nullable(),
     genre: z.string().min(1).max(50).optional().nullable(),
+    genres: z.array(z.string().min(1).max(50)).optional().nullable(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
 });

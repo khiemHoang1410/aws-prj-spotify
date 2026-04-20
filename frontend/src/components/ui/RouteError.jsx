@@ -19,7 +19,7 @@ export default function RouteError() {
           Quay lại
         </button>
         <button
-          onClick={() => navigate('/')}
+          onClick={() => navigate('/', { replace: true })}
           className="px-6 py-2 bg-green-500 text-black font-semibold rounded-full hover:bg-green-400 transition"
         >
           Về trang chủ

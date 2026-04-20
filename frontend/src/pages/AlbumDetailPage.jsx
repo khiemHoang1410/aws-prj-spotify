@@ -253,7 +253,7 @@ export default function AlbumDetailPage() {
                   <span className="text-sm font-medium text-white truncate">{song.title}</span>
                 </div>
                 <span className="text-sm text-neutral-400 flex items-center truncate">
-                  {song.album_name || '—'}
+                  {album?.title || '—'}
                 </span>
                 <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 {isOwner && (
