@@ -4,6 +4,8 @@ export default function RouteError() {
   const error = useRouteError();
   const navigate = useNavigate();
 
+  console.error('[RouteError] status:', error?.status, '| statusText:', error?.statusText, '| message:', error?.message, '| full:', error);
+
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-[#121212] text-center px-4">
       <div className="text-5xl mb-4">😵</div>

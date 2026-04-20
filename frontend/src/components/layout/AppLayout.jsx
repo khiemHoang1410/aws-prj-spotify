@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser } from '../../services/AuthService';
-import { loginSuccess, setLikedSongs } from '../../store/authSlice';
+import { loginSuccess, setLikedSongs, setRestoring } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
 import api from '../../services/apiClient';
@@ -73,41 +73,45 @@ export default function AppLayout() {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const user = await getCurrentUser();
-      if (!user) return;
-
-      // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
-      dispatch(loginSuccess(user));
-
-      // Fetch full profile từ BE để lấy artistId và các field DB khác
-      // (localStorage chỉ có data từ idToken, không có artistId)
-      let adaptedProfile = null;
       try {
-        const profile = await api.get('/me', { silent: true });
-        if (profile) {
-          adaptedProfile = adaptUser(profile);
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
+        dispatch(loginSuccess(user));
+
+        // Fetch full profile từ BE để lấy artistId và các field DB khác
+        // (localStorage chỉ có data từ idToken, không có artistId)
+        let adaptedProfile = null;
+        try {
+          const profile = await api.get('/me', { silent: true });
+          if (profile) {
+            adaptedProfile = adaptUser(profile);
+          }
+        } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+        // Kiểm tra user có phải artist không qua /me/artist-request
+        const artistData = await checkAndSaveArtistProfile(user.user_id);
+
+        // Merge: nếu có artist profile → cập nhật role + artistId
+        const finalUser = adaptedProfile || { ...user };
+        if (artistData?.id) {
+          finalUser.role = 'artist';
+          finalUser.artist_id = artistData.id;
         }
-      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+        dispatch(loginSuccess(finalUser));
 
-      // Kiểm tra user có phải artist không qua /me/artist-request
-      const artistData = await checkAndSaveArtistProfile(user.user_id);
+        // Restore liked songs từ API
+        try {
+          const liked = await getLikedSongs();
+          if (liked.length > 0) dispatch(setLikedSongs(liked));
+        } catch { /* ignore */ }
 
-      // Merge: nếu có artist profile → cập nhật role + artistId
-      const finalUser = adaptedProfile || { ...user };
-      if (artistData?.id) {
-        finalUser.role = 'artist';
-        finalUser.artist_id = artistData.id;
+        // Refresh user profile từ backend để cập nhật role + artistId mới nhất
+        await syncUserFromBackend(user);
+      } finally {
+        dispatch(setRestoring(false));
       }
-      dispatch(loginSuccess(finalUser));
-
-      // Restore liked songs từ API
-      try {
-        const liked = await getLikedSongs();
-        if (liked.length > 0) dispatch(setLikedSongs(liked));
-      } catch { /* ignore */ }
-
-      // Refresh user profile từ backend để cập nhật role + artistId mới nhất
-      await syncUserFromBackend(user);
     };
     restoreSession();
   }, [dispatch]);

@@ -6,8 +6,11 @@ import { Navigate, useLocation } from 'react-router-dom';
  * @param {string} requiredRole - 'listener' | 'artist' | 'admin' (optional)
  */
 export default function ProtectedRoute({ children, requiredRole }) {
-  const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { isAuthenticated, user, isRestoring } = useSelector((state) => state.auth);
   const location = useLocation();
+
+  // Chờ session restore xong trước khi quyết định redirect
+  if (isRestoring) return null;
 
   if (!isAuthenticated) {
     return <Navigate to="/" state={{ from: location, openLogin: true }} replace />;
