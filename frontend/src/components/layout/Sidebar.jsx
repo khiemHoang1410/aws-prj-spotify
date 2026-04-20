@@ -1,10 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock, Laugh, ListTodo } from 'lucide-react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { showToast } from '../../store/uiSlice';
 import { openModal } from '../../store/authSlice';
-import { setCurrentSong } from '../../store/playerSlice';
 import { getSongById } from '../../services/SongService';
 import {
   selectPlaylistIds,
@@ -12,9 +11,9 @@ import {
   fetchMyPlaylists,
   createPlaylist,
   deletePlaylist,
+  selectPlaylistById,
 } from '../../store/playlistSlice';
-import { selectPlaylistById } from '../../store/playlistSlice';
-import { isLikedPlaylistName } from '../../services/PlaylistService';
+import { setCurrentSong } from '../../store/playerSlice';
 import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
 import SidebarPlaylistItem from '../playlists/SidebarPlaylistItem';
@@ -72,7 +71,7 @@ export default function Sidebar() {
   const playlistIds = useSelector(selectPlaylistIds);
   const status = useSelector(selectPlaylistsStatus);
 
-  // Lấy 5 bài gần nhất từ historySlice (memoized để tránh unnecessary rerenders)
+  // Fetch playlists
   const entries = useSelector((s) => s.history?.entries);
   const recentEntries = useMemo(() => entries?.slice(0, 5) || [], [entries]);
 
@@ -147,6 +146,15 @@ export default function Sidebar() {
     navigate('/my-library');
   };
 
+  const handleDeletePlaylist = async (playlistId, playlistName) => {
+    try {
+      await dispatch(deletePlaylist(playlistId)).unwrap();
+      dispatch(showToast({ message: `Đã xoá "${playlistName}"`, type: 'success' }));
+    } catch {
+      dispatch(showToast({ message: 'Không thể xoá playlist', type: 'error' }));
+    }
+  };
+
   const handleCreatePlaylistClick = () => {
     if (!isAuthenticated) {
       dispatch(openModal('login'));
@@ -166,28 +174,6 @@ export default function Sidebar() {
       >
         <AudioLines size={28} />
         <span className="font-bold text-lg tracking-tight">Spotify</span>
-      </div>
-
-      {/* Quick links */}
-      <div className="bg-[#121212] rounded-lg px-3 py-2 flex flex-col gap-0.5">
-        {[
-          { label: 'Câu đùa vui', path: '/jokes', renderIcon: () => <Laugh size={18} /> },
-          { label: 'Việc cần làm', path: '/todos', renderIcon: () => <ListTodo size={18} /> },
-        ].map(({ label, path, renderIcon }) => {
-          const isActive = location.pathname === path;
-          return (
-            <button
-              key={path}
-              onClick={() => navigate(path)}
-              className={`flex items-center gap-3 px-2 py-2 rounded-lg text-sm font-medium transition w-full text-left ${
-                isActive ? 'bg-white/10 text-green-400' : 'text-[#b3b3b3] hover:text-white hover:bg-white/5'
-              }`}
-            >
-              {renderIcon()}
-              {label}
-            </button>
-          );
-        })}
       </div>
 
       {/* Thư viện */}
@@ -302,7 +288,7 @@ export default function Sidebar() {
                   ))
                 )}
 
-                {/* Mục: Nghe gần đây — đặt sau playlist */}
+                {/* Nghe gần đây */}
                 {recentEntries.length > 0 && (
                   <div className="mt-2">
                     <div className="h-[1px] bg-neutral-800 mb-2" />
@@ -326,38 +312,25 @@ export default function Sidebar() {
                         key={entry.entryId || idx}
                         className="flex items-center gap-3 px-2 py-1.5 rounded cursor-pointer hover:bg-white/5 transition overflow-hidden"
                         onClick={async () => {
-                          // audio_url không được lưu trong history entries từ backend.
-                          // Nếu entry có sẵn audio_url (vừa phát gần đây trong session này)
-                          // → dùng luôn. Nếu không → fetch đầy đủ từ API.
                           if (entry.audio_url) {
                             dispatch(setCurrentSong({
-                              song_id: entry.songId,
-                              title: entry.title,
-                              artist_name: entry.artist_name,
-                              artist_id: entry.artist_id,
-                              image_url: entry.image_url,
-                              audio_url: entry.audio_url,
-                              duration: entry.duration,
+                              song_id: entry.songId, title: entry.title,
+                              artist_name: entry.artist_name, artist_id: entry.artist_id,
+                              image_url: entry.image_url, audio_url: entry.audio_url, duration: entry.duration,
                             }));
                           } else {
                             try {
                               const fullSong = await getSongById(entry.songId);
                               dispatch(setCurrentSong(fullSong || {
-                                song_id: entry.songId,
-                                title: entry.title,
-                                artist_name: entry.artist_name,
-                                artist_id: entry.artist_id,
-                                image_url: entry.image_url,
-                                duration: entry.duration,
+                                song_id: entry.songId, title: entry.title,
+                                artist_name: entry.artist_name, artist_id: entry.artist_id,
+                                image_url: entry.image_url, duration: entry.duration,
                               }));
                             } catch {
                               dispatch(setCurrentSong({
-                                song_id: entry.songId,
-                                title: entry.title,
-                                artist_name: entry.artist_name,
-                                artist_id: entry.artist_id,
-                                image_url: entry.image_url,
-                                duration: entry.duration,
+                                song_id: entry.songId, title: entry.title,
+                                artist_name: entry.artist_name, artist_id: entry.artist_id,
+                                image_url: entry.image_url, duration: entry.duration,
                               }));
                             }
                           }
@@ -377,6 +350,7 @@ export default function Sidebar() {
                     ))}
                   </div>
                 )}
+
               </div>
             )
           )}
