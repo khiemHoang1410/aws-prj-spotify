@@ -14,8 +14,8 @@ export const handler = makeHandler(async (_body, params) => {
     const songResult = await songRepo.findById(idResult.data);
     if (!songResult.success || !songResult.data) return Failure("Bài hát không tồn tại", 404);
 
-    const categories: string[] = (songResult.data as any).categories ?? [];
-    if (categories.length === 0) {
+    const genre: string | null = (songResult.data as any).genre ?? null;
+    if (!genre) {
         // Fallback: same artist
         const artistSongs = await songRepo.findByArtistId(songResult.data.artistId);
         if (!artistSongs.success) return Success([]);
@@ -27,11 +27,9 @@ export const handler = makeHandler(async (_body, params) => {
     const seen = new Set<string>([idResult.data]);
     const related: any[] = [];
 
-    for (const cat of categories.slice(0, 3)) {
-        if (related.length >= 10) break;
-        const catResult = await songRepo.findByCategory(cat);
-        if (!catResult.success) continue;
-        for (const s of catResult.data) {
+    const catResult = await songRepo.findByGenre(genre, 50);
+    if (catResult.success) {
+        for (const s of catResult.data.items) {
             if (related.length >= 10) break;
             if (!seen.has(s.id)) {
                 seen.add(s.id);

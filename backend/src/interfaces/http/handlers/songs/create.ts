@@ -4,11 +4,12 @@ import { makeAuthHandler } from "../../middlewares/withAuth";
 import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
+import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
 import { NotificationRepository } from "../../../../infrastructure/database/NotificationRepository";
 import { FollowRepository } from "../../../../infrastructure/database/FollowRepository";
 import { validate } from "../../../../shared/utils/validate";
 
-const songService = new SongService(new SongRepository(), new ArtistRepository());
+const songService = new SongService(new SongRepository(), new ArtistRepository(), new CategoryRepository());
 const artistRepo = new ArtistRepository();
 const followRepo = new FollowRepository();
 const notificationRepo = new NotificationRepository();
@@ -22,6 +23,7 @@ const CreateSongSchema = z.object({
     coverUrl: z.url().nullable().optional(),
     mvUrl: z.url().nullable().optional(),
     lyrics: z.string().nullable().optional(),
+    genre: z.string().min(1).max(50),
 });
 
 const notifyFollowersNewSong = async (song: any) => {
