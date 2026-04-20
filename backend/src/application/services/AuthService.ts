@@ -37,6 +37,7 @@ export class AuthService {
                 email,
                 displayName,
                 role: "listener",
+                isVerified: false,
                 isBanned: false,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
