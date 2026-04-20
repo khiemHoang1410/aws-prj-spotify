@@ -4,6 +4,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Music } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { getSongs, updateSong } from '../services/SongService';
+import { getCategories } from '../services/CategoryService';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -26,11 +27,18 @@ export default function EditSongPage() {
   const { user } = useSelector((state) => state.auth);
 
   const [title, setTitle] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedGenre, setSelectedGenre] = useState('');
+  const [genreOptions, setGenreOptions] = useState([]);
   const [lyrics, setLyrics] = useState('');
   const [duration, setDuration] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isFetching, setIsFetching] = useState(true);
+
+  useEffect(() => {
+    getCategories()
+      .then((cats) => setGenreOptions(cats))
+      .catch(() => setGenreOptions(CATEGORIES.map((c) => ({ id: c.id, name: c.name }))));
+  }, []);
 
   useEffect(() => {
     if (!activeEditSongId) return;
@@ -56,7 +64,7 @@ export default function EditSongPage() {
       }
       
       setTitle(song.title);
-      setSelectedCategories(song.categories || []);
+      setSelectedGenre(song.genre || '');
       setLyrics('');
       setDuration(parseDuration(song.duration));
     }).finally(() => setIsFetching(false));
@@ -72,12 +80,6 @@ export default function EditSongPage() {
 
   if (!activeEditSongId) return null;
 
-  const handleToggleCategory = (catId) => {
-    setSelectedCategories((prev) =>
-      prev.includes(catId) ? prev.filter((c) => c !== catId) : [...prev, catId]
-    );
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!title.trim()) {
@@ -87,9 +89,9 @@ export default function EditSongPage() {
     setIsLoading(true);
     const formData = {
       title: title.trim(),
-      categories: selectedCategories,
       duration: durationToSeconds(duration),
     };
+    if (selectedGenre) formData.genre = selectedGenre;
     if (lyrics.trim()) formData.lyrics = lyrics.trim();
 
     const result = await updateSong(activeEditSongId, formData);
@@ -146,17 +148,17 @@ export default function EditSongPage() {
             />
           </div>
 
-          {/* Categories */}
+          {/* Genre */}
           <div>
             <label className="block text-sm font-medium text-neutral-300 mb-2">Thể loại</label>
             <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((cat) => (
+              {(genreOptions.length ? genreOptions : CATEGORIES.map((c) => ({ id: c.id, name: c.name }))).map((cat) => (
                 <button
-                  key={cat.id}
+                  key={cat.id || cat.slug}
                   type="button"
-                  onClick={() => handleToggleCategory(cat.id)}
+                  onClick={() => setSelectedGenre(cat.id || cat.slug)}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-                    selectedCategories.includes(cat.id)
+                    selectedGenre === (cat.id || cat.slug)
                       ? 'bg-green-500 text-black'
                       : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
                   }`}

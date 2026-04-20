@@ -23,7 +23,7 @@ export const adaptSong = (song) => {
     artist_photo: song.artist_photo || null,
     artist_background: song.artist_background || null,
     has_lyrics: !!(song.lyrics),
-    categories: song.categories || [],
+    categories: song.categories?.length ? song.categories : (song.genre ? [song.genre] : []),
     play_count: song.playCount || song.play_count || 0,
     genre: song.genre || null,
   };

@@ -144,7 +144,7 @@ export default function AppLayout() {
         <main className={`flex-1 bg-[#121212] rounded-lg mt-2 mr-2 mb-2 overflow-y-auto relative ${isLyricsPage ? 'ml-2' : ''}`}>
           <div className="p-6 min-h-full bg-gradient-to-b from-[#1f1f1f] to-[#121212] relative overflow-x-hidden">
             <Navbar />
-            <ErrorBoundary>
+            <ErrorBoundary key={location.pathname}>
               <Outlet />
             </ErrorBoundary>
           </div>
