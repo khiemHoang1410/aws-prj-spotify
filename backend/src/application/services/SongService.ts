@@ -53,10 +53,46 @@ export class SongService {
             }
 
             // 5. Lưu vào database
-            return await this.songRepo.save(songData);
+            const saveResult = await this.songRepo.save(songData);
+            if (!saveResult.success) return saveResult;
+
+            // 6. Increment songCount trên category (best-effort — không block nếu lỗi)
+            await this.categoryRepo.incrementSongCount(genre, 1).catch(() => {
+                // Không throw — songCount stale sẽ được fix bởi recalculate script
+            });
+
+            return saveResult;
 
         } catch (error: any) {
             return Failure(`Lỗi SongService: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Xóa bài hát (soft delete) và decrement songCount trên category.
+     * Dùng cho admin delete và artist self-delete.
+     */
+    async deleteSong(id: string): Promise<Result<void>> {
+        try {
+            // Lấy song trước để biết genre
+            const songResult = await this.songRepo.findById(id);
+            if (!songResult.success) return songResult as any;
+            if (!songResult.data) return Failure("Bài hát không tồn tại", 404);
+
+            const genre = songResult.data.genre;
+
+            // Soft delete
+            const deleteResult = await this.songRepo.delete(id);
+            if (!deleteResult.success) return deleteResult;
+
+            // Decrement songCount (best-effort)
+            if (genre) {
+                await this.categoryRepo.incrementSongCount(genre, -1).catch(() => {});
+            }
+
+            return deleteResult;
+        } catch (error: any) {
+            return Failure(`Lỗi xóa bài hát: ${error.message}`, 500);
         }
     }
 
