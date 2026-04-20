@@ -1,4 +1,4 @@
-import { DynamoDBDocumentClient, QueryCommand, ScanCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Song } from "../../domain/entities/Song";
@@ -24,24 +24,61 @@ export class SongRepository extends BaseRepository<Song> {
     }
 
     /**
-     * Scan songs filtered by category.
-     * DynamoDB không có GSI cho categories (array field) nên dùng FilterExpression.
-     * Acceptable vì categories là secondary filter, không phải primary access pattern.
+     * Query songs by genre using the GenreIndex GSI.
+     * Replaces the old full-table scan findByCategory.
+     * Supports cursor-based pagination; max 50 items per page.
      */
-    async findByCategory(category: string): Promise<Result<Song[]>> {
+    async findByGenre(
+        genre: string,
+        limit: number,
+        cursor?: string,
+    ): Promise<Result<{ items: Song[]; nextCursor?: string }>> {
         try {
-            const response = await docClient.send(new ScanCommand({
+            const clampedLimit = Math.min(limit, 50);
+            const params: any = {
                 TableName: this.tableName,
-                FilterExpression: "entityType = :type AND sk = :sk AND contains(categories, :cat) AND attribute_not_exists(deletedAt)",
+                IndexName: "GenreIndex",
+                KeyConditionExpression: "genre = :genre AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: {
-                    ":type": this.entityPrefix,
+                    ":genre": genre,
                     ":sk": "METADATA",
-                    ":cat": category,
                 },
-            }));
-            return Success((response.Items as Song[]) || []);
+                Limit: clampedLimit,
+            };
+            if (cursor) {
+                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+            }
+            const response = await docClient.send(new QueryCommand(params));
+            const nextCursor = response.LastEvaluatedKey
+                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                : undefined;
+            return Success({ items: (response.Items as Song[]) || [], nextCursor });
         } catch (error: any) {
             return Failure(`Lỗi lấy bài hát theo thể loại: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Count non-deleted songs for a given genre using GenreIndex GSI with Select: COUNT.
+     * Used by CategoryService to compute songCount without fetching full records.
+     */
+    async countByGenre(genre: string): Promise<Result<number>> {
+        try {
+            const response = await docClient.send(new QueryCommand({
+                TableName: this.tableName,
+                IndexName: "GenreIndex",
+                KeyConditionExpression: "genre = :genre AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
+                ExpressionAttributeValues: {
+                    ":genre": genre,
+                    ":sk": "METADATA",
+                },
+                Select: "COUNT",
+            }));
+            return Success(response.Count ?? 0);
+        } catch (error: any) {
+            return Failure(`Lỗi đếm bài hát theo thể loại: ${error.message}`, 500);
         }
     }
 
