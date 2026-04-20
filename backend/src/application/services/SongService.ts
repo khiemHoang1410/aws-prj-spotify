@@ -4,19 +4,39 @@ import { Song, SongSchema } from "../../domain/entities/Song";
 import { SongRepository } from "../../infrastructure/database/SongRepository";
 import { Result, Failure } from "../../shared/utils/Result";
 import { ArtistRepository } from "../../infrastructure/database/ArtistRepository";
+import { CategoryRepository } from "../../infrastructure/database/CategoryRepository";
 
 export class SongService {
     constructor(
         private readonly songRepo: SongRepository,
-        private readonly artistRepo: ArtistRepository
+        private readonly artistRepo: ArtistRepository,
+        private readonly categoryRepo: CategoryRepository
     ) { }
 
     async createSong(rawData: any): Promise<Result<Song>> {
         try {
-            // 1. Validate đầu vào (bỏ qua id, createdAt, updatedAt - server tự sinh)
+            // 1. Validate genre trước khi parse schema
+            const genre = rawData?.genre;
+            if (!genre || (typeof genre === "string" && genre.trim() === "")) {
+                return Failure("genre là bắt buộc", 400);
+            }
+            if (typeof genre === "string" && genre.length > 50) {
+                return Failure("genre không được vượt quá 50 ký tự", 400);
+            }
+
+            // 2. Validate đầu vào (bỏ qua id, createdAt, updatedAt - server tự sinh)
             const validation = SongSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(rawData);
             if (!validation.success) {
                 return Failure(validation.error.issues[0].message, 400);
+            }
+
+            // 3. Validate genre against known category slugs
+            const categoryResult = await this.categoryRepo.findBySlug(genre);
+            if (!categoryResult.success) {
+                return Failure(categoryResult.error ?? "Lỗi kiểm tra genre", categoryResult.code ?? 500);
+            }
+            if (!categoryResult.data) {
+                return Failure("genre không hợp lệ", 400);
             }
 
             const songData: Song = {
@@ -26,13 +46,13 @@ export class SongService {
                 updatedAt: new Date().toISOString(),
             };
 
-            // 2. Check Artist tồn tại
+            // 4. Check Artist tồn tại
             const artistResult = await this.artistRepo.findById(songData.artistId);
             if (!artistResult.success || !artistResult.data) {
                 return Failure(`Nghệ sĩ không tồn tại!`, 404);
             }
 
-            // 3. Lưu vào database
+            // 5. Lưu vào database
             return await this.songRepo.save(songData);
 
         } catch (error: any) {
@@ -92,16 +112,36 @@ export class SongService {
     }
 
     /**
+     * Lấy songs theo genre có kèm artistName.
+     * Supports cursor-based pagination; max 50 items per page.
+     */
+    async getByGenreEnriched(genre: string, limit: number, cursor?: string): Promise<Result<{ items: any[]; nextCursor?: string }>> {
+        const result = await this.songRepo.findByGenre(genre, limit, cursor);
+        if (!result.success) return result;
+
+        const artistIds = [...new Set(result.data.items.map(s => s.artistId).filter(Boolean))];
+        const artistMap = await this._buildArtistMap(artistIds);
+
+        const items = result.data.items.map(s => ({
+            ...s,
+            artistName: artistMap.get(s.artistId) ?? null,
+        }));
+
+        return { success: true, data: { items, nextCursor: result.data.nextCursor } };
+    }
+
+    /**
+     * @deprecated Use getByGenreEnriched instead.
      * Lấy songs theo category có kèm artistName.
      */
     async getByCategoryEnriched(category: string): Promise<Result<any[]>> {
-        const result = await this.songRepo.findByCategory(category);
+        const result = await this.songRepo.findByGenre(category, 50);
         if (!result.success) return result;
 
-        const artistIds = [...new Set(result.data.map(s => s.artistId).filter(Boolean))];
+        const artistIds = [...new Set(result.data.items.map(s => s.artistId).filter(Boolean))];
         const artistMap = await this._buildArtistMap(artistIds);
 
-        const items = result.data.map(s => ({
+        const items = result.data.items.map(s => ({
             ...s,
             artistName: artistMap.get(s.artistId) ?? null,
         }));

@@ -20,13 +20,24 @@ const mockArtistRepo = {
     delete: vi.fn(),
 };
 
-const songService = new SongService(mockSongRepo as any, mockArtistRepo as any);
+const mockCategoryRepo = {
+    findBySlug: vi.fn(),
+    findAllSorted: vi.fn(),
+    save: vi.fn(),
+    findAll: vi.fn(),
+    update: vi.fn(),
+    delete: vi.fn(),
+    incrementSongCount: vi.fn(),
+};
+
+const songService = new SongService(mockSongRepo as any, mockArtistRepo as any, mockCategoryRepo as any);
 
 const validSongInput = {
     title: "Chúng Ta Của Tương Lai",
     artistId: "019d19f9-1834-71fa-aeaf-e8c515a2c40c",
     duration: 240,
     fileUrl: "https://bucket.s3.amazonaws.com/raw/test.mp3",
+    genre: "vpop",
 };
 
 const mockArtist = {
@@ -35,8 +46,17 @@ const mockArtist = {
     userId: "user-123",
 };
 
+const mockCategory = {
+    id: "vpop",
+    name: "V-Pop",
+    color: "bg-red-500",
+    songCount: 0,
+};
+
 beforeEach(() => {
     vi.clearAllMocks();
+    // Default: category exists
+    mockCategoryRepo.findBySlug.mockResolvedValue({ success: true, data: mockCategory });
 });
 
 describe("SongService.createSong", () => {
@@ -49,6 +69,44 @@ describe("SongService.createSong", () => {
         expect(result.success).toBe(true);
         expect(mockArtistRepo.findById).toHaveBeenCalledWith(validSongInput.artistId);
         expect(mockSongRepo.save).toHaveBeenCalledOnce();
+    });
+
+    it("trả về lỗi 400 khi thiếu genre", async () => {
+        const { genre: _genre, ...inputWithoutGenre } = validSongInput;
+        const result = await songService.createSong(inputWithoutGenre) as any;
+
+        expect(result.success).toBe(false);
+        expect(result.code).toBe(400);
+        expect(result.error).toBe("genre là bắt buộc");
+        expect(mockCategoryRepo.findBySlug).not.toHaveBeenCalled();
+    });
+
+    it("trả về lỗi 400 khi genre là chuỗi rỗng", async () => {
+        const result = await songService.createSong({ ...validSongInput, genre: "" }) as any;
+
+        expect(result.success).toBe(false);
+        expect(result.code).toBe(400);
+        expect(result.error).toBe("genre là bắt buộc");
+    });
+
+    it("trả về lỗi 400 khi genre dài hơn 50 ký tự", async () => {
+        const longGenre = "a".repeat(51);
+        const result = await songService.createSong({ ...validSongInput, genre: longGenre }) as any;
+
+        expect(result.success).toBe(false);
+        expect(result.code).toBe(400);
+        expect(result.error).toBe("genre không được vượt quá 50 ký tự");
+    });
+
+    it("trả về lỗi 400 khi genre không phải slug hợp lệ", async () => {
+        mockCategoryRepo.findBySlug.mockResolvedValue({ success: true, data: null });
+
+        const result = await songService.createSong({ ...validSongInput, genre: "unknown-genre" }) as any;
+
+        expect(result.success).toBe(false);
+        expect(result.code).toBe(400);
+        expect(result.error).toBe("genre không hợp lệ");
+        expect(mockSongRepo.save).not.toHaveBeenCalled();
     });
 
     it("trả về lỗi 404 khi artist không tồn tại", async () => {
