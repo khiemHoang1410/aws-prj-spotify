@@ -8,6 +8,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminPagination from '../../components/admin/AdminPagination';
 import AdminSearchFilter from '../../components/admin/AdminSearchFilter';
 import AdminUserDetail from './AdminUserDetail';
+import { formatDateTime } from '../../utils/formatDate';
 
 const ROLE_BADGE = {
   listener: 'bg-blue-900/50 text-blue-300',
@@ -71,7 +72,7 @@ export default function AdminUsers() {
         </span>
       ),
     },
-    { key: 'createdAt', label: 'Ngày tạo', sortable: true },
+    { key: 'createdAt', label: 'Ngày tạo', sortable: true, render: (row) => formatDateTime(row.createdAt) },
     {
       key: 'actions',
       label: 'Hành động',

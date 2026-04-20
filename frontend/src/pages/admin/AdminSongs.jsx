@@ -7,6 +7,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminPagination from '../../components/admin/AdminPagination';
 import AdminSearchFilter from '../../components/admin/AdminSearchFilter';
 import AdminBulkToolbar from '../../components/admin/AdminBulkToolbar';
+import { formatDateTime } from '../../utils/formatDate';
 
 function formatDuration(seconds) {
   if (!seconds) return '—';
@@ -14,6 +15,11 @@ function formatDuration(seconds) {
   const s = seconds % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
+
+const GENRE_LABELS = {
+  vpop: 'V-Pop', pop: 'Pop', kpop: 'K-Pop', ballad: 'Ballad',
+  rap: 'Rap/Hip-Hop', indie: 'Indie', rnb: 'R&B', edm: 'EDM',
+};
 
 export default function AdminSongs() {
   const dispatch = useDispatch();
@@ -48,9 +54,16 @@ export default function AdminSongs() {
   const columns = [
     { key: 'title', label: 'Tên bài hát', sortable: true },
     { key: 'artistName', label: 'Nghệ sĩ', sortable: true },
+    {
+      key: 'genre',
+      label: 'Thể loại',
+      render: (row) => row.genre
+        ? <span className="px-2 py-0.5 rounded-full text-xs bg-neutral-700 text-neutral-200">{GENRE_LABELS[row.genre] || row.genre}</span>
+        : <span className="text-xs text-neutral-500 italic">Chưa có</span>,
+    },
     { key: 'duration', label: 'Thời lượng', render: (row) => formatDuration(row.duration) },
     { key: 'playCount', label: 'Lượt nghe', sortable: true, render: (row) => (row.playCount ?? 0).toLocaleString() },
-    { key: 'createdAt', label: 'Ngày tạo', sortable: true },
+    { key: 'createdAt', label: 'Ngày tạo', sortable: true, render: (row) => formatDateTime(row.createdAt) },
     {
       key: 'actions',
       label: 'Hành động',
