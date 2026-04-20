@@ -27,7 +27,7 @@ export default function EditSongPage() {
   const { user } = useSelector((state) => state.auth);
 
   const [title, setTitle] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState([]);
   const [genreOptions, setGenreOptions] = useState([]);
   const [lyrics, setLyrics] = useState('');
   const [duration, setDuration] = useState('');
@@ -64,7 +64,7 @@ export default function EditSongPage() {
       }
       
       setTitle(song.title);
-      setSelectedGenre(song.genre || '');
+      setSelectedGenres(song.categories || (song.genre ? [song.genre] : []));
       setLyrics('');
       setDuration(parseDuration(song.duration));
     }).finally(() => setIsFetching(false));
@@ -91,7 +91,7 @@ export default function EditSongPage() {
       title: title.trim(),
       duration: durationToSeconds(duration),
     };
-    if (selectedGenre) formData.genre = selectedGenre;
+    if (selectedGenres.length > 0) formData.genres = selectedGenres;
     if (lyrics.trim()) formData.lyrics = lyrics.trim();
 
     const result = await updateSong(activeEditSongId, formData);
@@ -150,15 +150,18 @@ export default function EditSongPage() {
 
           {/* Genre */}
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-2">Thể loại</label>
+            <label className="block text-sm font-medium text-neutral-300 mb-2">Thể loại <span className="text-neutral-500 font-normal">(chọn nhiều)</span></label>
             <div className="flex flex-wrap gap-2">
               {(genreOptions.length ? genreOptions : CATEGORIES.map((c) => ({ id: c.id, name: c.name }))).map((cat) => (
                 <button
                   key={cat.id || cat.slug}
                   type="button"
-                  onClick={() => setSelectedGenre(cat.id || cat.slug)}
+                  onClick={() => setSelectedGenres((prev) => {
+                    const slug = cat.id || cat.slug;
+                    return prev.includes(slug) ? prev.filter((g) => g !== slug) : [...prev, slug];
+                  })}
                   className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
-                    selectedGenre === (cat.id || cat.slug)
+                    selectedGenres.includes(cat.id || cat.slug)
                       ? 'bg-green-500 text-black'
                       : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
                   }`}
