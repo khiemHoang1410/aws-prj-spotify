@@ -15,28 +15,36 @@ export class SongService {
 
     async createSong(rawData: any): Promise<Result<Song>> {
         try {
-            // 1. Validate genre trước khi parse schema
-            const genre = rawData?.genre;
-            if (!genre || (typeof genre === "string" && genre.trim() === "")) {
-                return Failure("genre là bắt buộc", 400);
-            }
-            if (typeof genre === "string" && genre.length > 50) {
-                return Failure("genre không được vượt quá 50 ký tự", 400);
+            // 1. Normalize genres: ưu tiên genres[] (multi), fallback về genre string (legacy)
+            const rawGenres: string[] = Array.isArray(rawData?.genres) && rawData.genres.length > 0
+                ? rawData.genres
+                : rawData?.genre ? [String(rawData.genre)] : [];
+
+            if (rawGenres.length === 0) {
+                return Failure("Cần ít nhất một thể loại (genre)", 400);
             }
 
-            // 2. Validate đầu vào (bỏ qua id, createdAt, updatedAt - server tự sinh)
+            // 2. Validate từng genre
+            for (const g of rawGenres) {
+                if (!g || g.trim() === "") return Failure("Thể loại không được để trống", 400);
+                if (g.length > 50) return Failure("Tên thể loại không được vượt quá 50 ký tự", 400);
+                const categoryResult = await this.categoryRepo.findBySlug(g);
+                if (!categoryResult.success) {
+                    return Failure(categoryResult.error ?? "Lỗi kiểm tra genre", categoryResult.code ?? 500);
+                }
+                if (!categoryResult.data) {
+                    return Failure(`Thể loại '${g}' không hợp lệ`, 400);
+                }
+            }
+
+            // Inject normalized fields: genre = primary (for GSI), genres = all
+            rawData.genre = rawGenres[0];
+            rawData.genres = rawGenres;
+
+            // 3. Validate đầu vào (bỏ qua id, createdAt, updatedAt - server tự sinh)
             const validation = SongSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(rawData);
             if (!validation.success) {
                 return Failure(validation.error.issues[0].message, 400);
-            }
-
-            // 3. Validate genre against known category slugs
-            const categoryResult = await this.categoryRepo.findBySlug(genre);
-            if (!categoryResult.success) {
-                return Failure(categoryResult.error ?? "Lỗi kiểm tra genre", categoryResult.code ?? 500);
-            }
-            if (!categoryResult.data) {
-                return Failure("genre không hợp lệ", 400);
             }
 
             const songData: Song = {

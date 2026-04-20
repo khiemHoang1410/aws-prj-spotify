@@ -4,6 +4,7 @@ import { IntroMockData } from "../../data/IntroMockData"; // Đã import mock da
 
 function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState("home");
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
@@ -11,8 +12,17 @@ function Header() {
     e.preventDefault(); 
     const section = document.getElementById(sectionId);
     if (section) section.scrollIntoView({ behavior: "smooth" });
+    setActiveSection(sectionId);
     setIsMenuOpen(false); 
   };
+
+  const navLinks = [
+    { id: "home", label: "Home" },
+    { id: "stats", label: "About us" },
+    { id: "trending", label: "Trending" },
+    { id: "top-artists", label: "Top" },
+    { id: "subscribe", label: "Contact Us" },
+  ];
 
   return (
     <header className="header">
@@ -34,11 +44,17 @@ function Header() {
         </button>
         <nav className={`nav-menu ${isMenuOpen ? "active" : ""}`}>
           <ul>
-            <li><a href="#home" className="nav-link active" onClick={(e) => handleScroll(e, "home")}>Home</a></li>
-            <li><a href="#stats" className="nav-link" onClick={(e) => handleScroll(e, "stats")}>About us</a></li>
-            <li><a href="#trending" className="nav-link" onClick={(e) => handleScroll(e, "trending")}>Trending</a></li>
-            <li><a href="#top-artists" className="nav-link" onClick={(e) => handleScroll(e, "top-artists")}>Top</a></li>
-            <li><a href="#contact" className="nav-link" onClick={(e) => handleScroll(e, "contact")}>Contact Us</a></li>
+            {navLinks.map(({ id, label }) => (
+              <li key={id}>
+                <a
+                  href={`#${id}`}
+                  className={`nav-link${activeSection === id ? " active" : ""}`}
+                  onClick={(e) => handleScroll(e, id)}
+                >
+                  {label}
+                </a>
+              </li>
+            ))}
           </ul>
         </nav>
       </div>

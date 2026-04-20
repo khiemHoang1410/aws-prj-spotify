@@ -37,7 +37,7 @@ export default function UploadSongPage() {
   const [mvPreview, setMvPreview] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [duration, setDuration] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('');
+  const [selectedGenres, setSelectedGenres] = useState([]);
   const [genreOptions, setGenreOptions] = useState([]);
   const [genreLoading, setGenreLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
@@ -204,7 +204,7 @@ export default function UploadSongPage() {
   };
 
   const canProceed = () => {
-    if (step === 0) return title.trim() && audioFile && selectedGenre !== '';
+    if (step === 0) return title.trim() && audioFile && selectedGenres.length > 0;
     return true;
   };
 
@@ -214,7 +214,7 @@ export default function UploadSongPage() {
     // Validate trước khi gọi API
     if (!title.trim()) { setUploadError('Vui lòng nhập tên bài hát.'); return; }
     if (!audioFile) { setUploadError('Vui lòng chọn file âm thanh.'); return; }
-    if (!selectedGenre) { setUploadError('Vui lòng chọn thể loại.'); return; }
+    if (!selectedGenres.length) { setUploadError('Vui lòng chọn ít nhất một thể loại.'); return; }
     if (!artistId) { setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng tải lại trang.'); return; }
 
     setIsLoading(true);
@@ -231,7 +231,8 @@ export default function UploadSongPage() {
         coverFile: coverFiles[0] || null,
         lyrics,
         duration: durationSeconds,
-        genre: selectedGenre,
+        genres: selectedGenres,
+        genre: selectedGenres[0],
       };
       await uploadSong(formData);
       dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
@@ -254,7 +255,7 @@ export default function UploadSongPage() {
       setMvPreview('');
       setLyrics('');
       setDuration('');
-      setSelectedGenre('');
+      setSelectedGenres([]);
     } catch (err) {
       setUploadError(err?.message || 'Không thể upload bài hát. Vui lòng thử lại.');
     } finally {
@@ -401,28 +402,31 @@ export default function UploadSongPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-2">Thể loại *</label>
+            <label className="block text-sm text-neutral-300 mb-2">Thể loại * <span className="text-neutral-500 font-normal">(chọn nhiều)</span></label>
             {genreLoading ? (
-              <select
-                disabled
-                className="w-full bg-neutral-800 text-neutral-400 rounded-lg px-3 py-2 text-sm outline-none"
-              >
-                <option>Đang tải thể loại...</option>
-              </select>
+              <div className="text-xs text-neutral-400">Đang tải thể loại...</div>
             ) : (
-              <select
-                value={selectedGenre}
-                onChange={(e) => setSelectedGenre(e.target.value)}
-                className="w-full bg-neutral-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-green-500"
-              >
-                <option value="">-- Chọn thể loại --</option>
-                {genreOptions.map(({ id, name }) => (
-                  <option key={id} value={id}>{name}</option>
+              <div className="flex flex-wrap gap-2">
+                {(genreOptions.length ? genreOptions : CATEGORIES.map((c) => ({ id: c.id, name: c.name }))).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedGenres((prev) =>
+                      prev.includes(cat.id) ? prev.filter((g) => g !== cat.id) : [...prev, cat.id]
+                    )}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+                      selectedGenres.includes(cat.id)
+                        ? 'bg-green-500 text-black'
+                        : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
                 ))}
-              </select>
+              </div>
             )}
-            {selectedGenre === '' && !genreLoading && (
-              <p className="text-xs text-red-400 mt-1">Vui lòng chọn thể loại</p>
+            {selectedGenres.length === 0 && !genreLoading && (
+              <p className="text-xs text-red-400 mt-1">Vui lòng chọn ít nhất một thể loại</p>
             )}
           </div>
         </div>
@@ -553,9 +557,9 @@ export default function UploadSongPage() {
               </div>
               <div className="col-span-2">
                 <span className="text-neutral-400">Thể loại: </span>
-                <span className={selectedGenre ? 'text-green-400' : 'text-red-400'}>
-                  {selectedGenre
-                    ? (genreOptions.find((c) => c.id === selectedGenre)?.name || selectedGenre)
+                <span className={selectedGenres.length ? 'text-green-400' : 'text-red-400'}>
+                  {selectedGenres.length
+                    ? selectedGenres.map((g) => genreOptions.find((c) => c.id === g)?.name || g).join(', ')
                     : 'Chưa chọn'}
                 </span>
               </div>
