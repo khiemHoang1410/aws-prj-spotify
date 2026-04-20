@@ -11,6 +11,9 @@ export default function CardCategory({ category }) {
       onClick={() => category?.id && navigate(`/category/${category.id}`)}
     >
       <h3 className="text-white font-bold text-xl relative z-10">{category?.name || 'Category'}</h3>
+      {category?.songCount > 0 && (
+        <p className="text-white/80 text-sm mt-1 relative z-10">{category.songCount} songs</p>
+      )}
       
       <img
         src={imageSrc}

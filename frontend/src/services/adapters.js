@@ -25,6 +25,7 @@ export const adaptSong = (song) => {
     has_lyrics: !!(song.lyrics),
     categories: song.categories || [],
     play_count: song.playCount || song.play_count || 0,
+    genre: song.genre || null,
   };
 };
 

@@ -5,6 +5,7 @@ import { ArrowLeft, Music, Play } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getSongsByCategory } from '../services/SongService';
+import { getCategories } from '../services/CategoryService';
 import CardSong from '../components/cards/CardSong';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -24,22 +25,33 @@ export default function CategoryPage() {
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [sortBy, setSortBy] = useState('popular');
+  const [category, setCategory] = useState(null);
 
   useEffect(() => {
     if (!activeCategoryId) return;
-    setIsLoading(true);
-    const fetchSongs = async () => {
+
+    const fetchData = async () => {
+      setIsLoading(true);
       try {
-        const result = await getSongsByCategory(activeCategoryId);
-        setSongs(Array.isArray(result) ? result : []);
+        const [songsResult, categories] = await Promise.all([
+          getSongsByCategory(activeCategoryId),
+          getCategories(),
+        ]);
+        setSongs(Array.isArray(songsResult) ? songsResult : []);
+        const matched = Array.isArray(categories)
+          ? categories.find((c) => c.id === activeCategoryId)
+          : null;
+        setCategory(matched || null);
       } catch (error) {
-        console.error('Failed to fetch songs by category:', error);
+        console.error('Failed to fetch category data:', error);
         setSongs([]);
+        setCategory(null);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchSongs();
+
+    fetchData();
   }, [activeCategoryId]);
 
   const sortedSongs = useMemo(() => {
@@ -67,7 +79,7 @@ export default function CategoryPage() {
   return (
     <div>
       {/* Gradient header */}
-      <div className="flex items-end gap-4 h-56 px-2 pb-6 bg-gradient-to-b from-green-800/60 to-transparent mb-6 -mx-6 -mt-6 px-6">
+      <div className={`flex items-end gap-4 h-56 px-2 pb-6 bg-gradient-to-b ${category ? category.color : 'from-green-800/60'} to-transparent mb-6 -mx-6 -mt-6 px-6`}>
         <button
           onClick={() => navigate(-1)}
           className="p-2 rounded-full bg-black/30 hover:bg-black/50 text-white transition mb-1"
@@ -77,7 +89,9 @@ export default function CategoryPage() {
         </button>
         <div className="min-w-0">
           <p className="text-xs font-semibold text-white uppercase mb-1">Thể loại</p>
-          <h1 className="text-4xl font-extrabold text-white truncate">{activeCategoryId}</h1>
+          <h1 className="text-4xl font-extrabold text-white truncate">
+            {category ? category.name : activeCategoryId}
+          </h1>
           <p className="text-sm text-neutral-300 mt-1">{songs.length} bài hát</p>
         </div>
       </div>
