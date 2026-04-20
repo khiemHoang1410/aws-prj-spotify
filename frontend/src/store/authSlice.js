@@ -14,6 +14,7 @@ const initialState = {
   followedArtists: [],
   forgotPasswordModalOpen: false,
   loginPrefillEmail: '',
+  isRestoring: true, // true until session restore completes on mount
 };
 
 const authSlice = createSlice({
@@ -43,6 +44,7 @@ const authSlice = createSlice({
       state.verifyStatus = VERIFY_STATUS.IDLE;
       state.verifyMessage = '';
       state.followedArtists = [];
+      state.isRestoring = false;
     },
     toggleLikeSong: (state, action) => {
       const song = action.payload;
@@ -81,10 +83,13 @@ const authSlice = createSlice({
     setLoginPrefillEmail: (state, action) => {
       state.loginPrefillEmail = action.payload;
     },
+    setRestoring: (state, action) => {
+      state.isRestoring = action.payload;
+    },
   },
 });
 
-export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus, setFollowedArtists, toggleFollowArtist, setLikedSongs, openForgotPasswordModal, closeForgotPasswordModal, setLoginPrefillEmail } = authSlice.actions;
+export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus, setFollowedArtists, toggleFollowArtist, setLikedSongs, openForgotPasswordModal, closeForgotPasswordModal, setLoginPrefillEmail, setRestoring } = authSlice.actions;
 export default authSlice.reducer;
 
 // Thunk: optimistic update + API like/unlike
