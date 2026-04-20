@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
-import { toggleLikeSongThunk } from '../../store/authSlice';
+import { toggleLikeSongThunk, openModal } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
 import { getTrendingSongs } from '../../services/RecommendationService';
@@ -305,7 +305,10 @@ export default function PlayerBar() {
         </div>
         <button
           className={`ml-2 transition hover:scale-110 ${likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'text-green-500' : 'text-[#b3b3b3] hover:text-white'}`}
-          onClick={() => dispatch(toggleLikeSongThunk(currentSong))}
+          onClick={() => {
+            if (!isAuthenticated) { dispatch(openModal('login')); return; }
+            dispatch(toggleLikeSongThunk(currentSong));
+          }}
           title="Yêu thích"
         >
           <Heart size={16} fill={likedSongs.some(s => s.song_id === currentSong?.song_id) ? 'currentColor' : 'none'} />
@@ -324,7 +327,10 @@ export default function PlayerBar() {
           </button>
           <button className="text-[#b3b3b3] hover:text-white" onClick={handleSkipBack} title="Trước"><SkipBack size={20} fill="currentColor" /></button>
 
-          <button className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition" onClick={() => dispatch(togglePlay())}>
+          <button className="w-8 h-8 flex items-center justify-center bg-white text-black rounded-full hover:scale-105 transition" onClick={() => {
+            if (!isAuthenticated) { dispatch(openModal('login')); return; }
+            dispatch(togglePlay());
+          }}>
             {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
           </button>
 

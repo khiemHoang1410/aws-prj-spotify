@@ -13,6 +13,7 @@ const UpdateSongSchema = z.object({
     mvUrl: z.url().nullable().optional(),
     lyrics: z.string().nullable().optional(),
     albumId: z.uuid().nullable().optional(),
+    genre: z.string().min(1).max(50).optional(),
 });
 
 export const handler = makeAuthHandler(async (body, params) => {
