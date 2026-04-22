@@ -59,6 +59,8 @@ export default function ProfilePage() {
         const artistData = await getArtistById(artistId);
         if (artistData) {
           setArtistProfile(artistData);
+          // Cập nhật displayName với tên từ artist record
+          setDisplayName(artistData.name || user.name || user.username || '');
           if (artistData.isVerified) {
             dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
             return;
@@ -86,10 +88,17 @@ export default function ProfilePage() {
     if (!displayName.trim()) return;
     setIsSaving(true);
     try {
-      await updateProfile({ displayName: displayName.trim() });
-      // api.put trả về raw user data (không có success field) — nếu không throw là thành công
-      dispatch(loginSuccess({ ...user, name: displayName.trim(), username: displayName.trim() }));
-      dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
+      if (user.role === ROLES.ARTIST && artistProfile?.id) {
+        // Artist: cập nhật qua PUT /artists/{id}
+        const updated = await api.put(`/artists/${artistProfile.id}`, { name: displayName.trim() });
+        setArtistProfile({ ...artistProfile, name: displayName.trim() });
+        dispatch(showToast({ message: 'Cập nhật tên nghệ sĩ thành công!', type: 'success' }));
+      } else {
+        // User thường: cập nhật qua PUT /me
+        await updateProfile({ displayName: displayName.trim() });
+        dispatch(loginSuccess({ ...user, name: displayName.trim(), username: displayName.trim() }));
+        dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
+      }
       setIsEditing(false);
     } catch {
       dispatch(showToast({ message: 'Không thể cập nhật. Thử lại sau.', type: 'error' }));
@@ -99,7 +108,9 @@ export default function ProfilePage() {
   };
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.name || user?.username || '');
+    // Restore tên gốc: ưu tiên artistProfile.name nếu là artist
+    const originalName = (user.role === ROLES.ARTIST && artistProfile?.name) || user?.name || user?.username || '';
+    setDisplayName(originalName);
     setIsEditing(false);
   };
 
@@ -115,7 +126,7 @@ export default function ProfilePage() {
       <div className="flex items-end gap-6 mb-8 pb-8 border-b border-neutral-800">
         <div className="relative">
           <img
-            src={(user.role === ROLES.ARTIST && artistProfile?.photoUrl) || user.avatar_url || 'https://i.pravatar.cc/150?img=1'}
+            src={(user.role === ROLES.ARTIST && artistProfile?.photoUrl) || user.avatar_url || '../public/pictures/user_default.png'}
             alt={user.username}
             className="w-28 h-28 rounded-full object-cover shadow-2xl"
           />
