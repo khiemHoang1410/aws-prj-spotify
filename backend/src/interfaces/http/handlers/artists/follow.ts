@@ -19,10 +19,12 @@ export const handler = makeAuthHandler(async (_body, params, auth) => {
     const isFollowing = await followRepo.isFollowing(auth.userId, idResult.data);
 
     if (isFollowing) {
-        await followRepo.unfollow(auth.userId, idResult.data);
+        const unfollowResult = await followRepo.unfollow(auth.userId, idResult.data);
+        if (!unfollowResult.success) return unfollowResult;
         return Success({ following: false, message: "Đã bỏ theo dõi" });
     } else {
-        await followRepo.follow(auth.userId, idResult.data);
+        const followResult = await followRepo.follow(auth.userId, idResult.data);
+        if (!followResult.success) return followResult;
         return Success({ following: true, message: "Đã theo dõi" });
     }
 });

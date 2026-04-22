@@ -26,8 +26,18 @@ export const addSongHandler = makeAuthHandler(async (body, params) => {
     if (!songResult.success) return songResult;
     if (!songResult.data) return Failure("Bài hát không tồn tại", 404);
 
-    // Cập nhật albumId trên song
+    // Cập nhật songIds trên album (source of truth) — tránh GSI eventual consistency
+    const existingIds: string[] = (albumResult.data as any).songIds || [];
+    if (!existingIds.includes(v.data.song_id)) {
+        const updateResult = await albumRepo.update(albumIdResult.data, {
+            songIds: [...existingIds, v.data.song_id],
+        } as any);
+        if (!updateResult.success) return updateResult;
+    }
+
+    // Cũng cập nhật albumId trên song để backward compat (hiển thị album_name)
     await songRepo.update(v.data.song_id, { albumId: albumIdResult.data });
+
     return Success({ message: "Đã thêm bài hát vào album" });
 });
 
@@ -39,11 +49,29 @@ export const removeSongHandler = makeAuthHandler(async (_body, params) => {
     const songIdResult = validateUUID(params.songId, "song ID");
     if (!songIdResult.success) return songIdResult;
 
+    // Xác minh album tồn tại
+    const albumResult = await albumRepo.findById(albumIdResult.data);
+    if (!albumResult.success) return albumResult;
+    if (!albumResult.data) return Failure("Album không tồn tại", 404);
+
     const songResult = await songRepo.findById(songIdResult.data);
     if (!songResult.success) return songResult;
     if (!songResult.data) return Failure("Bài hát không tồn tại", 404);
-    if (songResult.data.albumId !== albumIdResult.data) return Failure("Bài hát không thuộc album này", 400);
 
-    await songRepo.update(songIdResult.data, { albumId: null });
+    // Xóa songId khỏi album.songIds
+    const existingIds: string[] = (albumResult.data as any).songIds || [];
+    if (!existingIds.includes(songIdResult.data)) {
+        return Failure("Bài hát không thuộc album này", 400);
+    }
+    const updateResult = await albumRepo.update(albumIdResult.data, {
+        songIds: existingIds.filter(id => id !== songIdResult.data),
+    } as any);
+    if (!updateResult.success) return updateResult;
+
+    // Nếu bài hát chỉ ở album này, xóa albumId trên song
+    if ((songResult.data as any).albumId === albumIdResult.data) {
+        await songRepo.update(songIdResult.data, { albumId: null });
+    }
+
     return Success({ message: "Đã xóa bài hát khỏi album" });
 });
