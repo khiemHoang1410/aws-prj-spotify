@@ -8,7 +8,7 @@ import { showToast } from '../../store/uiSlice';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
-export default function AddSongPanel({ playlistId, currentSongs }) {
+export default function AddSongPanel({ playlistId, currentSongs, onClose }) {
   const dispatch = useDispatch();
   const [searchTerm, setSearchTerm] = useState('');
   const [results, setResults] = useState([]);
@@ -66,66 +66,96 @@ export default function AddSongPanel({ playlistId, currentSongs }) {
   };
 
   return (
-    <div className="mt-8 border-t border-neutral-800 pt-6">
-      <h3 className="text-lg font-semibold text-white mb-3">Tìm bài hát để thêm</h3>
-      <div className="relative mb-4">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Tìm kiếm bài hát..."
-          className="w-full bg-neutral-800 text-white rounded-full pl-9 pr-4 py-2 text-sm outline-none focus:ring-1 focus:ring-white"
-          autoFocus
-        />
-      </div>
-
-      {isSearching && (
-        <p className="text-sm text-neutral-500 px-4">Đang tìm kiếm...</p>
-      )}
-
-      {!isSearching && results.length > 0 && (
-        <div className="flex flex-col gap-1">
-          {results.map((song) => {
-            const alreadyAdded = isSongInPlaylist(currentSongs, song.song_id);
-            return (
-              <div
-                key={song.song_id}
-                className="flex items-center justify-between px-4 py-2 rounded-md hover:bg-white/5 transition"
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <img
-                    src={song.image_url || IMG_FALLBACK}
-                    alt={song.title}
-                    className="w-10 h-10 rounded object-cover flex-shrink-0"
-                    onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
-                  />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-white truncate">{song.title}</p>
-                    <p className="text-xs text-neutral-400 truncate">{song.artist_name}</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => handleAdd(song)}
-                  disabled={alreadyAdded}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition flex-shrink-0 ${
-                    alreadyAdded
-                      ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
-                      : 'border border-neutral-500 text-white hover:border-white hover:bg-white/10'
-                  }`}
-                >
-                  {alreadyAdded ? <Check size={13} /> : <PlusCircle size={13} />}
-                  {alreadyAdded ? 'Đã thêm' : 'Thêm'}
-                </button>
-              </div>
-            );
-          })}
+    /* Fixed overlay — click backdrop để đóng */
+    <div
+      className="fixed inset-0 z-50 flex flex-col justify-end bg-black/60 backdrop-blur-sm"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose?.(); }}
+    >
+      <div className="bg-[#1a1a1a] border-t border-neutral-700 rounded-t-2xl shadow-2xl flex flex-col"
+        style={{ maxHeight: '75vh' }}>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800 flex-shrink-0">
+          <h3 className="text-lg font-semibold text-white">Tìm bài hát để thêm</h3>
+          <button
+            onClick={() => {
+              if (abortRef.current) abortRef.current.abort();
+              if (debounceRef.current) clearTimeout(debounceRef.current);
+              onClose?.();
+            }}
+            className="text-neutral-400 hover:text-white transition text-xl leading-none"
+            aria-label="Đóng"
+          >✕</button>
         </div>
-      )}
 
-      {!isSearching && results.length === 0 && searchTerm.trim().length > 0 && (
-        <p className="text-sm text-neutral-500 px-4">Không tìm thấy bài hát nào</p>
-      )}
+        {/* Search input */}
+        <div className="px-6 py-3 flex-shrink-0">
+          <div className="relative">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Tìm kiếm bài hát..."
+              className="w-full bg-neutral-800 text-white rounded-full pl-9 pr-4 py-2.5 text-sm outline-none focus:ring-1 focus:ring-white"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        {/* Results — scrollable */}
+        <div className="overflow-y-auto flex-1 px-6 pb-6">
+          {isSearching && (
+            <p className="text-sm text-neutral-500 py-3">Đang tìm kiếm...</p>
+          )}
+
+          {!isSearching && results.length > 0 && (
+            <div className="flex flex-col gap-1">
+              {results.map((song) => {
+                const alreadyAdded = isSongInPlaylist(currentSongs, song.song_id);
+                return (
+                  <div
+                    key={song.song_id}
+                    className="flex items-center justify-between px-3 py-2.5 rounded-lg hover:bg-white/5 transition"
+                  >
+                    <div className="flex items-center gap-3 min-w-0">
+                      <img
+                        src={song.image_url || IMG_FALLBACK}
+                        alt={song.title}
+                        className="w-11 h-11 rounded object-cover flex-shrink-0"
+                        onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
+                      />
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{song.title}</p>
+                        <p className="text-xs text-neutral-400 truncate">{song.artist_name}</p>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleAdd(song)}
+                      disabled={alreadyAdded}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition flex-shrink-0 ${
+                        alreadyAdded
+                          ? 'bg-neutral-700 text-neutral-400 cursor-not-allowed'
+                          : 'border border-neutral-500 text-white hover:border-white hover:bg-white/10'
+                      }`}
+                    >
+                      {alreadyAdded ? <Check size={13} /> : <PlusCircle size={13} />}
+                      {alreadyAdded ? 'Đã thêm' : 'Thêm'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {!isSearching && results.length === 0 && searchTerm.trim().length > 0 && (
+            <p className="text-sm text-neutral-500 py-3">Không tìm thấy bài hát nào</p>
+          )}
+
+          {!searchTerm.trim() && (
+            <p className="text-sm text-neutral-600 py-3 text-center">Nhập tên bài hát để tìm kiếm</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

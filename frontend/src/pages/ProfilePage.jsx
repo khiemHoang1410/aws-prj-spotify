@@ -17,7 +17,7 @@ import { selectPlaylistIds } from '../store/playlistSlice';
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
+  const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth, shallowEqual);
   const historyEntries = useSelector(
     (state) => state.history?.entries?.slice(0, 10) ?? [],
     shallowEqual
@@ -81,14 +81,17 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!displayName.trim()) return;
     setIsSaving(true);
-    const result = await updateProfile({ displayName: displayName.trim() });
-    if (result?.success) {
+    try {
+      await updateProfile({ displayName: displayName.trim() });
+      // api.put trả về raw user data (không có success field) — nếu không throw là thành công
+      dispatch(loginSuccess({ ...user, name: displayName.trim(), username: displayName.trim() }));
       dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
       setIsEditing(false);
-    } else {
+    } catch {
       dispatch(showToast({ message: 'Không thể cập nhật. Thử lại sau.', type: 'error' }));
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleCancelEdit = () => {

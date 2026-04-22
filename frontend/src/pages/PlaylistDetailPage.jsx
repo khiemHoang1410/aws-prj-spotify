@@ -301,7 +301,7 @@ export default function PlaylistDetailPage() {
 
       {/* Add song panel */}
       {isAddingSongs && isOwner && (
-        <AddSongPanel playlistId={playlistId} currentSongs={songs} />
+        <AddSongPanel playlistId={playlistId} currentSongs={songs} onClose={() => setIsAddingSongs(false)} />
       )}
 
       {/* Modals */}
