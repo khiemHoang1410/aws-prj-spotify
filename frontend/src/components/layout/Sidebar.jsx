@@ -169,7 +169,7 @@ export default function Sidebar() {
 
       {/* Logo */}
       <div
-        className="bg-[#121212] rounded-lg p-5 flex items-center gap-3 text-white cursor-pointer hover:text-[#1ed760] transition duration-200"
+        className="bg-transparent rounded-lg p-5 flex items-center gap-3 text-white cursor-pointer hover:text-[#1ed760] transition duration-200"
         onClick={() => navigate('/intro')}
       >
         <AudioLines size={28} />

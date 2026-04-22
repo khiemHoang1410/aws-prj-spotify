@@ -47,7 +47,13 @@ export default function FeaturedPlaylists() {
   return (
     <div className="mb-8">
       <h2 className="text-2xl font-bold text-white mb-4">Playlist nổi bật</h2>
-      <div className="grid grid-cols-5 gap-6">
+      <div className="sm:grid hidden grid-cols-5 gap-6">
+        {items.map((playlist) => (
+          <CardPlaylist key={playlist.id} playlist={playlist} />
+        ))}
+      </div>
+
+      <div className="sm:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
         {items.map((playlist) => (
           <CardPlaylist key={playlist.id} playlist={playlist} />
         ))}
