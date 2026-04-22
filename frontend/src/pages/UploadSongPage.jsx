@@ -256,8 +256,8 @@ export default function UploadSongPage() {
       try {
         const notif = await createNotification({
           type: 'new_song',
-          message: `${user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
-          artist_name: user.name || user.username,
+          message: `${artistName || user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
+          artist_name: artistName || user.name || user.username,
           song_title: title.trim(),
           image_url: coverPreviews[0] || '',
         });
@@ -551,7 +551,7 @@ export default function UploadSongPage() {
               )}
               <div>
                 <p className="text-white font-semibold text-lg">{title || '(Chưa nhập)'}</p>
-                <p className="text-neutral-400 text-sm">{user.name || user.username}</p>
+                <p className="text-neutral-400 text-sm">{artistName || user.name || user.username}</p>
                 {duration && <p className="text-neutral-500 text-xs mt-1">{duration}</p>}
               </div>
             </div>
