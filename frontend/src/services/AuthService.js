@@ -182,7 +182,17 @@ export const checkAndSaveArtistProfile = async (userId, _retryCount = 0) => {
     }
 
     if (!res.ok) {
-      localStorage.removeItem(`spotify_artist_${userId}`);
+      // Chỉ xóa cache khi BE xác nhận chắc chắn "không phải artist" (404/401/403)
+      // 5xx là lỗi transient (Lambda cold start) — giữ cache để không mất role artist
+      if (res.status === 404 || res.status === 401 || res.status === 403) {
+        localStorage.removeItem(`spotify_artist_${userId}`);
+        return null;
+      }
+      // Fallback: trả về dữ liệu đã cache từ lần đăng nhập trước
+      const cached = localStorage.getItem(`spotify_artist_${userId}`);
+      if (cached) {
+        try { return JSON.parse(cached); } catch { /* ignore */ }
+      }
       return null;
     }
 
@@ -223,7 +233,12 @@ export const checkAndSaveArtistProfile = async (userId, _retryCount = 0) => {
 
     return artistData;
   } catch {
-    localStorage.removeItem(`spotify_artist_${userId}`);
+    // Lỗi mạng/timeout — KHÔNG xóa cache (không biết chắc user có phải artist không)
+    // Chỉ xóa cache khi BE trả về 404/401/403 (xác nhận chắc chắn)
+    const cached = localStorage.getItem(`spotify_artist_${userId}`);
+    if (cached) {
+      try { return JSON.parse(cached); } catch { /* ignore */ }
+    }
     return null;
   }
 };

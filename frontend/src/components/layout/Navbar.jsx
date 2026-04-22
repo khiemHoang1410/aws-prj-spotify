@@ -51,11 +51,14 @@ export default function Navbar() {
         const artistData = await checkAndSaveArtistProfile(user.user_id);
 
         // 3. Merge role: nếu có artist profile → role = artist + gắn artistId
-        const finalUser = adaptedUser || { ...user };
+        const finalUser = adaptedUser ? { ...adaptedUser } : { ...user };
         if (artistData?.id) {
           finalUser.role = 'artist';
           finalUser.artist_id = artistData.id;
           finalUser.isVerified = artistData.isVerified ?? false;
+        } else {
+          // Cold start — giữ artist_id từ session, không clobber thành null
+          if (!finalUser.artist_id && user.artist_id) finalUser.artist_id = user.artist_id;
         }
 
         dispatch(loginSuccess(finalUser));

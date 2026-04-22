@@ -14,10 +14,24 @@ export class SearchService {
     async search(q: string, type?: string): Promise<Result<any>> {
         if (!q || q.trim().length === 0) return Failure("Từ khóa tìm kiếm không được để trống", 400);
 
-        // norm: loại bỏ dấu thanh/dấu mũ để tìm kiếm không phân biệt dấu
-        // VD: "Ngoc anh" → tìm được "Ngọc Anh"
+        // norm: NFD + loại bỏ combining diacritics → tìm kiếm không phân biệt dấu
+        // Dùng [\u0300-\u036f] thay vì \p{M} để tương thích rộng hơn
+        // VD: norm("Ngọc Anh") = "ngoc anh" → khớp với keyword "ngoc"
         const norm = (s: string) =>
-            (s || "").normalize("NFD").replace(/\p{M}/gu, "").toLowerCase();
+            (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
+        // Kiểm tra xem text có chứa keyword không (substring hoặc word-prefix)
+        // VD: "ngoc" khớp với "ngoc anh" (word-prefix: "ngoc".startsWith("ngoc") ✓)
+        const matches = (text: string, kw: string): boolean => {
+            if (!text || !kw) return false;
+            const normText = norm(text);
+            const normKw   = norm(kw);
+            // 1. Substring match: "ngọc anh" includes "ngoc anh"
+            if (normText.includes(normKw)) return true;
+            // 2. Word-prefix match: từng từ trong text có bắt đầu bằng keyword không
+            //    "ngoc" → "ngoc anh".split(" ") = ["ngoc","anh"] → "ngoc".startsWith("ngoc") ✓
+            return normText.split(/\s+/).some((word) => word.startsWith(normKw));
+        };
 
         const keyword = norm(q.trim());
         const searchAll = !type || type === "all";
@@ -27,7 +41,7 @@ export class SearchService {
             const songs = await this.songRepo.findAll();
             if (!songs.success) return songs;
             result.songs = songs.data
-                .filter(s => norm(s.title).includes(keyword) || norm(s.artistName || "").includes(keyword))
+                .filter(s => matches(s.title, keyword) || matches(s.artistName || "", keyword))
                 .slice(0, config.searchMaxResults);
         }
 
@@ -35,7 +49,7 @@ export class SearchService {
             const artists = await this.artistRepo.findAll();
             if (!artists.success) return artists;
             result.artists = artists.data
-                .filter(a => norm(a.name).includes(keyword))
+                .filter(a => matches(a.name, keyword))
                 .slice(0, config.searchMaxResults);
         }
 
@@ -43,7 +57,7 @@ export class SearchService {
             const albums = await this.albumRepo.findAll();
             if (!albums.success) return albums;
             result.albums = albums.data
-                .filter(a => norm(a.title).includes(keyword) || norm(a.artistName || "").includes(keyword))
+                .filter(a => matches(a.title, keyword) || matches(a.artistName || "", keyword))
                 .slice(0, config.searchMaxResults);
         }
 

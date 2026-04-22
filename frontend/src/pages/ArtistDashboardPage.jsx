@@ -1,22 +1,35 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { Music, Headphones, Users, TrendingUp, Play, Clock, Pencil, Trash2, PlusCircle, Disc3 } from 'lucide-react';
+import {
+  Music, Headphones, Users, TrendingUp,
+  Play, Clock, Pencil, Trash2, PlusCircle, Disc3, X,
+  Image as ImageIcon, Calendar, CheckSquare, Square,
+} from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
 import { getArtistById, getArtistByUserId } from '../services/ArtistService';
+import { getArtistProfileFromStorage } from '../services/AuthService';
 import { getSongs, deleteSong } from '../services/SongService';
-import { getAlbumsByArtist, getAllAlbums, createAlbum, deleteAlbum } from '../services/AlbumService';
+import {
+  getAllAlbums,
+  createAlbum,
+  updateAlbum,
+  deleteAlbum,
+  getAlbumSongs,
+  addSongToAlbum,
+  removeSongFromAlbum,
+} from '../services/AlbumService';
 
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 const STAT_CARDS = [
-  { key: 'totalSongs', label: 'Tổng bài hát', icon: Music, color: 'text-blue-400' },
-  { key: 'totalPlays', label: 'Tổng lượt nghe', icon: Headphones, color: 'text-green-400' },
-  { key: 'followers', label: 'Người theo dõi', icon: Users, color: 'text-purple-400' },
-  { key: 'monthlyListeners', label: 'Lượt nghe tháng', icon: TrendingUp, color: 'text-yellow-400' },
+  { key: 'totalSongs',      label: 'Tổng bài hát',    icon: Music,      color: 'text-blue-400' },
+  { key: 'totalPlays',      label: 'Tổng lượt nghe',  icon: Headphones, color: 'text-green-400' },
+  { key: 'followers',       label: 'Người theo dõi',  icon: Users,      color: 'text-purple-400' },
+  { key: 'monthlyListeners',label: 'Lượt nghe tháng', icon: TrendingUp, color: 'text-yellow-400' },
 ];
 
 function formatDuration(seconds) {
@@ -25,41 +38,326 @@ function formatDuration(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
+// ─── Album Modal ──────────────────────────────────────────────────────────────
+
+function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
+  const dispatch = useDispatch();
+
+  const [title, setTitle]           = useState(album?.title || '');
+  const [coverUrl, setCoverUrl]     = useState(album?.image_url || album?.coverUrl || '');
+  const [releaseDate, setReleaseDate] = useState(
+    album?.release_date ? album.release_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
+  );
+  const [saving, setSaving]         = useState(false);
+
+  // Song management (chỉ khi edit — sau khi album đã tồn tại)
+  const [albumSongIds, setAlbumSongIds] = useState(new Set());
+  const [songLoading, setSongLoading]   = useState(false);
+  const [togglingId, setTogglingId]     = useState(null);
+
+  // Saved album id (để add/remove songs sau khi create)
+  const [savedAlbumId, setSavedAlbumId] = useState(album?.id || null);
+  const [phase, setPhase]               = useState(mode === 'edit' ? 'details' : 'details');
+  // phase: 'details' | 'songs'
+
+  // Load songs hiện tại của album (khi edit)
+  useEffect(() => {
+    if (!savedAlbumId) return;
+    setSongLoading(true);
+    getAlbumSongs(savedAlbumId)
+      .then((songs) => setAlbumSongIds(new Set(songs.map((s) => s.song_id))))
+      .finally(() => setSongLoading(false));
+  }, [savedAlbumId]);
+
+  const handleSaveDetails = async () => {
+    if (!title.trim()) {
+      dispatch(showToast({ message: 'Tên album không được trống', type: 'error' }));
+      return;
+    }
+    setSaving(true);
+    try {
+      if (mode === 'create') {
+        const result = await createAlbum({
+          title: title.trim(),
+          coverUrl: coverUrl.trim() || undefined,
+          releaseDate: releaseDate || undefined,
+        });
+        if (!result.success || !result.data?.id) {
+          dispatch(showToast({ message: 'Tạo album thất bại', type: 'error' }));
+          return;
+        }
+        setSavedAlbumId(result.data.id);
+        setPhase('songs');
+        dispatch(showToast({ message: 'Đã tạo album — chọn bài hát bên dưới', type: 'success' }));
+      } else {
+        await updateAlbum(savedAlbumId, {
+          title: title.trim(),
+          coverUrl: coverUrl.trim() || undefined,
+          releaseDate: releaseDate || undefined,
+        });
+        dispatch(showToast({ message: 'Đã cập nhật album', type: 'success' }));
+        setPhase('songs');
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleToggleSong = async (song) => {
+    if (!savedAlbumId || togglingId) return;
+    const songId = song.song_id;
+    setTogglingId(songId);
+    const isInAlbum = albumSongIds.has(songId);
+    try {
+      if (isInAlbum) {
+        const res = await removeSongFromAlbum(savedAlbumId, songId);
+        if (res.success) setAlbumSongIds((prev) => { const s = new Set(prev); s.delete(songId); return s; });
+        else dispatch(showToast({ message: 'Không thể xoá bài hát', type: 'error' }));
+      } else {
+        const res = await addSongToAlbum(savedAlbumId, songId);
+        if (res.success) setAlbumSongIds((prev) => new Set([...prev, songId]));
+        else dispatch(showToast({ message: 'Không thể thêm bài hát', type: 'error' }));
+      }
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
+  const handleDone = () => {
+    onSaved(savedAlbumId);
+    onClose();
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+      <div className="bg-[#1a1a1a] rounded-xl w-full max-w-lg max-h-[90vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
+          <h2 className="text-lg font-bold text-white">
+            {mode === 'create' ? 'Tạo album mới' : `Chỉnh sửa: ${album?.title}`}
+          </h2>
+          <button onClick={onClose} className="text-neutral-400 hover:text-white transition">
+            <X size={20} />
+          </button>
+        </div>
+
+        {/* Phase tabs */}
+        <div className="flex border-b border-neutral-800">
+          <button
+            onClick={() => setPhase('details')}
+            className={`flex-1 py-2 text-sm font-semibold transition ${
+              phase === 'details' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
+            }`}
+          >
+            Thông tin
+          </button>
+          <button
+            onClick={() => savedAlbumId && setPhase('songs')}
+            disabled={!savedAlbumId}
+            className={`flex-1 py-2 text-sm font-semibold transition ${
+              phase === 'songs' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
+            } disabled:opacity-40 disabled:cursor-not-allowed`}
+          >
+            Bài hát ({albumSongIds.size})
+          </button>
+        </div>
+
+        {/* Content */}
+        <div className="overflow-y-auto flex-1 px-6 py-4">
+          {phase === 'details' && (
+            <div className="flex flex-col gap-4">
+              {/* Title */}
+              <div>
+                <label className="text-xs text-neutral-400 font-semibold mb-1 block">
+                  Tên album <span className="text-red-400">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="VD: Những bài hát hay nhất"
+                  className="w-full bg-neutral-800 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveDetails()}
+                />
+              </div>
+
+              {/* Cover URL */}
+              <div>
+                <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
+                  <ImageIcon size={12} /> Ảnh bìa (URL, tuỳ chọn)
+                </label>
+                <input
+                  type="url"
+                  value={coverUrl}
+                  onChange={(e) => setCoverUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full bg-neutral-800 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
+                />
+                {coverUrl && (
+                  <img
+                    src={coverUrl}
+                    alt="preview"
+                    className="mt-2 w-20 h-20 object-cover rounded"
+                    onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                  />
+                )}
+              </div>
+
+              {/* Release date */}
+              <div>
+                <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
+                  <Calendar size={12} /> Ngày phát hành (tuỳ chọn)
+                </label>
+                <input
+                  type="date"
+                  value={releaseDate}
+                  onChange={(e) => setReleaseDate(e.target.value)}
+                  className="w-full bg-neutral-800 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
+                />
+              </div>
+
+              {/* Save details */}
+              <button
+                onClick={handleSaveDetails}
+                disabled={saving}
+                className="mt-2 w-full py-2 rounded-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black text-sm font-bold transition"
+              >
+                {saving ? 'Đang lưu...' : mode === 'create' ? 'Tạo album & chọn bài hát →' : 'Lưu & quản lý bài hát →'}
+              </button>
+            </div>
+          )}
+
+          {phase === 'songs' && (
+            <div>
+              <p className="text-xs text-neutral-400 mb-3">
+                Chọn bài hát của bạn để thêm vào album. Thay đổi được áp dụng ngay.
+              </p>
+              {songLoading ? (
+                <div className="text-center text-neutral-400 text-sm py-6">Đang tải...</div>
+              ) : artistSongs.length === 0 ? (
+                <div className="text-center text-neutral-400 text-sm py-6">Bạn chưa có bài hát nào.</div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {artistSongs.map((song) => {
+                    const inAlbum = albumSongIds.has(song.song_id);
+                    const toggling = togglingId === song.song_id;
+                    return (
+                      <button
+                        key={song.song_id}
+                        onClick={() => handleToggleSong(song)}
+                        disabled={!!togglingId}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-md transition w-full text-left ${
+                          inAlbum ? 'bg-green-500/10 hover:bg-green-500/20' : 'hover:bg-white/5'
+                        } disabled:opacity-60`}
+                      >
+                        <div className="flex-shrink-0 text-green-400">
+                          {toggling ? (
+                            <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
+                          ) : inAlbum ? (
+                            <CheckSquare size={18} />
+                          ) : (
+                            <Square size={18} className="text-neutral-500" />
+                          )}
+                        </div>
+                        <img
+                          src={song.image_url || IMG_FALLBACK}
+                          alt={song.title}
+                          className="w-9 h-9 rounded object-cover flex-shrink-0"
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-white truncate font-medium">{song.title}</p>
+                          <p className="text-xs text-neutral-400 truncate">{formatDuration(song.duration)}</p>
+                        </div>
+                        {inAlbum && (
+                          <span className="text-xs text-green-400 font-semibold flex-shrink-0">Trong album</span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-neutral-800">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-full border border-neutral-600 text-white text-sm font-semibold hover:border-white transition"
+          >
+            Đóng
+          </button>
+          {phase === 'songs' && (
+            <button
+              onClick={handleDone}
+              className="px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-bold transition"
+            >
+              Xong ✓
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
 export default function ArtistDashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  const [stats, setStats] = useState(null);
+  const [stats, setStats]     = useState(null);
   const [mySongs, setMySongs] = useState([]);
   const [myAlbums, setMyAlbums] = useState([]);
-  const [isCreateAlbumOpen, setIsCreateAlbumOpen] = useState(false);
-  const [newAlbumTitle, setNewAlbumTitle] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
+  // Modal state
+  const [modal, setModal] = useState(null); // null | { mode: 'create'|'edit', album?: {...} }
+
+  const openCreateModal = () => setModal({ mode: 'create', album: null });
+  const openEditModal   = (album) => setModal({ mode: 'edit', album });
+  const closeModal      = () => setModal(null);
+
+  const refreshAlbums = useCallback(async (artistId) => {
+    const rawAlbums = await getAllAlbums();
+    const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
+    const songsByArtist = mySongs; // already loaded
+    const albumsWithCount = albums.map((a) => ({
+      ...a,
+      songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
+    }));
+    setMyAlbums(albumsWithCount);
+  }, [mySongs]);
+
   useEffect(() => {
-    if (!user || user.role !== ROLES.ARTIST) {
-      navigate('/');
-      return;
-    }
-    
+    if (!user || user.role !== ROLES.ARTIST) { navigate('/'); return; }
     setIsLoading(true);
 
     const resolveArtistProfile = async () => {
+      const userId = user.user_id || user.id;
+
+      // 1. Thử gọi API trực tiếp bằng artist_id (fast path)
       if (user.artist_id) {
-        const artistProfile = await getArtistById(user.artist_id);
-        if (artistProfile) return artistProfile;
+        const p = await getArtistById(user.artist_id);
+        if (p) return p;
       }
-      return getArtistByUserId(user.user_id || user.id);
+
+      // 2. API 503/lỗi — dùng localStorage cache (lưu khi login thành công trước đó)
+      const cached = getArtistProfileFromStorage(userId);
+      if (cached?.id) return cached;
+
+      // 3. Thử query theo userId (trường hợp artist_id chưa có trong Redux)
+      return getArtistByUserId(userId);
     };
 
     resolveArtistProfile().then((artistProfile) => {
       const artistId = artistProfile?.id || null;
       if (!artistId) {
-        dispatch(showToast({ 
-          message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', 
-          type: 'warning' 
-        }));
+        dispatch(showToast({ message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', type: 'warning' }));
         navigate('/artist-verify');
         setIsLoading(false);
         return;
@@ -69,13 +367,9 @@ export default function ArtistDashboardPage() {
         getSongs(),
         getAllAlbums(),
       ]).then(([profile, allSongs, rawAlbums]) => {
-        const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter(
-          (a) => a.artist_id === artistId
-        );
+        const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
         const songsByArtist = (Array.isArray(allSongs) ? allSongs : []).filter((s) => s.artist_id === artistId);
-        const totalPlays = songsByArtist.reduce((sum, song) => sum + (song.play_count || 0), 0);
-
-        // Đếm số bài hát mỗi album từ songs đã có — tránh N+1 queries
+        const totalPlays = songsByArtist.reduce((sum, s) => sum + (s.play_count || 0), 0);
         const albumsWithCount = albums.map((a) => ({
           ...a,
           songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
@@ -94,17 +388,10 @@ export default function ArtistDashboardPage() {
   }, [user, dispatch]);
 
   const handlePlaySong = (song) => {
-    if (!isAuthenticated) {
-      dispatch(openModal('login'));
-      return;
-    }
+    if (!isAuthenticated) { dispatch(openModal('login')); return; }
     dispatch(setCurrentSong(song));
   };
-
-  const handleEditSong = (song) => {
-    navigate(`/edit-song/${song.song_id}`);
-  };
-
+  const handleEditSong   = (song) => navigate(`/edit-song/${song.song_id}`);
   const handleDeleteSong = async (songId) => {
     if (!window.confirm('Bạn có chắc muốn xoá bài hát này?')) return;
     const result = await deleteSong(songId);
@@ -113,26 +400,6 @@ export default function ArtistDashboardPage() {
       dispatch(showToast({ message: 'Đã xoá bài hát', type: 'success' }));
     }
   };
-
-  // [S8-007.4] Album CRUD handlers
-  const handleCreateAlbum = async () => {
-    if (!newAlbumTitle.trim()) return;
-    const result = await createAlbum({
-      title: newAlbumTitle.trim(),
-      artistId: user.artist_id,
-      releaseDate: new Date().toISOString().slice(0, 10),
-    });
-    if (result.success && result.data?.id) {
-      setMyAlbums((prev) => [...prev, result.data]);
-      setNewAlbumTitle('');
-      setIsCreateAlbumOpen(false);
-      dispatch(showToast({ message: 'Đã tạo album mới', type: 'success' }));
-      navigate(`/album/${result.data.id}`);
-    } else if (result.success) {
-      dispatch(showToast({ message: 'Đã tạo album nhưng không thể navigate. Vào Dashboard để xem.', type: 'warning' }));
-    }
-  };
-
   const handleDeleteAlbum = async (albumId) => {
     if (!window.confirm('Bạn có chắc muốn xoá album này?')) return;
     const result = await deleteAlbum(albumId);
@@ -142,26 +409,40 @@ export default function ArtistDashboardPage() {
     }
   };
 
-  const handleEditAlbum = (album) => {
-    navigate(`/album/${album.id}`);
+  // Gọi sau khi modal lưu xong → refresh danh sách album
+  const handleModalSaved = async (savedAlbumId) => {
+    const artistId = user?.artist_id;
+    if (!artistId) return;
+    const rawAlbums = await getAllAlbums();
+    const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
+    setMyAlbums(albums.map((a) => ({
+      ...a,
+      songCount: mySongs.filter((s) => s.album_id === a.id).length,
+    })));
   };
 
   if (!user || user.role !== ROLES.ARTIST) return null;
 
   return (
     <div>
+      {/* Album modal */}
+      {modal && (
+        <AlbumModal
+          mode={modal.mode}
+          album={modal.album}
+          artistSongs={mySongs}
+          onClose={closeModal}
+          onSaved={handleModalSaved}
+        />
+      )}
+
       <h1 className="text-xl font-bold text-white mb-6">Thống kê nghệ sĩ</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 mb-8">
         {STAT_CARDS.map(({ key, label, icon: Icon, color }) => (
-          <div
-            key={key}
-            className="bg-neutral-800 rounded-xl p-5 flex items-center gap-4"
-          >
-            <div className={`${color}`}>
-              <Icon size={28} />
-            </div>
+          <div key={key} className="bg-neutral-800 rounded-xl p-5 flex items-center gap-4">
+            <div className={color}><Icon size={28} /></div>
             <div>
               <p className="text-2xl font-bold text-white">
                 {isLoading ? '—' : (stats?.[key]?.toLocaleString?.() ?? stats?.[key] ?? '—')}
@@ -179,16 +460,14 @@ export default function ArtistDashboardPage() {
           onClick={() => navigate('/upload')}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
         >
-          <PlusCircle size={16} />
-          Thêm bài hát
+          <PlusCircle size={16} /> Thêm bài hát
         </button>
       </div>
+
       {mySongs.length > 0 ? (
         <>
           <div className="grid grid-cols-[24px_1fr_1fr_56px_80px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
-            <span>#</span>
-            <span>Tiêu đề</span>
-            <span>Thể loại</span>
+            <span>#</span><span>Tiêu đề</span><span>Thể loại</span>
             <span className="flex justify-center"><Clock size={14} /></span>
             <span className="text-center">Thao tác</span>
           </div>
@@ -200,14 +479,10 @@ export default function ArtistDashboardPage() {
                 onClick={() => handlePlaySong(song)}
               >
                 <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-                <Play
-                  size={16}
-                  className="text-white hidden group-hover:flex items-center fill-white cursor-pointer"
-                />
+                <Play size={16} className="text-white hidden group-hover:flex items-center fill-white cursor-pointer" />
                 <div className="flex items-center gap-3 min-w-0">
                   <img
-                    src={song.image_url}
-                    alt={song.title}
+                    src={song.image_url} alt={song.title}
                     className="w-10 h-10 rounded object-cover flex-shrink-0"
                     onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
                   />
@@ -218,18 +493,10 @@ export default function ArtistDashboardPage() {
                 </span>
                 <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 <div className="flex items-center justify-center gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleEditSong(song); }}
-                    className="text-neutral-400 hover:text-white transition"
-                    title="Chỉnh sửa"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); handleEditSong(song); }} className="text-neutral-400 hover:text-white transition" title="Chỉnh sửa">
                     <Pencil size={16} />
                   </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }}
-                    className="text-neutral-400 hover:text-red-400 transition"
-                    title="Xoá"
-                  >
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }} className="text-neutral-400 hover:text-red-400 transition" title="Xoá">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -243,53 +510,25 @@ export default function ArtistDashboardPage() {
         </div>
       )}
 
-      {/* [S8-007.3] Albums section */}
+      {/* Albums section */}
       <div className="mt-10">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-white">Albums</h2>
           <button
-            onClick={() => setIsCreateAlbumOpen((prev) => !prev)}
+            onClick={openCreateModal}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
           >
-            <PlusCircle size={16} />
-            Tạo album mới
+            <PlusCircle size={16} /> Tạo album mới
           </button>
         </div>
 
-        {/* Inline create form */}
-        {isCreateAlbumOpen && (
-          <div className="flex items-center gap-3 mb-4 p-3 bg-neutral-800 rounded-lg">
-            <input
-              type="text"
-              value={newAlbumTitle}
-              onChange={(e) => setNewAlbumTitle(e.target.value)}
-              placeholder="Tên album..."
-              className="flex-1 bg-neutral-700 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
-              onKeyDown={(e) => e.key === 'Enter' && handleCreateAlbum()}
-            />
-            <button
-              onClick={handleCreateAlbum}
-              className="px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
-            >
-              Tạo
-            </button>
-            <button
-              onClick={() => { setIsCreateAlbumOpen(false); setNewAlbumTitle(''); }}
-              className="px-4 py-2 rounded-full border border-neutral-600 text-white text-sm font-semibold hover:border-white transition"
-            >
-              Huỷ
-            </button>
-          </div>
-        )}
-
-        {/* Album list */}
         {myAlbums.length > 0 ? (
           <div className="flex flex-col gap-1">
             {myAlbums.map((album) => (
               <div
                 key={album.id}
                 className="flex items-center gap-4 px-4 py-3 rounded-md hover:bg-white/5 cursor-pointer group transition"
-                onClick={() => handleEditAlbum(album)}
+                onClick={() => navigate(`/album/${album.id}`)}
               >
                 <img
                   src={album.image_url || IMG_FALLBACK}
@@ -299,10 +538,17 @@ export default function ArtistDashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{album.title}</p>
-                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} bài hát • {album.release_date}</p>
+                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} bài hát • {album.release_date || '—'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Disc3 size={16} className="text-neutral-500" />
+                  {/* Chỉ Pencil mới mở edit modal */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEditModal(album); }}
+                    className="text-neutral-400 hover:text-white transition"
+                    title="Chỉnh sửa album"
+                  >
+                    <Pencil size={16} />
+                  </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteAlbum(album.id); }}
                     className="text-neutral-400 hover:text-red-400 transition"

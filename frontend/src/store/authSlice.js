@@ -6,6 +6,9 @@ import { showToast } from './uiSlice';
 const initialState = {
   isAuthenticated: false,
   user: null,
+  // true trong khi đang đọc localStorage lúc app khởi động
+  // ProtectedRoute sẽ không redirect khi cờ này là true
+  isSessionRestoring: true,
   isModalOpen: false,
   modalType: 'login',
   likedSongs: [],
@@ -43,6 +46,10 @@ const authSlice = createSlice({
       state.verifyStatus = VERIFY_STATUS.IDLE;
       state.verifyMessage = '';
       state.followedArtists = [];
+      state.isSessionRestoring = false;
+    },
+    setSessionRestored: (state) => {
+      state.isSessionRestoring = false;
     },
     toggleLikeSong: (state, action) => {
       const song = action.payload;
@@ -84,7 +91,7 @@ const authSlice = createSlice({
   },
 });
 
-export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus, setFollowedArtists, toggleFollowArtist, setLikedSongs, openForgotPasswordModal, closeForgotPasswordModal, setLoginPrefillEmail } = authSlice.actions;
+export const { openModal, closeModal, loginSuccess, logout, toggleLikeSong, setVerifyStatus, setFollowedArtists, toggleFollowArtist, setLikedSongs, openForgotPasswordModal, closeForgotPasswordModal, setLoginPrefillEmail, setSessionRestored } = authSlice.actions;
 export default authSlice.reducer;
 
 // Thunk: optimistic update + API like/unlike
