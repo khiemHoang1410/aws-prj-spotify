@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from '../../services/AuthService';
-import { loginSuccess, setLikedSongs } from '../../store/authSlice';
+import { getCurrentUser, checkAndSaveArtistProfile, updateSessionUser } from '../../services/AuthService';
+import { loginSuccess, setLikedSongs, setSessionRestored } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
 import api from '../../services/apiClient';
 import { adaptUser } from '../../services/adapters';
-import { checkAndSaveArtistProfile } from '../../services/AuthService';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -34,7 +33,12 @@ const mergeUserRoleSafely = (cachedUser, freshUser) => {
     ? freshUser.role
     : cachedUser.role;
 
-  return { ...freshUser, role: chosenRole };
+  return {
+    ...freshUser,
+    role: chosenRole,
+    // /me endpoint không trả về artist_id — phải giữ từ session cache
+    artist_id: freshUser.artist_id || cachedUser.artist_id || null,
+  };
 };
 
 const isSameUserSnapshot = (leftUser, rightUser) => {
@@ -73,41 +77,52 @@ export default function AppLayout() {
 
   useEffect(() => {
     const restoreSession = async () => {
-      const user = await getCurrentUser();
-      if (!user) return;
-
-      // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
-      dispatch(loginSuccess(user));
-
-      // Fetch full profile từ BE để lấy artistId và các field DB khác
-      // (localStorage chỉ có data từ idToken, không có artistId)
-      let adaptedProfile = null;
       try {
-        const profile = await api.get('/me', { silent: true });
-        if (profile) {
-          adaptedProfile = adaptUser(profile);
+        const user = await getCurrentUser();
+        if (!user) return;
+
+        // Dispatch ngay với dữ liệu cache để UI hiển thị sớm
+        dispatch(loginSuccess(user));
+
+        // Fetch full profile từ BE để lấy artistId và các field DB khác
+        // (localStorage chỉ có data từ idToken, không có artistId)
+        let adaptedProfile = null;
+        try {
+          const profile = await api.get('/me', { silent: true });
+          if (profile) {
+            adaptedProfile = adaptUser(profile);
+          }
+        } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+
+        // Kiểm tra user có phải artist không qua /me/artist-request
+        const artistData = await checkAndSaveArtistProfile(user.user_id);
+
+        // Merge: nếu có artist profile → cập nhật role + artistId
+        const finalUser = adaptedProfile ? { ...adaptedProfile } : { ...user };
+        if (artistData?.id) {
+          finalUser.role = 'artist';
+          finalUser.artist_id = artistData.id;
+        } else {
+          // Cold start / API fail — giữ artist_id từ session gốc, không clobber thành null
+          if (!finalUser.artist_id && user.artist_id) finalUser.artist_id = user.artist_id;
         }
-      } catch { /* ignore — token hết hạn hoặc lỗi mạng */ }
+        // Persist vào localStorage để lần reload sau đọc được artist_id chính xác
+        updateSessionUser(finalUser);
+        dispatch(loginSuccess(finalUser));
 
-      // Kiểm tra user có phải artist không qua /me/artist-request
-      const artistData = await checkAndSaveArtistProfile(user.user_id);
+        // Restore liked songs từ API
+        try {
+          const liked = await getLikedSongs();
+          if (liked.length > 0) dispatch(setLikedSongs(liked));
+        } catch { /* ignore */ }
 
-      // Merge: nếu có artist profile → cập nhật role + artistId
-      const finalUser = adaptedProfile || { ...user };
-      if (artistData?.id) {
-        finalUser.role = 'artist';
-        finalUser.artist_id = artistData.id;
+        // Refresh user profile từ backend để cập nhật role + artistId mới nhất
+        await syncUserFromBackend(user);
+      } finally {
+        // Dù có session hay không — đánh dấu đã restore xong
+        // ProtectedRoute sẽ render sau điểm này
+        dispatch(setSessionRestored());
       }
-      dispatch(loginSuccess(finalUser));
-
-      // Restore liked songs từ API
-      try {
-        const liked = await getLikedSongs();
-        if (liked.length > 0) dispatch(setLikedSongs(liked));
-      } catch { /* ignore */ }
-
-      // Refresh user profile từ backend để cập nhật role + artistId mới nhất
-      await syncUserFromBackend(user);
     };
     restoreSession();
   }, [dispatch]);

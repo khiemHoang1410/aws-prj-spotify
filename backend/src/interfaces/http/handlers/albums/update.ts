@@ -8,7 +8,7 @@ const albumRepo = new AlbumRepository();
 
 const UpdateAlbumSchema = z.object({
     title: z.string().min(1).max(255).optional(),
-    coverUrl: z.url().nullable().optional(),
+    coverUrl: z.string().nullable().optional(),  // z.url() Zod v4 quá strict → dùng z.string()
     releaseDate: z.string().nullable().optional(),
 });
 

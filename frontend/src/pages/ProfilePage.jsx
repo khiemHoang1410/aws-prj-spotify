@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2, Camera } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
@@ -18,7 +18,10 @@ export default function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
-  const historyEntries = useSelector((state) => state.history?.entries?.slice(0, 10) || []);
+  const historyEntries = useSelector(
+    (state) => state.history?.entries?.slice(0, 10) ?? [],
+    shallowEqual
+  );
   const playlistIds = useSelector(selectPlaylistIds);
 
   const [isEditing, setIsEditing] = useState(false);
