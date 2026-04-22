@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, BadgeCheck, Flag, Users, Music, Disc3, Mic2, ListMusic } from 'lucide-react';
+import { LayoutDashboard, BadgeCheck, Flag, Users, Music, Disc3, Mic2, ListMusic, Tag } from 'lucide-react';
 import { ROLES } from '../../constants/enums';
 import AdminDashboard from './AdminDashboard';
 import AdminArtistRequests from './AdminArtistRequests';
@@ -11,6 +11,7 @@ import AdminSongs from './AdminSongs';
 import AdminAlbums from './AdminAlbums';
 import AdminArtists from './AdminArtists';
 import AdminEditorialPlaylists from './AdminEditorialPlaylists';
+import AdminCategories from './AdminCategories';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,6 +22,7 @@ const NAV_ITEMS = [
   { key: 'albums', label: 'Albums', icon: Disc3 },
   { key: 'artists', label: 'Nghệ sĩ', icon: Mic2 },
   { key: 'editorial-playlists', label: 'Editorial Playlists', icon: ListMusic },
+  { key: 'categories', label: 'Thể loại', icon: Tag },
 ];
 
 export default function AdminLayout() {
@@ -69,6 +71,7 @@ export default function AdminLayout() {
         {activeTab === 'albums' && <AdminAlbums />}
         {activeTab === 'artists' && <AdminArtists />}
         {activeTab === 'editorial-playlists' && <AdminEditorialPlaylists />}
+        {activeTab === 'categories' && <AdminCategories />}
       </div>
     </div>
   );

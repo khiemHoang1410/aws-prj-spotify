@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { Music, Upload, X, Video, ImagePlus, CheckCircle, FileText, Loader2, Search } from 'lucide-react';
@@ -8,6 +8,7 @@ import { createNotification } from '../services/NotificationService';
 import { getArtistByUserId } from '../services/ArtistService';
 import { addNotification } from '../store/notificationSlice';
 import { ROLES, CATEGORIES } from '../constants/enums';
+import { getCategories } from '../services/CategoryService';
 import { parseMp3Duration } from '../utils/audioMetadata';
 import EmptyState from '../components/ui/EmptyState';
 import ErrorMessage from '../components/ui/ErrorMessage';
@@ -36,7 +37,9 @@ export default function UploadSongPage() {
   const [mvPreview, setMvPreview] = useState('');
   const [lyrics, setLyrics] = useState('');
   const [duration, setDuration] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedGenres, setSelectedGenres] = useState([]);
+  const [genreOptions, setGenreOptions] = useState([]);
+  const [genreLoading, setGenreLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [artistId, setArtistId] = useState(null);
@@ -59,6 +62,15 @@ export default function UploadSongPage() {
       .catch(() => setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.'))
       .finally(() => setArtistLoading(false));
   }, [user]);
+
+  // Fetch genre options on mount
+  useEffect(() => {
+    setGenreLoading(true);
+    getCategories()
+      .then((cats) => setGenreOptions(cats))
+      .catch(() => setGenreOptions(CATEGORIES.map((c) => ({ id: c.id, name: c.name }))))
+      .finally(() => setGenreLoading(false));
+  }, []);
 
   // Fetch lyrics from lrclib.net — shared by auto-fetch (debounced) + manual trigger
   const fetchLyricsFromLrclib = async (songTitle, artistName, { silent = false } = {}) => {
@@ -171,7 +183,7 @@ export default function UploadSongPage() {
     if (!file) return;
     setAudioFile(file);
     setUploadError('');
-    
+
     // Auto-detect duration from audio file
     try {
       const seconds = await parseMp3Duration(file);
@@ -192,7 +204,7 @@ export default function UploadSongPage() {
   };
 
   const canProceed = () => {
-    if (step === 0) return title.trim() && audioFile && selectedCategories.length > 0;
+    if (step === 0) return title.trim() && audioFile && selectedGenres.length > 0;
     return true;
   };
 
@@ -202,7 +214,7 @@ export default function UploadSongPage() {
     // Validate trước khi gọi API
     if (!title.trim()) { setUploadError('Vui lòng nhập tên bài hát.'); return; }
     if (!audioFile) { setUploadError('Vui lòng chọn file âm thanh.'); return; }
-    if (selectedCategories.length === 0) { setUploadError('Vui lòng chọn ít nhất một thể loại.'); return; }
+    if (!selectedGenres.length) { setUploadError('Vui lòng chọn ít nhất một thể loại.'); return; }
     if (!artistId) { setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng tải lại trang.'); return; }
 
     setIsLoading(true);
@@ -219,7 +231,8 @@ export default function UploadSongPage() {
         coverFile: coverFiles[0] || null,
         lyrics,
         duration: durationSeconds,
-        categories: selectedCategories,
+        genres: selectedGenres,
+        genre: selectedGenres[0],
       };
       await uploadSong(formData);
       dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
@@ -242,7 +255,7 @@ export default function UploadSongPage() {
       setMvPreview('');
       setLyrics('');
       setDuration('');
-      setSelectedCategories([]);
+      setSelectedGenres([]);
     } catch (err) {
       setUploadError(err?.message || 'Không thể upload bài hát. Vui lòng thử lại.');
     } finally {
@@ -389,39 +402,31 @@ export default function UploadSongPage() {
           </div>
 
           <div>
-            <label className="block text-sm text-neutral-300 mb-2">Thể loại *</label>
-            <div className="grid grid-cols-2 gap-2">
-              {CATEGORIES.map(({ id, name }) => (
-                <label key={id} className="flex items-center gap-2 cursor-pointer bg-neutral-800 px-3 py-2 rounded-lg hover:bg-neutral-700 transition">
-                  <input
-                    type="checkbox"
-                    checked={selectedCategories.includes(id)}
-                    onChange={(e) =>
-                      setSelectedCategories((prev) =>
-                        e.target.checked ? [...prev, id] : prev.filter((c) => c !== id)
-                      )
-                    }
-                    className="accent-green-500"
-                  />
-                  <span className="text-sm text-white">{name}</span>
-                </label>
-              ))}
-            </div>
-            {selectedCategories.length > 0 && (
-              <div className="flex flex-wrap gap-1 mt-2">
-                {selectedCategories.map((id) => (
-                  <span key={id} className="flex items-center gap-1 bg-green-500/20 text-green-400 text-xs px-2 py-1 rounded-full">
-                    {CATEGORIES.find((c) => c.id === id)?.name}
-                    <button
-                      type="button"
-                      onClick={() => setSelectedCategories((prev) => prev.filter((c) => c !== id))}
-                      className="hover:text-green-200"
-                    >
-                      <X size={10} />
-                    </button>
-                  </span>
+            <label className="block text-sm text-neutral-300 mb-2">Thể loại * <span className="text-neutral-500 font-normal">(chọn nhiều)</span></label>
+            {genreLoading ? (
+              <div className="text-xs text-neutral-400">Đang tải thể loại...</div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(genreOptions.length ? genreOptions : CATEGORIES.map((c) => ({ id: c.id, name: c.name }))).map((cat) => (
+                  <button
+                    key={cat.id}
+                    type="button"
+                    onClick={() => setSelectedGenres((prev) =>
+                      prev.includes(cat.id) ? prev.filter((g) => g !== cat.id) : [...prev, cat.id]
+                    )}
+                    className={`px-3 py-1.5 rounded-full text-xs font-semibold transition ${
+                      selectedGenres.includes(cat.id)
+                        ? 'bg-green-500 text-black'
+                        : 'bg-neutral-700 text-neutral-300 hover:bg-neutral-600'
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
                 ))}
               </div>
+            )}
+            {selectedGenres.length === 0 && !genreLoading && (
+              <p className="text-xs text-red-400 mt-1">Vui lòng chọn ít nhất một thể loại</p>
             )}
           </div>
         </div>
@@ -552,9 +557,9 @@ export default function UploadSongPage() {
               </div>
               <div className="col-span-2">
                 <span className="text-neutral-400">Thể loại: </span>
-                <span className={selectedCategories.length ? 'text-green-400' : 'text-red-400'}>
-                  {selectedCategories.length
-                    ? selectedCategories.map((id) => CATEGORIES.find((c) => c.id === id)?.name).join(', ')
+                <span className={selectedGenres.length ? 'text-green-400' : 'text-red-400'}>
+                  {selectedGenres.length
+                    ? selectedGenres.map((g) => genreOptions.find((c) => c.id === g)?.name || g).join(', ')
                     : 'Chưa chọn'}
                 </span>
               </div>

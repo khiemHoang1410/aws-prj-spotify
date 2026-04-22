@@ -1,7 +1,5 @@
 import api from './apiClient';
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 // Fallback khi chưa có API hoặc BE chưa có endpoint categories
 const MOCK_CATEGORIES = [
   { id: 'vpop',   name: 'V-Pop',       color: 'bg-red-500',      img: '/pictures/CategoryDefault.png' },
@@ -18,11 +16,11 @@ const normalizeCategory = (item) => ({
   id: item?.id || item?.slug || item?.name,
   name: item?.name || 'Category',
   color: item?.color || 'bg-gradient-to-br from-indigo-500 to-blue-500',
-  img: item?.img || item?.image || item?.image_url || '/pictures/CategoryDefault.png',
+  img: item?.imageUrl || item?.img || item?.image || item?.image_url || '/pictures/CategoryDefault.png',
+  songCount: item?.songCount ?? 0,
 });
 
 export const getCategories = async () => {
-  if (!API_URL) return MOCK_CATEGORIES.map(normalizeCategory);
   try {
     const data = await api.get('/categories');
     const items = Array.isArray(data) ? data : (data?.items || []);
