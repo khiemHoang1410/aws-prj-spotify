@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import CardCategory from '../cards/CardCategory';
 import { getCategories } from '../../services/CategoryService';
+import SearchBar from '../search/SearchBar';
 
 export default function SearchContent() {
   const [categories, setCategories] = useState([]);
