@@ -3,7 +3,8 @@ import { adaptSong, adaptPaginatedResponse } from './adapters';
 
 export const getSongs = async () => {
   try {
-    const data = await api.get('/songs');
+    // silent: true — danh sách bài hát không cần toast khi cold start Lambda
+    const data = await api.get('/songs', { silent: true });
     return adaptPaginatedResponse(data, adaptSong);
   } catch {
     return [];
@@ -106,7 +107,7 @@ export const unlikeSong = async (songId) => {
 
 export const getLikedSongs = async () => {
   try {
-    const data = await api.get('/me/liked-songs?limit=100');
+    const data = await api.get('/me/liked-songs?limit=100', { silent: true });
     return (data?.items || []).map(adaptSong);
   } catch {
     return [];

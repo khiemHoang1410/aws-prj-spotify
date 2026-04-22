@@ -47,14 +47,46 @@ export class AlbumService {
     }
 
     async getSongsByAlbum(albumId: string): Promise<Result<any[]>> {
-        const result = await this.songRepo.findAll();
-        if (!result.success) return result;
+        // Lấy album để đọc songIds — strongly consistent (primary key lookup, không dùng GSI)
+        const albumResult = await this.albumRepo.findById(albumId);
+        if (!albumResult.success) return albumResult as any;
+        if (!albumResult.data) return { success: true, data: [] };
 
-        const albumSongs = result.data.filter(s => s.albumId === albumId);
-        if (!albumSongs.length) return { success: true, data: [] };
+        const songIds: string[] = (albumResult.data as any).songIds || [];
+
+        // Fallback: nếu album chưa có songIds (data cũ), dùng GSI để tìm songs có albumId này
+        if (songIds.length === 0) {
+            const allResult = await this.songRepo.findAll();
+            if (!allResult.success) return { success: true, data: [] };
+            const legacy = allResult.data.filter((s: any) => s.albumId === albumId && !s.deletedAt);
+            if (legacy.length === 0) return { success: true, data: [] };
+            // Migrate: cập nhật songIds trên album cho lần sau
+            await this.albumRepo.update(albumId, {
+                songIds: legacy.map((s: any) => s.id),
+            } as any);
+            const artistIds2 = [...new Set(legacy.map((s: any) => s.artistId).filter(Boolean))];
+            const artistMap2 = new Map<string, string>();
+            await Promise.all(artistIds2.map(async (id) => {
+                const r = await this.artistRepo.findById(id as string);
+                if (r.success && r.data) artistMap2.set(id as string, r.data.name);
+            }));
+            return {
+                success: true,
+                data: legacy.map((s: any) => ({ ...s, artistName: artistMap2.get(s.artistId) ?? null })),
+            };
+        }
+
+        // Fetch từng bài hát bằng primary key — strongly consistent, không bị delay GSI
+        const songResults = await Promise.all(songIds.map(id => this.songRepo.findById(id)));
+
+        const songs = songResults
+            .filter(r => r.success && r.data && !(r.data as any).deletedAt)
+            .map(r => r.data!);
+
+        if (songs.length === 0) return { success: true, data: [] };
 
         // Enrich với artistName — batch lookup tránh N+1
-        const artistIds = [...new Set(albumSongs.map(s => s.artistId).filter(Boolean))];
+        const artistIds = [...new Set(songs.map(s => s.artistId).filter(Boolean))];
         const artistMap = new Map<string, string>();
         await Promise.all(
             artistIds.map(async (id) => {
@@ -65,7 +97,7 @@ export class AlbumService {
 
         return {
             success: true,
-            data: albumSongs.map(s => ({ ...s, artistName: artistMap.get(s.artistId) ?? null })),
+            data: songs.map(s => ({ ...s, artistName: artistMap.get(s.artistId) ?? null })),
         };
     }
 

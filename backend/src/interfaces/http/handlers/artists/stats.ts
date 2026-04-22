@@ -1,11 +1,13 @@
 import { makeHandler } from "../../middlewares/makeHandler";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { FollowRepository } from "../../../../infrastructure/database/FollowRepository";
 import { Failure, Success } from "../../../../shared/utils/Result";
 import { validateUUID } from "../../../../shared/utils/validate";
 
 const artistRepo = new ArtistRepository();
 const songRepo = new SongRepository();
+const followRepo = new FollowRepository();
 
 // GET /artists/{id}/stats
 export const handler = makeHandler(async (_body, params) => {
@@ -16,15 +18,17 @@ export const handler = makeHandler(async (_body, params) => {
     if (!artistResult.success) return artistResult;
     if (!artistResult.data) return Failure("Nghệ sĩ không tồn tại", 404);
 
-    const songsResult = await songRepo.findByArtistId(idResult.data);
+    const [songsResult, followerCount] = await Promise.all([
+        songRepo.findByArtistId(idResult.data),
+        followRepo.getFollowerCount(idResult.data),
+    ]);
     const songs = songsResult.success ? songsResult.data : [];
-
     const totalPlays = songs.reduce((sum, s: any) => sum + (s.playCount || 0), 0);
 
     return Success({
         totalSongs: songs.length,
         totalPlays,
-        followers: (artistResult.data as any).followers || 0,
+        followers: followerCount,
         monthlyListeners: (artistResult.data as any).monthlyListeners || 0,
     });
 });

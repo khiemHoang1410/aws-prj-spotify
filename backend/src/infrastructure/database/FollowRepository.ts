@@ -60,11 +60,33 @@ export class FollowRepository {
                 TableName: this.tableName,
                 KeyConditionExpression: "pk = :pk",
                 ExpressionAttributeValues: { ":pk": `FOLLOW#${userId}` },
+                ConsistentRead: true,
             }));
-            const ids = (res.Items || []).map((item: any) => item.artistId);
+            // sk IS the artistId for FOLLOW items (pk=FOLLOW#userId, sk=artistId)
+            // Also fall back to item.artistId for safety
+            const ids = (res.Items || [])
+                .map((item: any) => item.sk || item.artistId)
+                .filter((id: any) => typeof id === "string" && id.length > 0);
             return Success(ids);
         } catch (error: any) {
             return Failure(`Lỗi lấy danh sách follow: ${error.message}`, 500);
+        }
+    }
+
+    async getFollowerCount(artistId: string): Promise<number> {
+        try {
+            const res = await docClient.send(new ScanCommand({
+                TableName: this.tableName,
+                FilterExpression: "entityType = :type AND artistId = :artistId",
+                ExpressionAttributeValues: {
+                    ":type": "FOLLOW",
+                    ":artistId": artistId,
+                },
+                Select: "COUNT",
+            }));
+            return res.Count ?? 0;
+        } catch {
+            return 0;
         }
     }
 
