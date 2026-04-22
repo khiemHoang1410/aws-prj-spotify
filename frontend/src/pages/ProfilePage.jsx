@@ -28,6 +28,7 @@ export default function ProfilePage() {
   const [displayName, setDisplayName] = useState(user?.name || user?.username || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [artistProfile, setArtistProfile] = useState(null);
   const avatarInputRef = useRef(null);
 
   const handleAvatarUpload = async (e) => {
@@ -48,17 +49,20 @@ export default function ProfilePage() {
     }
   };
 
+  // Fetch artist profile (name + photo) khi user là artist
   useEffect(() => {
     if (user?.role !== ROLES.ARTIST) return;
 
     (async () => {
-      // Ưu tiên: check isVerified trực tiếp từ artist record (admin xác minh)
       const artistId = user.artist_id;
       if (artistId) {
         const artistData = await getArtistById(artistId);
-        if (artistData?.isVerified) {
-          dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
-          return;
+        if (artistData) {
+          setArtistProfile(artistData);
+          if (artistData.isVerified) {
+            dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
+            return;
+          }
         }
       }
 
@@ -111,7 +115,7 @@ export default function ProfilePage() {
       <div className="flex items-end gap-6 mb-8 pb-8 border-b border-neutral-800">
         <div className="relative">
           <img
-            src={user.avatar_url || 'https://i.pravatar.cc/150?img=1'}
+            src={(user.role === ROLES.ARTIST && artistProfile?.photoUrl) || user.avatar_url || 'https://i.pravatar.cc/150?img=1'}
             alt={user.username}
             className="w-28 h-28 rounded-full object-cover shadow-2xl"
           />
@@ -137,6 +141,7 @@ export default function ProfilePage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={(user.role === ROLES.ARTIST && artistProfile?.name) || user.name || user.username}
                 autoFocus
                 className="bg-neutral-700 text-white text-3xl font-extrabold rounded-lg px-3 py-1 outline-none focus:ring-2 focus:ring-green-500 max-w-xs"
               />
@@ -156,7 +161,9 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-4xl font-extrabold text-white truncate">{displayName}</h1>
+              <h1 className="text-4xl font-extrabold text-white truncate">
+                {(user.role === ROLES.ARTIST && artistProfile?.name) || displayName}
+              </h1>
               <button
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-full transition"

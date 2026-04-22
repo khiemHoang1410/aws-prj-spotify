@@ -240,7 +240,7 @@ export default function UploadSongPage() {
         ? duration.split(':').reduce((acc, val, i) => acc + (i === 0 ? parseInt(val) * 60 : parseInt(val)), 0)
         : 0;
 
-      // UploadService expect "categories" array, NOT "genres" or "genre"
+      // UploadService expect "genres" array (thể loại nhạc)
       const formData = {
         title: title.trim(),
         artistId,
@@ -249,7 +249,7 @@ export default function UploadSongPage() {
         coverFile: coverFiles[0] || null,
         lyrics,
         duration: durationSeconds,
-        categories: selectedGenres,
+        genres: selectedGenres,
       };
       await uploadSong(formData);
       dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));

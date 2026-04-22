@@ -63,7 +63,7 @@ export const uploadMvVideo = async (file) => {
 /**
  * Hàm tổng hợp — dùng trong UploadSongPage
  */
-export const uploadSong = async ({ title, artistId, duration, lyrics, categories, coverFile, audioFile, mvFile }) => {
+export const uploadSong = async ({ title, artistId, duration, lyrics, genres, coverFile, audioFile, mvFile }) => {
   const { uploadUrl, fileUrl } = await getUploadUrl();
 
   if (audioFile) await uploadFileToS3(uploadUrl, audioFile);
@@ -80,6 +80,6 @@ export const uploadSong = async ({ title, artistId, duration, lyrics, categories
     mvUrl = result.url;
   }
 
-  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, mvUrl, lyrics: lyrics || null, categories: categories || [] });
+  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, mvUrl, lyrics: lyrics || null, genres: genres || [] });
   return data;
 };
