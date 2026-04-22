@@ -168,12 +168,19 @@ export const updateSessionUser = (newUser) => {
  * Nếu có => lưu artist data vào localStorage + cập nhật session user role thành artist
  * Return: artistData nếu là artist, null nếu không
  */
-export const checkAndSaveArtistProfile = async (userId) => {
+export const checkAndSaveArtistProfile = async (userId, _retryCount = 0) => {
   if (!API_URL || !userId) return null;
 
   try {
     const headers = await getAuthHeaders();
     const res = await fetch(`${API_URL}/artists?userId=${encodeURIComponent(userId)}`, { headers });
+
+    // Retry 503/502/504 — Lambda cold start (tối đa 3 lần, backoff 700ms/1400ms/2800ms)
+    if ((res.status === 503 || res.status === 502 || res.status === 504) && _retryCount < 3) {
+      await new Promise((r) => setTimeout(r, 700 * Math.pow(2, _retryCount)));
+      return checkAndSaveArtistProfile(userId, _retryCount + 1);
+    }
+
     if (!res.ok) {
       localStorage.removeItem(`spotify_artist_${userId}`);
       return null;

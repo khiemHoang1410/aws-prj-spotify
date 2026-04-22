@@ -79,8 +79,11 @@ function useLyrics(songId) {
 
   React.useEffect(() => {
     if (!songId) return;
-    import('../../services/SongService').then(({ getLyrics }) => {
-      getLyrics(songId).then(setLyrics);
+    Promise.all([
+      import('../../services/SongService'),
+      import('../../utils/lrcParser'),
+    ]).then(([{ getLyrics }, { normalizeLyrics }]) => {
+      getLyrics(songId).then((raw) => setLyrics(normalizeLyrics(raw)));
     });
   }, [songId]);
 

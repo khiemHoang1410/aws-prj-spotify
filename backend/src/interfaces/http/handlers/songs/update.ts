@@ -14,16 +14,6 @@ const UpdateSongSchema = z.object({
     lyrics: z.string().nullable().optional(),
     albumId: z.uuid().nullable().optional(),
     genre: z.string().min(1).max(50).optional(),
-});
-
-const UpdateSongSchema = z.object({
-    title: z.string().min(1).max(255).optional(),
-    duration: z.number().int().min(1).optional(),
-    coverUrl: z.url().nullable().optional(),
-    mvUrl: z.url().nullable().optional(),
-    lyrics: z.string().nullable().optional(),
-    albumId: z.uuid().nullable().optional(),
-    genre: z.string().min(1).max(50).optional(),
     genres: z.array(z.string().min(1).max(50)).min(1).optional(),
 });
 

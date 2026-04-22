@@ -156,7 +156,7 @@ export const loadHistory = () => async (dispatch, getState) => {
   }
 
   try {
-    const res = await apiClient.get(`/users/${user.user_id}/play-history?limit=20`);
+    const res = await apiClient.get(`/users/${user.user_id}/play-history?limit=20`, { silent: true });
     dispatch(setEntries({ items: res?.items || [], nextCursor: res?.nextCursor || null }));
   } catch {
     // Fallback localStorage nếu API lỗi
