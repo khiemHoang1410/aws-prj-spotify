@@ -23,9 +23,13 @@ export default function ArtistProfilePage() {
   const dispatch = useDispatch();
   const { id: activeArtistId } = useParams();
   const navigate = useNavigate();
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  // Ẩn nút follow nếu đây là trang nghệ sĩ của chính mình
+  const isOwnProfile = !!(user?.artist_id && user.artist_id === activeArtistId);
 
   const [artist, setArtist] = useState(null);
+  const [followerCount, setFollowerCount] = useState(0);
   const [artistSongs, setArtistSongs] = useState([]);
   const [artistAlbums, setArtistAlbums] = useState([]);
   const [relatedArtists, setRelatedArtists] = useState([]);
@@ -42,12 +46,13 @@ export default function ArtistProfilePage() {
     ]).then(([artistData, allSongs, followedArtists]) => {
       setArtist(artistData);
       if (artistData) {
+        // followers từ GET /artists/{id} đã là số thực từ DynamoDB
+        setFollowerCount(artistData.followers ?? 0);
         setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
         getAllAlbums().then((albums) => {
           setArtistAlbums(albums.filter((a) => a.artist_id === activeArtistId));
         });
         getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
-        // Check if current user follows this artist
         setIsFollowing(followedArtists.some((a) => a.id === activeArtistId));
       }
     }).finally(() => setIsLoading(false));
@@ -70,10 +75,13 @@ export default function ArtistProfilePage() {
       dispatch(openModal('login'));
       return;
     }
+    const wasFollowing = isFollowing;
+    // Optimistic update
+    setIsFollowing(!wasFollowing);
+    setFollowerCount((prev) => wasFollowing ? Math.max(0, prev - 1) : prev + 1);
     await followArtist(activeArtistId);
-    setIsFollowing((prev) => !prev);
     dispatch(showToast({
-      message: isFollowing ? 'Đã huỷ theo dõi' : 'Đã theo dõi nghệ sĩ',
+      message: wasFollowing ? 'Đã huỷ theo dõi' : 'Đã theo dõi nghệ sĩ',
       type: 'success',
     }));
   };
@@ -124,7 +132,7 @@ export default function ArtistProfilePage() {
             )}
             <h1 className="text-5xl font-extrabold text-white mb-2">{artist.name}</h1>
             <p className="text-sm text-neutral-300">
-              {artist.monthly_listeners} người nghe hàng tháng • {artist.followers?.toLocaleString()} người theo dõi
+              {artist.monthly_listeners} người nghe hàng tháng • {followerCount.toLocaleString()} người theo dõi
             </p>
           </div>
         </div>
@@ -139,17 +147,20 @@ export default function ArtistProfilePage() {
         >
           <Play size={24} className="text-black fill-black ml-1" />
         </button>
-        <button
-          onClick={handleFollow}
-          className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
-            isFollowing
-              ? 'border border-green-500 text-green-500 hover:border-green-400'
-              : 'border border-neutral-600 text-white hover:border-white'
-          }`}
-        >
-          {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
-          {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
-        </button>
+        {/* Ẩn nút theo dõi nếu đây là trang nghệ sĩ của chính mình */}
+        {!isOwnProfile && (
+          <button
+            onClick={handleFollow}
+            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition ${
+              isFollowing
+                ? 'border border-green-500 text-green-500 hover:border-green-400'
+                : 'border border-neutral-600 text-white hover:border-white'
+            }`}
+          >
+            {isFollowing ? <UserCheck size={16} /> : <UserPlus size={16} />}
+            {isFollowing ? 'Đang theo dõi' : 'Theo dõi'}
+          </button>
+        )}
       </div>
 
       {/* Bio */}
@@ -192,7 +203,9 @@ export default function ArtistProfilePage() {
                     />
                     <span className="text-sm font-medium text-white truncate">{song.title}</span>
                   </div>
-                  <span className="text-sm text-neutral-400 flex items-center truncate">{song.album_name || '—'}</span>
+                  <span className="text-sm text-neutral-400 flex items-center truncate">
+                    {artistAlbums.find((a) => a.id === song.album_id)?.title || song.album_name || '—'}
+                  </span>
                   <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 </div>
               ))}

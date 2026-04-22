@@ -13,7 +13,10 @@ import { fetchAuthSession, clearSession } from './AuthService';
 
 const API_URL = import.meta.env.VITE_API_URL;
 const DEFAULT_TIMEOUT_MS = 15_000;
-const MAX_RETRIES = 2;
+const MAX_RETRIES = 3; // Tăng lên 3 để handle Lambda cold start (~2-3s)
+
+// Status codes cần retry — Lambda cold start / transient gateway errors
+const RETRYABLE_STATUS = new Set([502, 503, 504]);
 
 // ─── Auth logout callback (set bởi Redux store sau khi init) ─────────────────
 let _onAuthExpired = null;
@@ -132,6 +135,15 @@ const request = async (method, path, { body, headers: extraHeaders = {}, timeout
   }
 
   if (!res.ok) {
+    // Retry 502/503/504 — Lambda cold start thường recover sau 1-3 giây
+    if (RETRYABLE_STATUS.has(res.status) && _retry < MAX_RETRIES) {
+      // Exponential backoff + jitter để tránh thundering herd
+      const base = 700 * Math.pow(2, _retry); // 700ms → 1400ms → 2800ms
+      const jitter = Math.floor(Math.random() * 300); // 0-300ms random
+      await delay(base + jitter);
+      return request(method, path, { body, headers: extraHeaders, timeout, _retry: _retry + 1, silent });
+    }
+
     let errBody = {};
     try { errBody = await res.json(); } catch { /* ignore */ }
     const apiError = new ApiError(
