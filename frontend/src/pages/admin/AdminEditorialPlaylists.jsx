@@ -14,6 +14,7 @@ import AdminTable from '../../components/admin/AdminTable';
 import AdminPagination from '../../components/admin/AdminPagination';
 import EditorialPlaylistForm from '../../components/admin/EditorialPlaylistForm';
 import EditorialSongManager from '../../components/admin/EditorialSongManager';
+import { formatDateTime } from '../../utils/formatDate';
 
 export default function AdminEditorialPlaylists() {
   const dispatch = useDispatch();
@@ -98,7 +99,7 @@ export default function AdminEditorialPlaylists() {
       key: 'createdAt',
       label: 'Ngày tạo',
       sortable: true,
-      render: (row) => (row.createdAt ? row.createdAt.slice(0, 10) : '—'),
+      render: (row) => formatDateTime(row.createdAt),
     },
     {
       key: 'actions',

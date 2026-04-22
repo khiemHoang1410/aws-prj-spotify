@@ -2,9 +2,10 @@ import { makeHandler } from "../../middlewares/makeHandler";
 import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
+import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
 import { Success } from "../../../../shared/utils/Result";
 
-const songService = new SongService(new SongRepository(), new ArtistRepository());
+const songService = new SongService(new SongRepository(), new ArtistRepository(), new CategoryRepository());
 
 // GET /songs/trending — top songs by playCount desc, limit 20
 export const handler = makeHandler(async (_body, _params, query) => {

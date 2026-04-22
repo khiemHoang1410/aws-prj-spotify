@@ -6,6 +6,7 @@ import useAdminTable from '../../hooks/useAdminTable';
 import AdminTable from '../../components/admin/AdminTable';
 import AdminPagination from '../../components/admin/AdminPagination';
 import AdminSearchFilter from '../../components/admin/AdminSearchFilter';
+import { formatDateTime } from '../../utils/formatDate';
 
 export default function AdminArtists() {
   const dispatch = useDispatch();
@@ -37,7 +38,7 @@ export default function AdminArtists() {
       ),
     },
     { key: 'userEmail', label: 'Email tài khoản' },
-    { key: 'createdAt', label: 'Ngày tạo', sortable: true },
+    { key: 'createdAt', label: 'Ngày tạo', sortable: true, render: (row) => formatDateTime(row.createdAt) },
     {
       key: 'actions',
       label: 'Hành động',

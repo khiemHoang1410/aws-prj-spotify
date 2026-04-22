@@ -19,7 +19,7 @@ export const getTopSongs = () => getSongs();
 
 export const getSongsByCategory = async (categoryId) => {
   try {
-    const data = await api.get(`/songs?category=${encodeURIComponent(categoryId)}`);
+    const data = await api.get(`/songs?genre=${encodeURIComponent(categoryId)}`);
     return adaptPaginatedResponse(data, adaptSong);
   } catch {
     return [];
@@ -40,7 +40,12 @@ export const getSongsByArtist = async (artistId) => {
 };
 
 export const updateSong = async (songId, payload) => {
-  return api.put(`/songs/${encodeURIComponent(songId)}`, payload);
+  try {
+    const data = await api.put(`/songs/${encodeURIComponent(songId)}`, payload);
+    return { success: true, data };
+  } catch (err) {
+    return { success: false, message: err?.message || 'Lỗi khi cập nhật bài hát' };
+  }
 };
 
 export const deleteSong = async (songId) => {

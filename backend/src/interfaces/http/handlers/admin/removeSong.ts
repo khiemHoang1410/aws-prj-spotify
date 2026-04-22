@@ -1,12 +1,18 @@
 import { makeAuthHandler } from "../../middlewares/withAuth";
+import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
-import { Failure } from "../../../../shared/utils/Result";
+import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
+import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
 import { validateUUID } from "../../../../shared/utils/validate";
 
-const songRepo = new SongRepository();
+const service = new SongService(
+    new SongRepository(),
+    new ArtistRepository(),
+    new CategoryRepository(),
+);
 
 export const handler = makeAuthHandler(async (_body, params) => {
     const idResult = validateUUID(params.id, "song ID");
     if (!idResult.success) return idResult;
-    return songRepo.delete(idResult.data);
+    return service.deleteSong(idResult.data);
 }, "admin");
