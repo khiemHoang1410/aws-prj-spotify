@@ -23,7 +23,8 @@ const CreateSongSchema = z.object({
     coverUrl: z.url().nullable().optional(),
     mvUrl: z.url().nullable().optional(),
     lyrics: z.string().nullable().optional(),
-    genre: z.string().min(1).max(50),
+    genres: z.array(z.string().min(1).max(50)).min(1, "Cần ít nhất một thể loại"),
+    categories: z.array(z.string().min(1).max(50)).optional().nullable(),
 });
 
 const notifyFollowersNewSong = async (song: any) => {
