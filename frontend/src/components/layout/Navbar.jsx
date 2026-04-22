@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3, User } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3, User,LogIn,UserRoundPlus,TextAlignJustify } from 'lucide-react';
 import { openModal, logout, setFollowedArtists, loginSuccess } from '../../store/authSlice';
 import { toggleBrowse } from '../../store/uiSlice';
 import { setNotifications, markRead, markAllRead, toggleNotificationDropdown, closeNotificationDropdown } from '../../store/notificationSlice';
@@ -12,6 +12,7 @@ import { adaptUser } from '../../services/adapters';
 import SearchBar from '../search/SearchBar';
 import api from '../../services/apiClient';
 import { ROLES } from '../../constants/enums';
+
 
 export default function Navbar() {
   const dispatch = useDispatch();
@@ -89,41 +90,51 @@ export default function Navbar() {
   }, [isUserMenuOpen]);
 
   return (
-    <div className="flex items-center justify-between mb-8 sticky top-0 bg-[#121212]/95 backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md">
+    <div className="flex items-center justify-between sticky top-[-6] bg-black backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md gap-1 sm:h-auto h-[60px]">
 
       {/* Back / Forward */}
-      <div className="flex items-center gap-2 w-1/4">
-        <button onClick={() => navigate(-1)} className="bg-black/50 text-[#b3b3b3] p-2 rounded-full hover:text-white transition">
+      <div className="sm:flex hidden items-center gap-2 w-auto min-w-0 gap-2 shrink-1 md:flex-1 ">
+        <button onClick={() => navigate(-1)} className="bg-black/50 text-[#b3b3b3] p-1 rounded-full hover:text-white transition hidden md:flex">
           <ChevronLeft size={20} />
         </button>
-        <button onClick={() => navigate(1)} className="bg-black/50 text-[#b3b3b3] p-2 rounded-full hover:text-white transition">
+        <button onClick={() => navigate(1)} className="bg-black/50 text-[#b3b3b3] p-1 rounded-full hover:text-white transition hidden md:flex">
           <ChevronRight size={20} />
         </button>
+        <button onClick={() =>{}} className="transition flex md:hidden justify-center items-center mr-2">
+          <TextAlignJustify size={20} className=" active:text-[#1DB954]"/>
+        </button>
       </div>
-
       {/* Home + Search */}
-      <div className="flex items-center justify-center gap-2 flex-1">
+      <div className="flex items-center justify-center gap-2 flex-[2] min-w-0 ">
         <button
-          className={`p-3 rounded-full transition duration-200 ${isHome ? 'bg-[#333] text-white' : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#333]'}`}
+          className={`p-3 rounded-full hidden md:block transition duration-200 ${isHome ? 'bg-[#333] text-white' : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#333]'}`}
           onClick={() => navigate('/')}
           title="Trang chủ"
         >
           <Home size={22} className={isHome ? 'fill-white' : ''} />
         </button>
-        <div onClick={() => { if (location.pathname !== '/search') navigate('/search'); }}>
+        <div onClick={() => { if (location.pathname !== '/search') navigate('/search'); }} className="flex-1 w-full cursor-pointer max-w-[]">
           <SearchBar onOpenBrowse={() => dispatch(toggleBrowse())} />
         </div>
       </div>
 
       {/* Auth area */}
-      <div className="flex items-center justify-end gap-4 w-1/4">
+      <div className="sm:flex hidden items-center justify-end gap-2 flex-1 min-w-0">
         {!isAuthenticated ? (
           <>
-            <button className="text-[#b3b3b3] font-bold hover:text-white hover:scale-105 transition whitespace-nowrap" onClick={() => dispatch(openModal('register'))}>
-              Đăng ký
+            <button
+              className="w-auto h-8 flex-shrink-0 flex items-center justify-center text-white font-bold rounded-full hover:bg-[#1DB954] hover:text-black active:text-white transition whitespace-nowrap p-3"
+              onClick={() => dispatch(openModal('register'))}
+            >
+              <span className="hidden md:block">Đăng ký</span>
+              <UserRoundPlus className="w-5 aspect-square block md:hidden"/>
             </button>
-            <button className="bg-white text-black font-bold py-3 px-8 rounded-full hover:scale-105 transition whitespace-nowrap" onClick={() => dispatch(openModal('login'))}>
-              Đăng nhập
+            <button
+              className="w-auto h-8 flex-shrink-0 flex items-center justify-center bg-white text-black font-bold rounded-full hover:bg-[#1E1E1E] hover:text-white active:text-[#1DB954] transition whitespace-nowrap p-3"
+              onClick={() => dispatch(openModal('login'))}
+            >
+              <span className="hidden md:block">Đăng nhập</span>
+              <LogIn className="w-5 aspect-square block md:hidden"/>  
             </button>
           </>
         ) : (
@@ -269,6 +280,6 @@ export default function Navbar() {
           </div>
         )}
       </div>
-    </div>
+      </div>
   );
 }
