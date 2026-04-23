@@ -123,11 +123,13 @@ export default function SearchBar({ onOpenBrowse }) {
     }
   };
 
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
   return (
     // relative để DropDown có thể neo vào vị trí của thanh Search
-    <div className="relative flex-1 flex items-center justify-center gap-2  ">
+    <div className="relative flex-1 flex items-center justify-start gap-2  ">
       {/* THANH SEARCH GỐC */}
-      <div className="flex items-center justify-between bg-[#242424] group rounded-full gap-1 md:px-3 px-2 py-2 w-full border border-transparent hover:border-[#333] hover:bg-[#2a2a2a] focus-within:border-white focus-within:bg-[#242424] transition-all z-30 relative">
+      <div className="flex items-center justify-between bg-[#242424] group rounded-full gap-1 md:px-3 px-2 py-2 w-auto border border-transparent hover:border-[#333] hover:bg-[#2a2a2a] focus-within:border-white focus-within:bg-[#242424] transition-all z-30 relative">
         <div className="flex items-center md:gap-3 gap-2 flex-1">
           <Search className="text-[#b3b3b3] size-4 md:size-6" />
           <input 
@@ -136,7 +138,9 @@ export default function SearchBar({ onOpenBrowse }) {
             value={searchQuery}
             onChange={(e) => dispatch(setSearchQuery(e.target.value))}
             onKeyDown={handleKeyDown}
-            className="bg-transparent text-white focus:outline-none flex-1 text-[15px] placeholder:text-[clamp(12px,1.5vw,16px)] text-[clamp(14px,1.8vw,18px)] focus:placeholder-transparent placeholder-[#b3b3b3] w-[clamp(100px,14vw,260px)] flex-shrink-0" />
+            onFocus={() => setIsSearchFocused(true)}
+            onBlur={() => setIsSearchFocused(false)}
+            className="bg-transparent text-white focus:outline-none flex-1 text-[15px] placeholder:text-[clamp(12px,1.5vw,16px)] text-[clamp(14px,1.8vw,18px)] focus:placeholder-transparent placeholder-[#b3b3b3] w-[clamp(200px,25vw,350px)]" />
         </div>
         {/* Nút Library */}
         {searchQuery && (
@@ -154,8 +158,8 @@ export default function SearchBar({ onOpenBrowse }) {
       </div>
 
       {/* GIAO DIỆN DROPDOWN */}
-      {searchQuery.length > 0 && !isSearchSubmitted && (
-        <div className="absolute top-14 left-0 w-full bg-[#242424] rounded-lg shadow-2xl z-50 p-2 border border-[#333]">
+      {searchQuery.length > 0 && !isSearchSubmitted && (isSearchFocused || dropDownResults.length > 0) && (
+        <div className="absolute top-14 left-1/2 -translate-x-1/2 w-full bg-[#242424] rounded-lg shadow-2xl z-50 p-2 border border-[#333]">
           <h4 className="text-white font-bold px-3 py-2 text-sm">
             {isLoading ? '⏳ Đang tìm kiếm...' : 'Kết quả liên quan'}
           </h4>

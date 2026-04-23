@@ -56,12 +56,7 @@ export default function BottomNavbar() {
             <Music size={32} className="m-auto"/>
             <span className="text-[8px]">Thư viện</span>
         </button>
-        <button className="flex flex-col item-center justify-center "
-          onClick={() => navigate('/profile')}
-        >
-            <User size={32} className="m-auto"/>
-            <span className="text-[8px]">Cá nhân</span>
-        </button>
+        
     </div>
   );
 }

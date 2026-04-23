@@ -306,7 +306,7 @@ export default function PlayerBar() {
   const volumePercent = volume * 100;
 
   return (
-    <div className="h-full md:px-4 flex flex-col items-center justify-between relative">
+    <div className="h-full md:px-4 flex flex-col items-center justify-between bg-transparent relative">
       <Audio
         currentSong={currentSong}
         isPlaying={isPlaying}

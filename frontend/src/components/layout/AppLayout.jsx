@@ -137,20 +137,23 @@ export default function AppLayout() {
     navigate(`/song/${songId}`, { replace: true });
   }, [location.search, navigate]);
 
+
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-black text-white overflow-hidden font-sans">
       <div className="flex-1 flex overflow-hidden md:px-2 p-0">
         {!isLyricsPage && (
-          <aside className="w-64 bg-black flex-shrink-0 hidden md:flex flex-col">
+          <aside className="w-64 bg-black flex-shrink-0 hidden lg:flex flex-col z-55 lg:z-default ">
             <Sidebar />
           </aside>
         )}
 
-        <main className={`flex-1 bg-[#121212] rounded-lg mt-2 mb-2 overflow-y-auto relative ${isLyricsPage ? 'ml-2' : ''}`}>
-          <div className="p-6 min-h-full bg-gradient-to-b from-[#1f1f1f] to-[#121212] relative overflow-x-hidden">
+        <main className={`flex-1 bg-[#121212] rounded-lg mt-2 mb-2 relative ${isLyricsPage ? 'ml-2' : ''}`}>
+          <div className=" min-h-full bg-gradient-to-b from-[#1f1f1f] to-[#121212] relative overflow-x-hidden mb-20">
             <Navbar />
             <ErrorBoundary key={location.pathname}>
-              <Outlet />
+              <div className="h-[100dvh] overflow-y-auto mt-8 pb-40 px-4 mb-50 scrollbar-hidden" style={{ scrollbarWidth: 'none' }}>
+                <Outlet />
+              </div>
             </ErrorBoundary>
           </div>
         </main>
@@ -158,8 +161,21 @@ export default function AppLayout() {
         <QueueSidebar />
       </div>
 
-      <footer className="h-auto flex flex-col bg-black flex-shrink-0 z-50 border-t border-[#282828]">
-          <div className="h-[55px] md:h-[75px] shrink-0 px-2">
+      <footer className="h-auto flex flex-col absolute backdrop-blur-[2px] bottom-0 right-0 left-0 gap-2 pt-2 flex-shrink-0 z-50  "
+              style={{
+                background: `
+                  linear-gradient(
+                    to bottom,
+                    rgba(0, 0, 0, 0.05) 0%,
+                    rgba(0, 0, 0, 0.15) 40%,
+                    rgba(0,0,0,0.4) 70%,
+                    rgba(0,0,0,0.6) 85%,
+                    rgba(0,0,0,0.9) 100%
+                  )
+                `
+              }}
+      >
+          <div className="h-[60px] md:h-[75px] shrink-0 px-2">
             <PlayerBar />
           </div>
           <BottomNavbar />

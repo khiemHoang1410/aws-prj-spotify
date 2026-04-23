@@ -90,22 +90,22 @@ export default function Navbar() {
   }, [isUserMenuOpen]);
 
   return (
-    <div className="flex items-center justify-between sticky top-[-6] bg-black backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md gap-1 sm:h-auto h-[60px]">
-
+    <div className="flex items-center justify-between bg-black z-20 py-4 px-4 shadow-md gap-2 sm:h-auto h-[60px]">
       {/* Back / Forward */}
-      <div className="sm:flex hidden items-center gap-2 w-auto min-w-0 gap-2 shrink-1 md:flex-1 ">
+      <div className="sm:flex hidden items-center gap-2 w-auto min-w-0 gap-2 shrink-10 md:flex-1 ">
+        <button title="Thư viện" onClick={() => navigate("/my-library")} className="transition flex lg:hidden justify-center items-center mr-5 text-[#b3b3b3] hover:text-white">
+          <TextAlignJustify size={20} className=" active:text-[#1DB954]"/>
+        </button>
         <button onClick={() => navigate(-1)} className="bg-black/50 text-[#b3b3b3] p-1 rounded-full hover:text-white transition hidden md:flex">
           <ChevronLeft size={20} />
         </button>
         <button onClick={() => navigate(1)} className="bg-black/50 text-[#b3b3b3] p-1 rounded-full hover:text-white transition hidden md:flex">
           <ChevronRight size={20} />
         </button>
-        <button onClick={() =>{}} className="transition flex md:hidden justify-center items-center mr-2">
-          <TextAlignJustify size={20} className=" active:text-[#1DB954]"/>
-        </button>
+        
       </div>
       {/* Home + Search */}
-      <div className="flex items-center justify-center gap-2 flex-[2] min-w-0 ">
+      <div className="flex items-center justify-start gap-2 flex-[3] min-w-0 shrink-1 ">
         <button
           className={`p-3 rounded-full hidden md:block transition duration-200 ${isHome ? 'bg-[#333] text-white' : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#333]'}`}
           onClick={() => navigate('/')}
@@ -113,13 +113,13 @@ export default function Navbar() {
         >
           <Home size={22} className={isHome ? 'fill-white' : ''} />
         </button>
-        <div onClick={() => { if (location.pathname !== '/search') navigate('/search'); }} className="flex-1 w-full cursor-pointer max-w-[]">
+        <div onClick={() => { if (location.pathname !== '/search') navigate('/search'); }} className="flex-1 w-full cursor-pointer">
           <SearchBar onOpenBrowse={() => dispatch(toggleBrowse())} />
         </div>
       </div>
 
       {/* Auth area */}
-      <div className="sm:flex hidden items-center justify-end gap-2 flex-1 min-w-0">
+      <div className="flex items-center justify-end gap-2 flex-2 min-w-0 shrink-1">
         {!isAuthenticated ? (
           <>
             <button
@@ -138,13 +138,13 @@ export default function Navbar() {
             </button>
           </>
         ) : (
-          <div className="flex items-center gap-5 relative">
-            <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition" title="Trò chuyện">
+          <div className="flex items-center sm:gap-5 gap-2 relative">
+            <button className="sm:flex hidden text-[#b3b3b3] hover:text-white hover:scale-105 transition" title="Trò chuyện">
               <Users size={20} />
             </button>
 
             {/* Notifications */}
-            <div className="relative" ref={notifRef}>
+            <div className="relative " ref={notifRef}>
               <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition relative" title="Thông báo" onClick={() => dispatch(toggleNotificationDropdown())}>
                 <Bell size={20} />
                 {unreadCount > 0 && (

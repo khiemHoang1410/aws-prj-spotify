@@ -165,7 +165,7 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="h-full flex flex-col gap-2 p-2">
+    <nav className="h-full flex flex-col gap-2 p-2 ">
 
       {/* Logo */}
       <div
