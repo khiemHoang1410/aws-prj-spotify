@@ -131,7 +131,7 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="sm:p-3 pt-4 ">
+      <div className="sm:p-3 pt-4 mb-20 ">
         <FeaturedPlaylists />
         {isAuthenticated && <Section title="Dành cho bạn" sectionKey="personalized" items={personalizedSongs} />}
         <Section title="Thịnh hành" sectionKey="trending" items={trendingSongs} />
