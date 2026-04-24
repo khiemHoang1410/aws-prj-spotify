@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2, Camera } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
@@ -17,14 +17,18 @@ import { selectPlaylistIds } from '../store/playlistSlice';
 export default function ProfilePage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth);
-  const historyEntries = useSelector((state) => state.history?.entries?.slice(0, 10) || []);
+  const { user, likedSongs, verifyStatus } = useSelector((state) => state.auth, shallowEqual);
+  const historyEntries = useSelector(
+    (state) => state.history?.entries?.slice(0, 10) ?? [],
+    shallowEqual
+  );
   const playlistIds = useSelector(selectPlaylistIds);
 
   const [isEditing, setIsEditing] = useState(false);
   const [displayName, setDisplayName] = useState(user?.name || user?.username || '');
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [artistProfile, setArtistProfile] = useState(null);
   const avatarInputRef = useRef(null);
 
   const handleAvatarUpload = async (e) => {
@@ -45,17 +49,22 @@ export default function ProfilePage() {
     }
   };
 
+  // Fetch artist profile (name + photo) khi user là artist
   useEffect(() => {
     if (user?.role !== ROLES.ARTIST) return;
 
     (async () => {
-      // Ưu tiên: check isVerified trực tiếp từ artist record (admin xác minh)
       const artistId = user.artist_id;
       if (artistId) {
         const artistData = await getArtistById(artistId);
-        if (artistData?.isVerified) {
-          dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
-          return;
+        if (artistData) {
+          setArtistProfile(artistData);
+          // Cập nhật displayName với tên từ artist record
+          setDisplayName(artistData.name || user.name || user.username || '');
+          if (artistData.isVerified) {
+            dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
+            return;
+          }
         }
       }
 
@@ -78,18 +87,30 @@ export default function ProfilePage() {
   const handleSave = async () => {
     if (!displayName.trim()) return;
     setIsSaving(true);
-    const result = await updateProfile({ displayName: displayName.trim() });
-    if (result?.success) {
-      dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
+    try {
+      if (user.role === ROLES.ARTIST && artistProfile?.id) {
+        // Artist: cập nhật qua PUT /artists/{id}
+        const updated = await api.put(`/artists/${artistProfile.id}`, { name: displayName.trim() });
+        setArtistProfile({ ...artistProfile, name: displayName.trim() });
+        dispatch(showToast({ message: 'Cập nhật tên nghệ sĩ thành công!', type: 'success' }));
+      } else {
+        // User thường: cập nhật qua PUT /me
+        await updateProfile({ displayName: displayName.trim() });
+        dispatch(loginSuccess({ ...user, name: displayName.trim(), username: displayName.trim() }));
+        dispatch(showToast({ message: 'Cập nhật thành công!', type: 'success' }));
+      }
       setIsEditing(false);
-    } else {
+    } catch {
       dispatch(showToast({ message: 'Không thể cập nhật. Thử lại sau.', type: 'error' }));
+    } finally {
+      setIsSaving(false);
     }
-    setIsSaving(false);
   };
 
   const handleCancelEdit = () => {
-    setDisplayName(user?.name || user?.username || '');
+    // Restore tên gốc: ưu tiên artistProfile.name nếu là artist
+    const originalName = (user.role === ROLES.ARTIST && artistProfile?.name) || user?.name || user?.username || '';
+    setDisplayName(originalName);
     setIsEditing(false);
   };
 
@@ -105,7 +126,7 @@ export default function ProfilePage() {
       <div className="flex items-end gap-6 mb-8 pb-8 border-b border-neutral-800">
         <div className="relative">
           <img
-            src={user.avatar_url || 'https://i.pravatar.cc/150?img=1'}
+            src={(user.role === ROLES.ARTIST && artistProfile?.photoUrl) || user.avatar_url || '../public/pictures/user_default.png'}
             alt={user.username}
             className="w-28 h-28 rounded-full object-cover shadow-2xl"
           />
@@ -131,6 +152,7 @@ export default function ProfilePage() {
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
+                placeholder={(user.role === ROLES.ARTIST && artistProfile?.name) || user.name || user.username}
                 autoFocus
                 className="bg-neutral-700 text-white text-3xl font-extrabold rounded-lg px-3 py-1 outline-none focus:ring-2 focus:ring-green-500 max-w-xs"
               />
@@ -150,7 +172,9 @@ export default function ProfilePage() {
             </div>
           ) : (
             <div className="flex items-center gap-2 mb-2">
-              <h1 className="text-4xl font-extrabold text-white truncate">{displayName}</h1>
+              <h1 className="text-4xl font-extrabold text-white truncate">
+                {(user.role === ROLES.ARTIST && artistProfile?.name) || displayName}
+              </h1>
               <button
                 onClick={() => setIsEditing(true)}
                 className="p-1.5 text-neutral-400 hover:text-white hover:bg-neutral-700 rounded-full transition"

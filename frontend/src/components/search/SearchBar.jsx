@@ -12,7 +12,20 @@ export default function SearchBar({ onOpenBrowse }) {
   const { searchQuery, isBrowsing, isSearchSubmitted } = useSelector(state => state.ui);
   const [dropDownResults, setDropDownResults] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const debounceTimer = useRef(null);
+  const containerRef = useRef(null);
+
+  // Đóng dropdown khi click ra ngoài
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (containerRef.current && !containerRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const getSongPath = (song) => {
     const slug = song?.songSlug || song?.slug || song?.song_slug;
@@ -34,6 +47,7 @@ export default function SearchBar({ onOpenBrowse }) {
     }
 
     dispatch(submitSearch());
+    setIsDropdownOpen(false);
   };
 
   // Gọi API search với debounce
@@ -46,12 +60,14 @@ export default function SearchBar({ onOpenBrowse }) {
     // Không gọi API nếu query rỗng
     if (!searchQuery.trim()) {
       setDropDownResults([]);
+      setIsDropdownOpen(false);
       return;
     }
 
     // Set timer để gọi API sau 300ms (debounce)
     debounceTimer.current = setTimeout(async () => {
       setIsLoading(true);
+      setIsDropdownOpen(true);
       try {
         const results = await search(searchQuery, 'all');
         
@@ -119,13 +135,14 @@ export default function SearchBar({ onOpenBrowse }) {
   // Bắt sự kiện bấm phím Enter
   const handleKeyDown = (e) => {
     if (e.key === 'Enter' && searchQuery.trim().length > 0) {
+      setIsDropdownOpen(false);
       dispatch(submitSearch());
     }
   };
 
   return (
     // relative để DropDown có thể neo vào vị trí của thanh Search
-    <div className="relative flex-1 flex items-center justify-center gap-2  ">
+    <div className="relative flex-1 flex items-center justify-center gap-2" ref={containerRef}>
       {/* THANH SEARCH GỐC */}
       <div className="flex items-center justify-between bg-[#242424] group rounded-full gap-1 md:px-3 px-2 py-2 w-full border border-transparent hover:border-[#333] hover:bg-[#2a2a2a] focus-within:border-white focus-within:bg-[#242424] transition-all z-30 relative">
         <div className="flex items-center md:gap-3 gap-2 flex-1">
@@ -154,7 +171,7 @@ export default function SearchBar({ onOpenBrowse }) {
       </div>
 
       {/* GIAO DIỆN DROPDOWN */}
-      {searchQuery.length > 0 && !isSearchSubmitted && (
+      {searchQuery.length > 0 && !isSearchSubmitted && isDropdownOpen && (
         <div className="absolute top-14 left-0 w-full bg-[#242424] rounded-lg shadow-2xl z-50 p-2 border border-[#333]">
           <h4 className="text-white font-bold px-3 py-2 text-sm">
             {isLoading ? '⏳ Đang tìm kiếm...' : 'Kết quả liên quan'}
@@ -184,7 +201,7 @@ export default function SearchBar({ onOpenBrowse }) {
           {dropDownResults.length > 0 && (
             <div 
               className="px-3 py-3 mt-2 text-sm font-bold text-white hover:text-green-500 cursor-pointer border-t border-[#333]"
-              onClick={() => dispatch(submitSearch())}
+              onClick={() => { dispatch(submitSearch()); setIsDropdownOpen(false); }}
             >
               Xem tất cả kết quả cho "{searchQuery}"
             </div>

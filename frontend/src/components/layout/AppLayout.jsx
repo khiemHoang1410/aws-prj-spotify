@@ -1,13 +1,12 @@
 import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
-import { getCurrentUser } from '../../services/AuthService';
+import { getCurrentUser, checkAndSaveArtistProfile, updateSessionUser } from '../../services/AuthService';
 import { loginSuccess, setLikedSongs, setRestoring } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
 import api from '../../services/apiClient';
 import { adaptUser } from '../../services/adapters';
-import { checkAndSaveArtistProfile } from '../../services/AuthService';
 import Sidebar from './Sidebar';
 import Navbar from './Navbar';
 import PlayerBar from './PlayerBar';
@@ -35,7 +34,12 @@ const mergeUserRoleSafely = (cachedUser, freshUser) => {
     ? freshUser.role
     : cachedUser.role;
 
-  return { ...freshUser, role: chosenRole };
+  return {
+    ...freshUser,
+    role: chosenRole,
+    // /me endpoint không trả về artist_id — phải giữ từ session cache
+    artist_id: freshUser.artist_id || cachedUser.artist_id || null,
+  };
 };
 
 const isSameUserSnapshot = (leftUser, rightUser) => {
@@ -95,11 +99,16 @@ export default function AppLayout() {
         const artistData = await checkAndSaveArtistProfile(user.user_id);
 
         // Merge: nếu có artist profile → cập nhật role + artistId
-        const finalUser = adaptedProfile || { ...user };
+        const finalUser = adaptedProfile ? { ...adaptedProfile } : { ...user };
         if (artistData?.id) {
           finalUser.role = 'artist';
           finalUser.artist_id = artistData.id;
+        } else {
+          // Cold start / API fail — giữ artist_id từ session gốc, không clobber thành null
+          if (!finalUser.artist_id && user.artist_id) finalUser.artist_id = user.artist_id;
         }
+        // Persist vào localStorage để lần reload sau đọc được artist_id chính xác
+        updateSessionUser(finalUser);
         dispatch(loginSuccess(finalUser));
 
         // Restore liked songs từ API

@@ -1,9 +1,33 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { IntroMockData } from "../../data/IntroMockData";
+import { getAllAlbums } from "../../services/AlbumService";
+
+const BANNER_COUNT = 10;
+const MOCK_IMAGES = IntroMockData.bannerAlbums;
 
 function Banner() {
-  const albumImages = IntroMockData.bannerAlbums;
+  const [albumImages, setAlbumImages] = useState(MOCK_IMAGES);
   const [hoveredIndex, setHoveredIndex] = useState(null);
+
+  useEffect(() => {
+    getAllAlbums()
+      .then((albums) => {
+        const realImages = albums
+          .map((a) => a.image_url || a.coverUrl)
+          .filter(Boolean);
+
+        if (realImages.length >= BANNER_COUNT) {
+          // Đủ ảnh thật — dùng hết, không cần mock
+          setAlbumImages(realImages.slice(0, BANNER_COUNT));
+        } else if (realImages.length > 0) {
+          // Bù mock vào phần còn thiếu
+          const needed = BANNER_COUNT - realImages.length;
+          setAlbumImages([...realImages, ...MOCK_IMAGES.slice(0, needed)]);
+        }
+        // Nếu API trả rỗng — giữ nguyên MOCK_IMAGES (state khởi tạo)
+      })
+      .catch(() => { /* giữ mock nếu API lỗi */ });
+  }, []);
 
   return (
     <div className="container banner">

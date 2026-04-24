@@ -43,6 +43,7 @@ export default function UploadSongPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [uploadError, setUploadError] = useState('');
   const [artistId, setArtistId] = useState(null);
+  const [artistName, setArtistName] = useState('');
   const [artistLoading, setArtistLoading] = useState(true);
   const [autoLyricsFetchedKey, setAutoLyricsFetchedKey] = useState('');
   // 'idle' | 'fetching' | 'found' | 'notFound'
@@ -52,14 +53,29 @@ export default function UploadSongPage() {
   // Lấy artistId từ BE khi mount — bắt buộc có trước khi cho upload
   React.useEffect(() => {
     if (!user) return;
+    // Ưu tiên artist_id từ Redux session (đã được persist)
+    const cachedArtistId = user.artist_id;
     const userId = user.user_id || user.id;
     setArtistLoading(true);
-    getArtistByUserId(userId)
+
+    const fetchArtist = cachedArtistId
+      ? import('../services/ArtistService').then((m) => m.getArtistById(cachedArtistId))
+      : import('../services/ArtistService').then((m) => m.getArtistByUserId(userId));
+
+    fetchArtist
       .then((artist) => {
-        if (artist?.id) setArtistId(artist.id);
-        else setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng liên hệ hỗ trợ.');
+        if (artist?.id) {
+          setArtistId(artist.id);
+          setArtistName(artist.name || user.name || user.username || '');
+        } else {
+          setArtistName(user.name || user.username || '');
+          setUploadError('Không tìm thấy hồ sơ nghệ sĩ. Vui lòng liên hệ hỗ trợ.');
+        }
       })
-      .catch(() => setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.'))
+      .catch(() => {
+        setArtistName(user.name || user.username || '');
+        setUploadError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.');
+      })
       .finally(() => setArtistLoading(false));
   }, [user]);
 
@@ -100,21 +116,22 @@ export default function UploadSongPage() {
 
   // Auto-fetch when title + audioFile are set (debounced 450ms, only if lyrics blank)
   React.useEffect(() => {
-    const artistName = String(user?.name || user?.username || '').trim();
+    // Dùng artistName từ state (BE "Hoàng Huy"), không dùng user.name (Cognito "huy")
+    const finalArtistName = String(artistName || user?.name || user?.username || '').trim();
     const songTitle = String(title || '').trim();
-    if (!audioFile || !artistName || !songTitle) return;
+    if (!audioFile || !finalArtistName || !songTitle) return;
     if (String(lyrics || '').trim()) return;
 
-    const fetchKey = `${songTitle}__${artistName}__${audioFile?.name || ''}`;
+    const fetchKey = `${songTitle}__${finalArtistName}__${audioFile?.name || ''}`;
     if (fetchKey === autoLyricsFetchedKey) return;
 
     const timer = setTimeout(() => {
-      fetchLyricsFromLrclib(songTitle, artistName, { silent: true });
+      fetchLyricsFromLrclib(songTitle, finalArtistName, { silent: true });
     }, 450);
 
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [audioFile, title, user?.name, user?.username, lyrics, autoLyricsFetchedKey]);
+  }, [audioFile, title, artistName, user?.name, user?.username, lyrics, autoLyricsFetchedKey]);
 
   // Handler for LRC file upload
   const handleLrcFileChange = (e) => {
@@ -223,6 +240,7 @@ export default function UploadSongPage() {
         ? duration.split(':').reduce((acc, val, i) => acc + (i === 0 ? parseInt(val) * 60 : parseInt(val)), 0)
         : 0;
 
+      // UploadService expect "genres" array (thể loại nhạc)
       const formData = {
         title: title.trim(),
         artistId,
@@ -232,15 +250,14 @@ export default function UploadSongPage() {
         lyrics,
         duration: durationSeconds,
         genres: selectedGenres,
-        genre: selectedGenres[0],
       };
       await uploadSong(formData);
       dispatch(showToast({ message: 'Upload thành công!', type: 'success' }));
       try {
         const notif = await createNotification({
           type: 'new_song',
-          message: `${user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
-          artist_name: user.name || user.username,
+          message: `${artistName || user.name || user.username} vừa đăng bài hát mới: ${title.trim()}`,
+          artist_name: artistName || user.name || user.username,
           song_title: title.trim(),
           image_url: coverPreviews[0] || '',
         });
@@ -304,7 +321,7 @@ export default function UploadSongPage() {
               <label className="block text-sm text-neutral-300 mb-1">Tên nghệ sĩ</label>
               <input
                 type="text"
-                value={user.name || user.username}
+                value={artistName || user.name || user.username}
                 readOnly
                 className="w-full bg-neutral-800/50 text-neutral-400 rounded-lg px-3 py-2 text-sm outline-none cursor-not-allowed"
               />
@@ -377,13 +394,13 @@ export default function UploadSongPage() {
                   type="button"
                   disabled={lyricsStatus === 'fetching' || !title.trim()}
                   onClick={() => {
-                    const artistName = String(user?.name || user?.username || '').trim();
+                    const finalArtistName = String(artistName || user?.name || user?.username || '').trim();
                     const songTitle = String(title || '').trim();
                     // Clear key so fetch runs even if previously attempted
                     setAutoLyricsFetchedKey('');
                     // Also clear lyrics so we don't skip due to existing content
                     setLyrics('');
-                    fetchLyricsFromLrclib(songTitle, artistName);
+                    fetchLyricsFromLrclib(songTitle, finalArtistName);
                   }}
                   className="flex items-center gap-1 text-xs text-neutral-400 hover:text-white bg-neutral-800 hover:bg-neutral-700 px-2 py-1 rounded transition disabled:opacity-40 disabled:cursor-not-allowed"
                   title="Tìm lời tự động từ lrclib.net"
@@ -534,7 +551,7 @@ export default function UploadSongPage() {
               )}
               <div>
                 <p className="text-white font-semibold text-lg">{title || '(Chưa nhập)'}</p>
-                <p className="text-neutral-400 text-sm">{user.name || user.username}</p>
+                <p className="text-neutral-400 text-sm">{artistName || user.name || user.username}</p>
                 {duration && <p className="text-neutral-500 text-xs mt-1">{duration}</p>}
               </div>
             </div>
