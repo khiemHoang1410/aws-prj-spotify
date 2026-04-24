@@ -56,6 +56,41 @@ export default function HomePage() {
 
   const toggleSection = (key) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
 
+  // Section album: horizontal scroll trên mobile, grid trên desktop
+  const AlbumSection = ({ title, items }) => {
+    if (!items?.length) return null;
+    return (
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>
+        {/* Mobile: horizontal scroll */}
+        <div className="sm:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+          {items.map((album) => (
+            <div key={album.id} className="flex-shrink-0 w-40">
+              <Card
+                image={album.image_url || album.coverUrl}
+                title={album.title || album.name}
+                subtitle={album.artist_name || album.artistName || 'Album'}
+                onClick={() => navigate(`/album/${album.id}`)}
+              />
+            </div>
+          ))}
+        </div>
+        {/* Desktop: responsive grid */}
+        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          {items.slice(0, 10).map((album) => (
+            <Card
+              key={album.id}
+              image={album.image_url || album.coverUrl}
+              title={album.title || album.name}
+              subtitle={album.artist_name || album.artistName || 'Album'}
+              onClick={() => navigate(`/album/${album.id}`)}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // Section bài hát: grid trên desktop, horizontal scroll trên mobile
   const Section = ({ title, sectionKey, items }) => {
     if (!items?.length) return null;
@@ -85,29 +120,6 @@ export default function HomePage() {
     );
   };
 
-  // Section album: horizontal scroll
-  const AlbumSection = ({ title, items }) => {
-    if (!items?.length) return null;
-    return (
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-        </div>
-        <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {items.map((album) => (
-            <div key={album.id} className="flex-shrink-0 w-44">
-              <Card
-                image={album.image_url || album.coverUrl}
-                title={album.title || album.name}
-                subtitle={album.artist_name || album.artistName || ''}
-                onClick={() => navigate(`/album/${album.id}`)}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
 
   if (loading) {
     return (
@@ -131,11 +143,11 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="sm:p-3 pt-4 mb-20 ">
+      <div className="sm:p-3 pt-4 mb-20">
         <FeaturedPlaylists />
+        <AlbumSection title="Album nổi bật" items={albums} />
         {isAuthenticated && <Section title="Dành cho bạn" sectionKey="personalized" items={personalizedSongs} />}
         <Section title="Thịnh hành" sectionKey="trending" items={trendingSongs} />
-        <AlbumSection title="Album" items={albums} />
         <Section title="Mới phát hành" sectionKey="newReleases" items={newReleases} />
         {isAuthenticated && <Section title="Khám phá" sectionKey="discover" items={discoverSongs} />}
         {songs.length === 0 && <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>}
