@@ -136,11 +136,24 @@ export const login = async (email, password) => {
   if (!res.ok) throw new Error(data.error || 'Đăng nhập thất bại');
 
   const idTokenPayload = JSON.parse(atob(data.idToken.split('.')[1]));
+
+  // Cognito có thể trả về groups dưới dạng array ["admin"] hoặc string "[admin]"
+  // Cần parse cả 2 trường hợp để lấy đúng role
+  const rawGroups = idTokenPayload['cognito:groups'];
+  let role = 'listener';
+  if (Array.isArray(rawGroups) && rawGroups.length > 0) {
+    role = rawGroups[0];
+  } else if (typeof rawGroups === 'string' && rawGroups.trim().length > 0) {
+    // Strip brackets: "[admin]" → "admin", "[admin, artist]" → "admin"
+    const parsed = rawGroups.replace(/^\[|\]$/g, '').split(',').map((s) => s.trim()).filter(Boolean);
+    if (parsed.length > 0) role = parsed[0];
+  }
+
   const user = adaptUser({
     userId: idTokenPayload.sub,
     email: idTokenPayload.email || email,
     displayName: idTokenPayload.name || idTokenPayload.email || email,
-    role: (idTokenPayload['cognito:groups'] || [])[0] || 'listener',
+    role,
     avatarUrl: null,
   });
   saveSession({
