@@ -138,7 +138,13 @@ store.subscribe(() => {
     store.dispatch(syncOnLogin());
     store.dispatch(fetchMyPlaylists());
   }
+
+  // Session restore hoàn tất mà không đăng nhập → load history (sẽ trả về rỗng cho guest)
+  if (prevAuth.isRestoring && !state.auth.isRestoring && !state.auth.isAuthenticated) {
+    store.dispatch(loadHistory());
+  }
 });
 
-// Load history khi app khởi động (guest dùng localStorage, user đã login dùng API)
+// Load history khi app khởi động — nếu isRestoring=true thì loadHistory sẽ bail out sớm,
+// auth subscriber ở trên sẽ gọi lại sau khi session restore xong
 store.dispatch(loadHistory());

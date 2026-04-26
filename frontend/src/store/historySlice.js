@@ -40,16 +40,18 @@ export const normalizeHistoryEntry = (item) => ({
 
 // ─── Slice ────────────────────────────────────────────────────────────────────
 
+const initialState = {
+  entries: [],
+  hasMore: true,
+  nextCursor: null,
+  isLoading: false,
+  isSyncing: false,
+  hasSyncedOnLogin: false,
+};
+
 const historySlice = createSlice({
   name: 'history',
-  initialState: {
-    entries: [],
-    hasMore: true,
-    nextCursor: null,
-    isLoading: false,
-    isSyncing: false,
-    hasSyncedOnLogin: false,
-  },
+  initialState,
   reducers: {
     addEntryOptimistic(state, action) {
       const song = action.payload;
@@ -127,6 +129,16 @@ const historySlice = createSlice({
       state.hasSyncedOnLogin = true;
     },
   },
+  extraReducers: (builder) => {
+    // Clear history khi user logout
+    builder.addMatcher(
+      (action) => action.type === 'auth/logout',
+      () => {
+        clearLocal();
+        return { ...initialState };
+      }
+    );
+  },
 });
 
 export const {
@@ -145,13 +157,18 @@ export const {
 
 /** Load history lần đầu khi app khởi động */
 export const loadHistory = () => async (dispatch, getState) => {
-  const { isAuthenticated, user } = getState().auth;
+  const { isAuthenticated, user, isRestoring } = getState().auth;
+
+  // Chờ session restore xong — nếu đang restore thì không làm gì,
+  // auth subscriber trong store.js sẽ gọi lại sau khi loginSuccess
+  if (isRestoring) return;
+
   dispatch(setLoading(true));
 
   if (!isAuthenticated || !user?.user_id || !import.meta.env.VITE_API_URL) {
-    // Fallback localStorage
-    const local = loadLocal();
-    dispatch(setEntries({ items: local, nextCursor: null }));
+    // User chưa đăng nhập và session đã restore xong → không load localStorage
+    // (tránh hiển thị history của session cũ sau khi logout)
+    dispatch(setEntries({ items: [], nextCursor: null }));
     return;
   }
 
@@ -159,7 +176,7 @@ export const loadHistory = () => async (dispatch, getState) => {
     const res = await apiClient.get(`/users/${user.user_id}/play-history?limit=20`, { silent: true });
     dispatch(setEntries({ items: res?.items || [], nextCursor: res?.nextCursor || null }));
   } catch {
-    // Fallback localStorage nếu API lỗi
+    // Fallback localStorage nếu API lỗi (chỉ khi đã authenticated)
     const local = loadLocal();
     dispatch(setEntries({ items: local, nextCursor: null }));
   }
