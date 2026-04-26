@@ -29,12 +29,10 @@ export const getSongsByCategory = async (categoryId) => {
 
 export const getSongsByArtist = async (artistId) => {
   try {
-    const allSongs = await getSongs();
-    // Filter: artist_id matches AND not part of album (albumId is null or undefined)
-    return allSongs.filter((song) =>
-      song.artist_id === artistId &&
-      (!song.albumId || song.albumId === null)
-    );
+    // Dùng /artists/{id}/songs thay vì load all songs rồi filter client-side
+    const data = await api.get(`/artists/${encodeURIComponent(artistId)}/songs`, { silent: true });
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptSong);
   } catch {
     return [];
   }
