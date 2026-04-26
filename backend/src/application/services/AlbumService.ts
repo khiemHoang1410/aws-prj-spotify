@@ -81,7 +81,7 @@ export class AlbumService {
 
         const songs = songResults
             .filter(r => r.success && r.data && !(r.data as any).deletedAt)
-            .map(r => r.data!);
+            .map(r => (r as any).data as Song);
 
         if (songs.length === 0) return { success: true, data: [] };
 
