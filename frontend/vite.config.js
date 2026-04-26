@@ -9,4 +9,9 @@ export default defineConfig({
     fs: { strict: false },
   },
   appType: 'spa', // ensures SPA fallback (index.html) for all routes
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./src/test/setup.js'],
+  },
 })
