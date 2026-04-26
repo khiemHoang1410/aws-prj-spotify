@@ -1,19 +1,24 @@
 import React, { useRef, useEffect } from 'react';
 import { streamSong } from '../../services/UserService';
+import { useDispatch } from 'react-redux';
+import { showToast } from '../../store/uiSlice';
 
 export default function Audio({ currentSong, isPlaying, volume, seekTime, onTimeUpdate, onEnded }) {
   const audioRef = useRef(null);
+  const dispatch = useDispatch();
 
   // 30s active listening tracker
   const listeningTimeRef = useRef(0);
   const lastTimeRef = useRef(null);
   const streamCalledRef = useRef(false);
+  const errorCountRef = useRef(0); // track consecutive errors để tránh spam toast
 
   // Reset tracker khi đổi bài
   useEffect(() => {
     listeningTimeRef.current = 0;
     lastTimeRef.current = null;
     streamCalledRef.current = false;
+    errorCountRef.current = 0;
   }, [currentSong?.song_id]);
 
   useEffect(() => {
@@ -59,12 +64,30 @@ export default function Audio({ currentSong, isPlaying, volume, seekTime, onTime
     onTimeUpdate(currentTime);
   };
 
+  const handleAudioError = (e) => {
+    // Chỉ hiện toast lần đầu tiên để tránh spam
+    if (errorCountRef.current > 0) return;
+    errorCountRef.current += 1;
+
+    const mediaError = e.target?.error;
+    // MEDIA_ERR_SRC_NOT_SUPPORTED (4) hoặc MEDIA_ERR_NETWORK (2) — URL hết hạn hoặc không tải được
+    const isExpired = mediaError?.code === 2 || mediaError?.code === 4;
+
+    dispatch(showToast({
+      message: isExpired
+        ? 'Không thể phát bài hát này. URL có thể đã hết hạn, vui lòng thử lại.'
+        : 'Lỗi phát nhạc. Vui lòng thử bài khác.',
+      type: 'error',
+    }));
+  };
+
   return (
     <audio
       ref={audioRef}
       src={currentSong?.audio_url}
       onTimeUpdate={(e) => handleTimeUpdate(e.target.currentTime)}
       onEnded={onEnded}
+      onError={handleAudioError}
       className="hidden"
     />
   );
