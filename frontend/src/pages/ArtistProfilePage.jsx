@@ -5,8 +5,7 @@ import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
-import { getArtistById, followArtist, getRelatedArtists, getFollowedArtists } from '../services/ArtistService';
-import { getSongs } from '../services/SongService';
+import { getArtistById, followArtist, getRelatedArtists, getFollowedArtists, getArtistTopTracks } from '../services/ArtistService';
 import { getAlbumsByArtist, getAllAlbums } from '../services/AlbumService';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -35,26 +34,29 @@ export default function ArtistProfilePage() {
   const [relatedArtists, setRelatedArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isFollowing, setIsFollowing] = useState(false);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!activeArtistId) return;
     setIsLoading(true);
+    setError(null);
     Promise.all([
       getArtistById(activeArtistId),
-      getSongs(),
+      getArtistTopTracks(activeArtistId),
       isAuthenticated ? getFollowedArtists() : Promise.resolve([]),
-    ]).then(([artistData, allSongs, followedArtists]) => {
+    ]).then(([artistData, topTracks, followedArtists]) => {
+      if (!artistData) { setError('Không tìm thấy nghệ sĩ.'); return; }
       setArtist(artistData);
-      if (artistData) {
-        // followers từ GET /artists/{id} đã là số thực từ DynamoDB
-        setFollowerCount(artistData.followers ?? 0);
-        setArtistSongs(allSongs.filter((s) => s.artist_name === artistData.name));
-        getAllAlbums().then((albums) => {
-          setArtistAlbums(albums.filter((a) => a.artist_id === activeArtistId));
-        });
-        getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
-        setIsFollowing(followedArtists.some((a) => a.id === activeArtistId));
-      }
+      setFollowerCount(artistData.followers ?? 0);
+      setArtistSongs(topTracks);
+      setIsFollowing(followedArtists.some((a) => a.id === activeArtistId));
+      // Load albums và related artists song song sau khi có artistData
+      getAllAlbums().then((albums) => {
+        setArtistAlbums(albums.filter((a) => a.artist_id === activeArtistId));
+      });
+      getRelatedArtists(activeArtistId).then((related) => setRelatedArtists(related));
+    }).catch(() => {
+      setError('Không thể tải thông tin nghệ sĩ. Vui lòng thử lại.');
     }).finally(() => setIsLoading(false));
   }, [activeArtistId, isAuthenticated]);
 
@@ -98,9 +100,11 @@ export default function ArtistProfilePage() {
     );
   }
 
-  if (!artist) {
+  if (error || !artist) {
     return (
-      <div className="mt-10 text-center text-neutral-400">Không tìm thấy nghệ sĩ.</div>
+      <div className="mt-10 text-center text-neutral-400">
+        {error || 'Không tìm thấy nghệ sĩ.'}
+      </div>
     );
   }
 
