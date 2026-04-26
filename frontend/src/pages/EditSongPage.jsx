@@ -3,7 +3,8 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, Music } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { getSongs, updateSong } from '../services/SongService';
+import { getSongById, updateSong } from '../services/SongService';
+import { getLyrics } from '../services/SongService';
 import { getCategories } from '../services/CategoryService';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
@@ -43,30 +44,38 @@ export default function EditSongPage() {
   useEffect(() => {
     if (!activeEditSongId) return;
     setIsFetching(true);
-    getSongs().then((allSongs) => {
-      const song = allSongs.find((s) => s.song_id === activeEditSongId);
+    Promise.all([
+      getSongById(activeEditSongId),
+      getLyrics(activeEditSongId),
+    ]).then(([song, lyricsData]) => {
       if (!song) {
         dispatch(showToast({ message: 'Bài hát không tồn tại', type: 'error' }));
         navigate('/artist-dashboard');
-        setIsFetching(false);
         return;
       }
-      
       // Permission check: Only owner artist can edit
       if (song.artist_id && song.artist_id !== user?.artist_id) {
-        dispatch(showToast({ 
-          message: 'Bạn không có quyền chỉnh sửa bài hát này', 
-          type: 'error' 
+        dispatch(showToast({
+          message: 'Bạn không có quyền chỉnh sửa bài hát này',
+          type: 'error',
         }));
         navigate('/artist-dashboard');
-        setIsFetching(false);
         return;
       }
-      
       setTitle(song.title);
       setSelectedGenres(song.categories || (song.genre ? [song.genre] : []));
-      setLyrics('');
+      // Lyrics từ API: array of { text } hoặc plain string
+      if (Array.isArray(lyricsData) && lyricsData.length > 0) {
+        setLyrics(lyricsData.map((l) => l.text || l).join('\n'));
+      } else if (typeof lyricsData === 'string') {
+        setLyrics(lyricsData);
+      } else {
+        setLyrics('');
+      }
       setDuration(parseDuration(song.duration));
+    }).catch(() => {
+      dispatch(showToast({ message: 'Không thể tải thông tin bài hát', type: 'error' }));
+      navigate('/artist-dashboard');
     }).finally(() => setIsFetching(false));
   }, [activeEditSongId, user, dispatch, navigate]);
 

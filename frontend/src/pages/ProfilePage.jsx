@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector, shallowEqual } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
-import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2, Camera } from 'lucide-react';
+import { User, Edit2, Save, X, Music, BadgeCheck, Clock, Trash2, Camera, UserCheck } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import api from '../services/apiClient';
 import { updateProfile } from '../services/UserService';
-import { getArtistById } from '../services/ArtistService';
+import { getArtistById, getFollowedArtists } from '../services/ArtistService';
 import { uploadCoverImage } from '../services/UploadService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
@@ -13,6 +13,8 @@ import { setCurrentSong } from '../store/playerSlice';
 import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
 import { selectPlaylistIds } from '../store/playlistSlice';
+
+const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -29,6 +31,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const [artistProfile, setArtistProfile] = useState(null);
+  const [followedArtists, setFollowedArtists] = useState([]);
   const avatarInputRef = useRef(null);
 
   const handleAvatarUpload = async (e) => {
@@ -84,7 +87,11 @@ export default function ProfilePage() {
     })();
   }, [dispatch, user?.role, user?.artist_id]);
 
-  const handleSave = async () => {
+  // Fetch followed artists
+  useEffect(() => {
+    if (!user) return;
+    getFollowedArtists().then((artists) => setFollowedArtists(artists)).catch(() => {});
+  }, [user?.user_id]);
     if (!displayName.trim()) return;
     setIsSaving(true);
     try {
@@ -262,8 +269,34 @@ export default function ProfilePage() {
           </div>
         )}
       </div>
-      {/* Lịch sử nghe nhạc */}
-      <div className="mt-8">
+      {/* Nghệ sĩ đang theo dõi */}
+      {followedArtists.length > 0 && (
+        <div className="mt-8">
+          <h2 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+            <UserCheck size={20} /> Đang theo dõi
+          </h2>
+          <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-neutral-700">
+            {followedArtists.map((artist) => (
+              <div
+                key={artist.id}
+                className="flex-shrink-0 w-32 cursor-pointer group text-center"
+                onClick={() => navigate(`/artist/${artist.id}`)}
+              >
+                <img
+                  src={artist.photo_url || artist.image_url || IMG_FALLBACK}
+                  alt={artist.name}
+                  className="w-32 h-32 rounded-full object-cover shadow-lg group-hover:opacity-80 transition mx-auto"
+                  onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = IMG_FALLBACK; }}
+                />
+                <p className="text-sm font-medium text-white mt-2 truncate">{artist.name}</p>
+                <p className="text-xs text-neutral-400">Nghệ sĩ</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Lịch sử nghe nhạc */}      <div className="mt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Clock size={20} /> Lịch sử nghe nhạc
