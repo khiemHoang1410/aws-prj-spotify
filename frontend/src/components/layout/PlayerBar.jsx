@@ -5,7 +5,7 @@ import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextS
 import { toggleLikeSongThunk, openModal } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
-import { getTrendingSongs } from '../../services/RecommendationService';
+import { fetchTrendingSongs } from '../../services/RecommendationService';
 import { toSongUrl } from '../../utils/songUrl';
 import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
@@ -196,12 +196,13 @@ export default function PlayerBar() {
   };
 
   const getTrendingFallbackSong = async () => {
-    const allSongs = await getSongs();
     const historyIds = new Set(historyEntries.map((entry) => entry.songId || entry.song_id));
     if (currentSong?.song_id) historyIds.add(currentSong.song_id);
 
-    const trendingSongs = getTrendingSongs(allSongs);
-    return trendingSongs.find((song) => !historyIds.has(song.song_id)) || null;
+    const trendingSongs = await fetchTrendingSongs(20);
+    // Fallback về getSongs nếu API trending không trả về gì
+    const candidates = trendingSongs.length > 0 ? trendingSongs : await getSongs();
+    return candidates.find((song) => !historyIds.has(song.song_id)) || null;
   };
 
   const handleSongEnded = async () => {

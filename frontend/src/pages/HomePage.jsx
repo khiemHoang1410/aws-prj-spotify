@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getSongs } from '../services/SongService';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getPersonalizedSongs, getTrendingSongs, getNewReleases, getDiscoverMix } from '../services/RecommendationService';
+import { getPersonalizedSongs, getDiscoverMix, fetchTrendingSongs, fetchNewReleases } from '../services/RecommendationService';
 import { getAllAlbums } from '../services/AlbumService';
 import CardSong from '../components/cards/CardSong';
 import Card from '../components/cards/Card';
@@ -29,9 +29,16 @@ export default function HomePage() {
     const fetchMusic = async () => {
       try {
         setLoading(true);
-        const [songsData, albumsData] = await Promise.all([getSongs(), getAllAlbums()]);
+        const [songsData, albumsData, trendingData, newReleasesData] = await Promise.all([
+          getSongs(),
+          getAllAlbums(),
+          fetchTrendingSongs(10),
+          fetchNewReleases(10),
+        ]);
         setSongs(songsData);
         setAlbums(albumsData);
+        setTrendingSongs(trendingData.length > 0 ? trendingData : songsData.slice(0, 10));
+        setNewReleases(newReleasesData.length > 0 ? newReleasesData : songsData.slice(0, 10));
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
       } finally {
@@ -43,8 +50,6 @@ export default function HomePage() {
 
   useEffect(() => {
     if (songs.length === 0) return;
-    setTrendingSongs(getTrendingSongs(songs));
-    setNewReleases(getNewReleases(songs));
     setPersonalizedSongs(getPersonalizedSongs(likedSongs || [], songs));
     setDiscoverSongs(getDiscoverMix(likedSongs || [], songs));
   }, [songs, likedSongs]);
