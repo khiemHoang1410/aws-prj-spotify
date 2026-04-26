@@ -41,7 +41,7 @@ export class SearchService {
             const songs = await this.songRepo.findAll();
             if (!songs.success) return songs;
             result.songs = songs.data
-                .filter(s => matches(s.title, keyword) || matches(s.artistName || "", keyword))
+                .filter(s => matches(s.title, keyword) || matches((s as any).artistName || "", keyword))
                 .slice(0, config.searchMaxResults);
         }
 
@@ -57,7 +57,7 @@ export class SearchService {
             const albums = await this.albumRepo.findAll();
             if (!albums.success) return albums;
             result.albums = albums.data
-                .filter(a => matches(a.title, keyword) || matches(a.artistName || "", keyword))
+                .filter(a => matches(a.title, keyword) || matches((a as any).artistName || "", keyword))
                 .slice(0, config.searchMaxResults);
         }
 

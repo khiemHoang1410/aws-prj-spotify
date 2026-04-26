@@ -65,7 +65,7 @@ export class SongService {
             if (!saveResult.success) return saveResult;
 
             // 6. Increment songCount trên category (best-effort — không block nếu lỗi)
-            await this.categoryRepo.incrementSongCount(genre, 1).catch(() => {
+            await this.categoryRepo.incrementSongCount(rawGenres[0], 1).catch(() => {
                 // Không throw — songCount stale sẽ được fix bởi recalculate script
             });
 
