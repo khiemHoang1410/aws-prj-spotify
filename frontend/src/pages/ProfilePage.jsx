@@ -92,6 +92,8 @@ export default function ProfilePage() {
     if (!user) return;
     getFollowedArtists().then((artists) => setFollowedArtists(artists)).catch(() => {});
   }, [user?.user_id]);
+
+  const handleSave = async () => {
     if (!displayName.trim()) return;
     setIsSaving(true);
     try {
