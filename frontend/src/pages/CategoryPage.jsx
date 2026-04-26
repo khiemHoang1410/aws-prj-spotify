@@ -24,6 +24,7 @@ export default function CategoryPage() {
 
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('popular');
   const [category, setCategory] = useState(null);
 
@@ -32,6 +33,7 @@ export default function CategoryPage() {
 
     const fetchData = async () => {
       setIsLoading(true);
+      setError(null);
       try {
         const [songsResult, categories] = await Promise.all([
           getSongsByCategory(activeCategoryId),
@@ -42,8 +44,8 @@ export default function CategoryPage() {
           ? categories.find((c) => c.id === activeCategoryId)
           : null;
         setCategory(matched || null);
-      } catch (error) {
-        console.error('Failed to fetch category data:', error);
+      } catch {
+        setError('Không thể tải dữ liệu. Vui lòng thử lại.');
         setSongs([]);
         setCategory(null);
       } finally {
@@ -121,6 +123,16 @@ export default function CategoryPage() {
       {isLoading ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
           {[1, 2, 3, 4, 5].map((i) => <SkeletonCard key={i} />)}
+        </div>
+      ) : error ? (
+        <div className="mt-10 text-center">
+          <p className="text-neutral-400 text-sm mb-3">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition"
+          >
+            Thử lại
+          </button>
         </div>
       ) : songs.length === 0 ? (
         <div className="mt-10">

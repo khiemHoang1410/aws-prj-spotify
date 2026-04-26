@@ -13,6 +13,7 @@ export default function SearchResults({ query, onPlaySong }) {
   const navigate = useNavigate();
   const [results, setResults] = useState({ songs: [], artists: [], topResult: null });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [activeCategory, setActiveCategory] = useState(null);
   const [matchedCategories, setMatchedCategories] = useState([]);
 
@@ -20,11 +21,13 @@ export default function SearchResults({ query, onPlaySong }) {
     if (!query || query.trim().length < 1) {
       setResults({ songs: [], artists: [], topResult: null });
       setMatchedCategories([]);
+      setError(null);
       return;
     }
 
     setIsLoading(true);
     setActiveCategory(null);
+    setError(null);
 
     Promise.all([
       searchSongs(query.trim()),
@@ -37,6 +40,9 @@ export default function SearchResults({ query, onPlaySong }) {
         ? { ...songs[0], resultType: 'song' }
         : null;
       setResults({ songs: songs.slice(0, 4), artists: artists.slice(0, 6), topResult });
+    }).catch(() => {
+      setError('Không thể tìm kiếm. Vui lòng thử lại.');
+    }).finally(() => {
       setIsLoading(false);
     });
   }, [query]);
@@ -50,6 +56,20 @@ export default function SearchResults({ query, onPlaySong }) {
             {[1, 2, 3, 4].map((i) => <SkeletonCard key={i} variant="row" />)}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center mt-16 text-center">
+        <p className="text-neutral-400 text-lg mb-3">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-4 py-2 text-sm bg-neutral-800 hover:bg-neutral-700 text-white rounded-full transition"
+        >
+          Thử lại
+        </button>
       </div>
     );
   }
