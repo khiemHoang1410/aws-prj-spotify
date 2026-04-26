@@ -27,6 +27,7 @@ export default function AlbumDetailPage() {
   const [album, setAlbum] = useState(null);
   const [songs, setSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [showSongPicker, setShowSongPicker] = useState(false);
   const [availableSongs, setAvailableSongs] = useState([]);
 
@@ -41,11 +42,14 @@ export default function AlbumDetailPage() {
   useEffect(() => {
     if (!activeAlbumId) return;
     setIsLoading(true);
+    setError(null);
     Promise.all([getAlbumById(activeAlbumId), getAlbumSongs(activeAlbumId)])
       .then(([albumData, songData]) => {
+        if (!albumData) { setError('Không tìm thấy album.'); return; }
         setAlbum(albumData);
         setSongs(songData);
       })
+      .catch(() => setError('Không thể tải album. Vui lòng thử lại.'))
       .finally(() => setIsLoading(false));
   }, [activeAlbumId]);
 
@@ -118,13 +122,13 @@ export default function AlbumDetailPage() {
     );
   }
 
-  if (!album) {
+  if (error || !album) {
     return (
-      <div className="mt-10 text-center text-neutral-400">Không tìm thấy album.</div>
+      <div className="mt-10 text-center text-neutral-400">
+        {error || 'Không tìm thấy album.'}
+      </div>
     );
   }
-
-  // songs state đã được load riêng từ /albums/{id}/songs
 
   return (
     <div>

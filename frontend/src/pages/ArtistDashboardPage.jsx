@@ -10,9 +10,9 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistById, getArtistByUserId } from '../services/ArtistService';
+import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs } from '../services/ArtistService';
 import { getArtistProfileFromStorage } from '../services/AuthService';
-import { getSongs, deleteSong } from '../services/SongService';
+import { getSongs as _getSongs, deleteSong } from '../services/SongService';
 import {
   getAllAlbums,
   createAlbum,
@@ -364,22 +364,21 @@ export default function ArtistDashboardPage() {
       }
       Promise.all([
         Promise.resolve(artistProfile),
-        getSongs(),
+        getArtistSongs(artistId),
         getAllAlbums(),
-      ]).then(([profile, allSongs, rawAlbums]) => {
+        getArtistStats(artistId),
+      ]).then(([profile, songsByArtist, rawAlbums, apiStats]) => {
         const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
-        const songsByArtist = (Array.isArray(allSongs) ? allSongs : []).filter((s) => s.artist_id === artistId);
-        const totalPlays = songsByArtist.reduce((sum, s) => sum + (s.play_count || 0), 0);
         const albumsWithCount = albums.map((a) => ({
           ...a,
           songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
         }));
         setStats({
-          totalSongs: songsByArtist.length,
+          totalSongs: apiStats.totalSongs || songsByArtist.length,
           totalAlbums: albumsWithCount.length,
-          totalPlays,
-          followers: profile?.followers || 0,
-          monthlyListeners: Number(profile?.monthly_listeners) || 0,
+          totalPlays: apiStats.totalPlays,
+          followers: apiStats.followers || profile?.followers || 0,
+          monthlyListeners: apiStats.monthlyListeners || Number(profile?.monthly_listeners) || 0,
         });
         setMySongs(songsByArtist);
         setMyAlbums(albumsWithCount);

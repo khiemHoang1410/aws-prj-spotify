@@ -1,5 +1,5 @@
 import api from './apiClient';
-import { adaptArtist, adaptPaginatedResponse } from './adapters';
+import { adaptArtist, adaptSong, adaptPaginatedResponse } from './adapters';
 
 export const getArtists = async () => {
   try {
@@ -50,16 +50,35 @@ export const getArtistByUserId = async (userId) => {
 
 export const getArtistStats = async (artistId) => {
   try {
-    const data = await getArtistById(artistId);
+    const data = await api.get(`/artists/${artistId}/stats`, { silent: true });
     return {
-      totalSongs: 0,
-      totalAlbums: 0,
-      totalPlays: 0,
-      followers: data?.followers || 0,
-      monthlyListeners: Number(data?.monthly_listeners) || 0,
+      totalSongs: data?.totalSongs ?? 0,
+      totalPlays: data?.totalPlays ?? 0,
+      followers: data?.followers ?? 0,
+      monthlyListeners: data?.monthlyListeners ?? 0,
     };
   } catch {
-    return { totalSongs: 0, totalAlbums: 0, totalPlays: 0, followers: 0, monthlyListeners: 0 };
+    return { totalSongs: 0, totalPlays: 0, followers: 0, monthlyListeners: 0 };
+  }
+};
+
+export const getArtistSongs = async (artistId) => {
+  try {
+    const data = await api.get(`/artists/${artistId}/songs`, { silent: true });
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptSong);
+  } catch {
+    return [];
+  }
+};
+
+export const getArtistTopTracks = async (artistId) => {
+  try {
+    const data = await api.get(`/artists/${artistId}/top-tracks`, { silent: true });
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptSong);
+  } catch {
+    return [];
   }
 };
 
