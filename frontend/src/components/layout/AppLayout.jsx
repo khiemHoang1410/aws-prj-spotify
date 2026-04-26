@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { getCurrentUser, checkAndSaveArtistProfile, updateSessionUser } from '../../services/AuthService';
-import { loginSuccess, setLikedSongs, setRestoring } from '../../store/authSlice';
+import { loginSuccess, setLikedSongs, setRestoring, openModal } from '../../store/authSlice';
 import { getProfile } from '../../services/UserService';
 import { getLikedSongs } from '../../services/SongService';
 import api from '../../services/apiClient';
@@ -145,6 +145,15 @@ export default function AppLayout() {
 
     navigate(`/song/${songId}`, { replace: true });
   }, [location.search, navigate]);
+
+  // Mở login modal khi ProtectedRoute redirect về "/" với state openLogin: true
+  useEffect(() => {
+    if (location.state?.openLogin) {
+      dispatch(openModal('login'));
+      // Xóa state để không trigger lại khi navigate
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state?.openLogin]);
 
   return (
     <div className="h-[100dvh] w-full flex flex-col bg-black text-white overflow-hidden font-sans">
