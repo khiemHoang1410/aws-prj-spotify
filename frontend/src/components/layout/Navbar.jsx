@@ -93,7 +93,7 @@ export default function Navbar() {
   }, [isUserMenuOpen]);
 
   return (
-    <div className="flex items-center justify-between sticky top-[-6] bg-black backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md gap-1 sm:h-auto h-[60px]">
+    <div className="flex items-center justify-between sticky top-0 bg-[#121212]/95 backdrop-blur-sm z-20 px-6 py-3 shadow-md gap-1 sm:h-auto h-[60px]">
 
       {/* Back / Forward */}
       <div className="sm:flex hidden items-center gap-2 w-auto min-w-0 gap-2 shrink-1 md:flex-1 ">
