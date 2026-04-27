@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice';
-import { getCategories } from '../../services/CategoryService';
+import { getGenres } from '../../services/GenreService';
 import {
-  createCategory,
-  updateCategory,
-  deleteCategory,
-} from '../../services/CategoryAdminService';
+  createGenres,
+  updateGenres,
+  deleteGenres,
+} from '../../services/GenreAdminService';
 
 const EMPTY_FORM = { id: '', name: '', color: '', imageUrl: '' };
 
-export default function AdminCategories() {
+export default function AdminGenres() {
   const dispatch = useDispatch();
 
   const [categories, setCategories] = useState([]);
@@ -23,11 +23,11 @@ export default function AdminCategories() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [submitting, setSubmitting] = useState(false);
 
-  const fetchCategories = async () => {
+  const fetchGenres = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await getCategories();
+      const data = await getGenres();
       setCategories(data);
     } catch (err) {
       setError(err?.message || 'Không thể tải danh sách thể loại');
@@ -37,7 +37,7 @@ export default function AdminCategories() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchGenres();
   }, []);
 
   const openCreate = () => {
@@ -72,14 +72,14 @@ export default function AdminCategories() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await createCategory({
+      await createGenres({
         id: form.id.trim(),
         name: form.name.trim(),
         color: form.color.trim(),
         imageUrl: form.imageUrl.trim() || undefined,
       });
       closeModal();
-      await fetchCategories();
+      await fetchGenres();
       dispatch(showToast({ message: 'Đã tạo thể loại', type: 'success' }));
     } catch (err) {
       dispatch(showToast({ message: err?.message || 'Lỗi khi tạo thể loại', type: 'error' }));
@@ -92,13 +92,13 @@ export default function AdminCategories() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      await updateCategory(selectedRow.id, {
+      await updateGenres(selectedRow.id, {
         name: form.name.trim(),
         color: form.color.trim(),
         imageUrl: form.imageUrl.trim() || undefined,
       });
       closeModal();
-      await fetchCategories();
+      await fetchGenres();
       dispatch(showToast({ message: 'Đã cập nhật thể loại', type: 'success' }));
     } catch (err) {
       dispatch(showToast({ message: err?.message || 'Lỗi khi cập nhật thể loại', type: 'error' }));
@@ -110,7 +110,7 @@ export default function AdminCategories() {
   const handleDelete = async (row) => {
     if (!window.confirm(`Xóa thể loại "${row.name}"?`)) return;
     try {
-      await deleteCategory(row.id);
+      await deleteGenres(row.id);
       setCategories((prev) => prev.filter((c) => c.id !== row.id));
       dispatch(showToast({ message: `Đã xóa "${row.name}"`, type: 'warning' }));
     } catch (err) {
@@ -141,7 +141,7 @@ export default function AdminCategories() {
       {error && !loading && (
         <div className="text-red-400 text-sm mb-4">
           {error}{' '}
-          <button onClick={fetchCategories} className="underline hover:text-red-300">
+          <button onClick={fetchGenres} className="underline hover:text-red-300">
             Thử lại
           </button>
         </div>

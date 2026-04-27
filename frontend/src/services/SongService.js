@@ -18,9 +18,9 @@ export const getSongById = async (songId) => {
 
 export const getTopSongs = () => getSongs();
 
-export const getSongsByCategory = async (categoryId) => {
+export const getSongsByGenre = async (genreId) => {
   try {
-    const data = await api.get(`/songs?genre=${encodeURIComponent(categoryId)}`);
+    const data = await api.get(`/songs?genre=${encodeURIComponent(genreId)}`);
     return adaptPaginatedResponse(data, adaptSong);
   } catch {
     return [];

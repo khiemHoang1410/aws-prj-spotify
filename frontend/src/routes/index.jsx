@@ -10,7 +10,7 @@ import LyricsPage from '../pages/LyricsPage';
 import PlaylistDetailPage from '../pages/PlaylistDetailPage';
 import ArtistProfilePage from '../pages/ArtistProfilePage';
 import AlbumDetailPage from '../pages/AlbumDetailPage';
-import CategoryPage from '../pages/CategoryPage';
+import GenrePage from '../pages/GenrePage';
 import LikedSongsPage from '../pages/LikedSongsPage';
 import ProfilePage from '../pages/ProfilePage';
 import SettingsPage from '../pages/SettingsPage';
@@ -42,7 +42,7 @@ export const router = createBrowserRouter([
       { path: '/playlist/:id', element: <PlaylistDetailPage /> },
       { path: '/song/:songSlug', element: <SongDetailPage /> },
       { path: '/artist/:id', element: <ArtistProfilePage /> },      { path: '/album/:id', element: <AlbumDetailPage /> },
-      { path: '/category/:id', element: <CategoryPage /> },
+      { path: '/genre/:id', element: <GenrePage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
       { path: '/jokes', element: <JokeGeneratorPage /> },
       { path: '/todos', element: <TodoListPage /> },

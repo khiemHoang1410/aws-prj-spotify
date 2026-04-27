@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
-import CardCategory from '../cards/CardCategory';
-import { getCategories } from '../../services/CategoryService';
+import CardGenre from '../cards/CardGenre';
+import { getGenres } from '../../services/GenreService';
 import SearchBar from '../search/SearchBar';
 
 export default function SearchContent() {
-  const [categories, setCategories] = useState([]);
+  const [genres, setGenres] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      const data = await getCategories();
-      setCategories(data);
+    const fetchGenres = async () => {
+      const data = await getGenres();
+      setGenres(data);
       setLoading(false);
     };
-    fetchCategories();
+    fetchGenres();
   }, []);
 
   return (
@@ -29,8 +29,8 @@ export default function SearchContent() {
       ) : (
         // Grid thay đổi số cột tùy theo kích thước màn hình
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-          {categories.map(cat => (
-            <CardCategory key={cat.id} category={cat} />
+          {genres.map(genre => (
+            <CardGenre key={genre.id} category={genre} />
           ))}
         </div>
       )}
