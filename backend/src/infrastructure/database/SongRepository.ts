@@ -25,7 +25,6 @@ export class SongRepository extends BaseRepository<Song> {
 
     /**
      * Query songs by genre using the GenreIndex GSI.
-     * Replaces the old full-table scan findByCategory.
      * Supports cursor-based pagination; max 50 items per page.
      */
     async findByGenre(
@@ -61,7 +60,6 @@ export class SongRepository extends BaseRepository<Song> {
 
     /**
      * Count non-deleted songs for a given genre using GenreIndex GSI with Select: COUNT.
-     * Used by CategoryService to compute songCount without fetching full records.
      */
     async countByGenre(genre: string): Promise<Result<number>> {
         try {
@@ -82,10 +80,6 @@ export class SongRepository extends BaseRepository<Song> {
         }
     }
 
-    /**
-     * Atomic increment playCount by 1.
-     * Dùng ADD expression để tránh race condition khi nhiều user nghe cùng lúc.
-     */
     async incrementPlayCount(songId: string): Promise<Result<void>> {
         try {
             await docClient.send(new UpdateCommand({

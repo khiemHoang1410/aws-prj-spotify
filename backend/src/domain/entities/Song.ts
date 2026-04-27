@@ -1,5 +1,3 @@
-// backend\src\domain\entities\Song.ts
-
 import { z } from "zod";
 
 export const SongSchema = z.object({
@@ -12,14 +10,15 @@ export const SongSchema = z.object({
     coverUrl: z.url().optional().nullable(),
     mvUrl: z.url().optional().nullable(),
     lyrics: z.string().optional().nullable(),
+    // genre: primary genre slug — GSI key (GenreIndex), luôn = genres[0]
     genre: z.string().min(1).max(50).optional().nullable(),
-    genres: z.array(z.string().min(1).max(50)).optional().nullable(),
+    // genres: tất cả genre slugs do artist chọn khi upload (e.g. ["vpop", "ballad"])
+    genres: z.array(z.string().min(1).max(50)).min(1, "Cần ít nhất một thể loại").optional(),
+    // moods: tâm trạng/cảm xúc — admin gán sau (Phase 2)
+    moods: z.array(z.string().min(1).max(50)).optional().nullable(),
     createdAt: z.iso.datetime().optional(),
     updatedAt: z.iso.datetime().optional(),
 });
 
-// Type dùng khi validate input từ client (id chưa có)
 export type SongInput = z.infer<typeof SongSchema>;
-
-// Type dùng sau khi service đã gán id (id bắt buộc)
 export type Song = SongInput & { id: string };

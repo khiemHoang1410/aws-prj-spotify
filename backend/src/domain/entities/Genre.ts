@@ -1,8 +1,6 @@
-// backend/src/domain/entities/Category.ts
-
 import { z } from "zod";
 
-export const CategorySchema = z.object({
+export const GenreSchema = z.object({
     id: z.string().min(1).max(50),          // slug, e.g. "vpop"
     name: z.string().min(1).max(100),
     color: z.string().min(1),               // Tailwind class, e.g. "bg-red-500"
@@ -12,4 +10,4 @@ export const CategorySchema = z.object({
     updatedAt: z.iso.datetime().optional(),
 });
 
-export type Category = z.infer<typeof CategorySchema>;
+export type Genre = z.infer<typeof GenreSchema>;

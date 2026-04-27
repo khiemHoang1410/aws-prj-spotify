@@ -14,7 +14,7 @@ export const handler = makeHandler(async (_body, params) => {
     const songResult = await songRepo.findById(idResult.data);
     if (!songResult.success || !songResult.data) return Failure("Bài hát không tồn tại", 404);
 
-    const genre: string | null = (songResult.data as any).genre ?? null;
+    const genre: string | null = songResult.data.genre ?? null;
     if (!genre) {
         // Fallback: same artist
         const artistSongs = await songRepo.findByArtistId(songResult.data.artistId);

@@ -1,9 +1,9 @@
 import { makeHandler } from "../../middlewares/makeHandler";
 import { Success } from "../../../../shared/utils/Result";
-import { CategoryService } from "../../../../application/services/CategoryService";
-import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
+import { GenreService } from "../../../../application/services/GenreService";
+import { GenreRepository } from "../../../../infrastructure/database/GenreRepository";
 
-const DEFAULT_CATEGORIES = [
+const DEFAULT_GENRES = [
     { id: "vpop",   name: "V-Pop",       color: "bg-red-500" },
     { id: "pop",    name: "Pop",          color: "bg-blue-600" },
     { id: "kpop",   name: "K-Pop",        color: "bg-pink-500" },
@@ -14,18 +14,11 @@ const DEFAULT_CATEGORIES = [
     { id: "edm",    name: "EDM",          color: "bg-teal-500" },
 ];
 
-const service = new CategoryService(new CategoryRepository());
+const service = new GenreService(new GenreRepository());
 
 export const handler = makeHandler(async () => {
-    // Seed defaults on first deploy (idempotent — no-op if already seeded)
     await service.seed();
-
     const result = await service.list();
-
-    // Fall back to hardcoded defaults if DB returns empty or errors
-    if (!result.success || result.data.length === 0) {
-        return Success(DEFAULT_CATEGORIES);
-    }
-
+    if (!result.success || result.data.length === 0) return Success(DEFAULT_GENRES);
     return Success(result.data);
 });
