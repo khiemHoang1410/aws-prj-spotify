@@ -4,8 +4,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Music, Play } from 'lucide-react';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
-import { getSongsByCategory } from '../services/SongService';
-import { getCategories } from '../services/CategoryService';
+import { getSongsByGenre } from '../services/SongService';
+import { getGenres } from '../services/GenreService';
 import CardSong from '../components/cards/CardSong';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -16,7 +16,7 @@ const SORT_OPTIONS = [
   { id: 'name', label: 'Tên A-Z' },
 ];
 
-export default function CategoryPage() {
+export default function GenrePage() {
   const dispatch = useDispatch();
   const { id: activeCategoryId } = useParams();
   const navigate = useNavigate();
@@ -35,13 +35,13 @@ export default function CategoryPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const [songsResult, categories] = await Promise.all([
-          getSongsByCategory(activeCategoryId),
-          getCategories(),
+        const [songsResult, genres] = await Promise.all([
+          getSongsByGenre(activeCategoryId),
+          getGenres(),
         ]);
         setSongs(Array.isArray(songsResult) ? songsResult : []);
-        const matched = Array.isArray(categories)
-          ? categories.find((c) => c.id === activeCategoryId)
+        const matched = Array.isArray(genres)
+          ? genres.find((c) => c.id === activeCategoryId)
           : null;
         setCategory(matched || null);
       } catch {

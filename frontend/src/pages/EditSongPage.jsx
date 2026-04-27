@@ -5,7 +5,7 @@ import { ArrowLeft, Save, Music } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { getSongById, updateSong } from '../services/SongService';
 import { getLyrics } from '../services/SongService';
-import { getCategories } from '../services/CategoryService';
+import { getGenres } from '../services/GenreService';
 import { ROLES, CATEGORIES } from '../constants/enums';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -36,7 +36,7 @@ export default function EditSongPage() {
   const [isFetching, setIsFetching] = useState(true);
 
   useEffect(() => {
-    getCategories()
+    getGenres()
       .then((cats) => setGenreOptions(cats))
       .catch(() => setGenreOptions(CATEGORIES.map((c) => ({ id: c.id, name: c.name }))));
   }, []);

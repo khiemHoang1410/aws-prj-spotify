@@ -11,7 +11,7 @@ import AdminSongs from './AdminSongs';
 import AdminAlbums from './AdminAlbums';
 import AdminArtists from './AdminArtists';
 import AdminEditorialPlaylists from './AdminEditorialPlaylists';
-import AdminCategories from './AdminCategories';
+import AdminGenres from './AdminGenres';
 
 const NAV_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
   { key: 'albums', label: 'Albums', icon: Disc3 },
   { key: 'artists', label: 'Nghệ sĩ', icon: Mic2 },
   { key: 'editorial-playlists', label: 'Editorial Playlists', icon: ListMusic },
-  { key: 'categories', label: 'Thể loại', icon: Tag },
+  { key: 'genres', label: 'Thể loại', icon: Tag },
 ];
 
 export default function AdminLayout() {
@@ -71,7 +71,7 @@ export default function AdminLayout() {
         {activeTab === 'albums' && <AdminAlbums />}
         {activeTab === 'artists' && <AdminArtists />}
         {activeTab === 'editorial-playlists' && <AdminEditorialPlaylists />}
-        {activeTab === 'categories' && <AdminCategories />}
+        {activeTab === 'genres' && <AdminGenres />}
       </div>
     </div>
   );
