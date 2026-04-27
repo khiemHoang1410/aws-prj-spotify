@@ -10,6 +10,7 @@ import CardSong from '../components/cards/CardSong';
 import Card from '../components/cards/Card';
 import SkeletonCard from '../components/ui/SkeletonCard';
 import FeaturedPlaylists from '../components/editorial/FeaturedPlaylists';
+import PageFooter from '../components/layout/PageFooter';
 
 export default function HomePage() {
   const dispatch = useDispatch();
@@ -81,7 +82,7 @@ export default function HomePage() {
           ))}
         </div>
         {/* Desktop: responsive grid */}
-        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
           {items.slice(0, 10).map((album) => (
             <Card
               key={album.id}
@@ -116,7 +117,7 @@ export default function HomePage() {
             </div>
           ))}
         </div>
-        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
           {(expanded ? items : items.slice(0, 5)).map((song) => (
             <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
           ))}
@@ -132,7 +133,7 @@ export default function HomePage() {
         {[1, 2].map((s) => (
           <div key={s}>
             <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
-            <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+            <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
               {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
             </div>
             <div className="sm:hidden flex gap-4 overflow-x-auto pb-2">
@@ -157,6 +158,7 @@ export default function HomePage() {
         {isAuthenticated && <Section title="Khám phá" sectionKey="discover" items={discoverSongs} />}
         {songs.length === 0 && <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>}
       </div>
+      <PageFooter />
     </>
   );
 }

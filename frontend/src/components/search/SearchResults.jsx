@@ -197,7 +197,7 @@ export default function SearchResults({ query, onPlaySong }) {
       {artists.length > 0 && (
         <div>
           <h2 className="text-2xl font-bold text-white mb-4">Nghệ sĩ</h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2">
             {artists.map((artist) => (
               <CardArtist key={artist.id} artist={artist} />
             ))}
