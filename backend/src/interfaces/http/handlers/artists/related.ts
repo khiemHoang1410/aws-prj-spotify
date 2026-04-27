@@ -22,7 +22,7 @@ export const handler = makeHandler(async (_body, params) => {
 
     const genres: string[] = [];
     for (const song of songsResult.data) {
-        const g = (song as any).genre;
+        const g = song.genre;
         if (g && !genres.includes(g)) genres.push(g);
     }
 

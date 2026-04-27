@@ -4,12 +4,12 @@ import { makeAuthHandler } from "../../middlewares/withAuth";
 import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
+import { GenreRepository } from "../../../../infrastructure/database/GenreRepository";
 import { NotificationRepository } from "../../../../infrastructure/database/NotificationRepository";
 import { FollowRepository } from "../../../../infrastructure/database/FollowRepository";
 import { validate } from "../../../../shared/utils/validate";
 
-const songService = new SongService(new SongRepository(), new ArtistRepository(), new CategoryRepository());
+const songService = new SongService(new SongRepository(), new ArtistRepository(), new GenreRepository());
 const artistRepo = new ArtistRepository();
 const followRepo = new FollowRepository();
 const notificationRepo = new NotificationRepository();

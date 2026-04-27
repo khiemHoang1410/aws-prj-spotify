@@ -2,13 +2,13 @@ import { makeAuthHandler } from "../../middlewares/withAuth";
 import { SongService } from "../../../../application/services/SongService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { CategoryRepository } from "../../../../infrastructure/database/CategoryRepository";
+import { GenreRepository } from "../../../../infrastructure/database/GenreRepository";
 import { validateUUID } from "../../../../shared/utils/validate";
 
 const service = new SongService(
     new SongRepository(),
     new ArtistRepository(),
-    new CategoryRepository(),
+    new GenreRepository(),
 );
 
 export const handler = makeAuthHandler(async (_body, params) => {

@@ -6,19 +6,15 @@ import {
     UpdateCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./BaseRepository";
-import { Category } from "../../domain/entities/Category";
+import { Genre } from "../../domain/entities/Genre";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
-export class CategoryRepository extends BaseRepository<Category> {
-    protected readonly entityPrefix = "CATEGORY";
+export class GenreRepository extends BaseRepository<Genre> {
+    protected readonly entityPrefix = "GENRE";
 
-    /**
-     * Query EntityTypeIndex for all non-deleted CATEGORY records,
-     * then sort by name ascending client-side.
-     */
-    async findAllSorted(): Promise<Result<Category[]>> {
+    async findAllSorted(): Promise<Result<Genre[]>> {
         try {
             const params: any = {
                 TableName: this.tableName,
@@ -31,14 +27,13 @@ export class CategoryRepository extends BaseRepository<Category> {
                 },
             };
 
-            // Paginate through all results (no Limit — we need all to sort)
-            const items: Category[] = [];
+            const items: Genre[] = [];
             let lastKey: Record<string, any> | undefined;
 
             do {
                 if (lastKey) params.ExclusiveStartKey = lastKey;
                 const response = await docClient.send(new QueryCommand(params));
-                items.push(...((response.Items as Category[]) || []));
+                items.push(...((response.Items as Genre[]) || []));
                 lastKey = response.LastEvaluatedKey;
             } while (lastKey);
 
@@ -46,15 +41,11 @@ export class CategoryRepository extends BaseRepository<Category> {
 
             return Success(items);
         } catch (error: any) {
-            return Failure(`Lỗi lấy danh sách categories: ${error.message}`, 500);
+            return Failure(`Lỗi lấy danh sách genres: ${error.message}`, 500);
         }
     }
 
-    /**
-     * GetItem on pk = CATEGORY#<slug>, sk = METADATA.
-     * Returns null if not found or soft-deleted.
-     */
-    async findBySlug(slug: string): Promise<Result<Category | null>> {
+    async findBySlug(slug: string): Promise<Result<Genre | null>> {
         try {
             const response = await docClient.send(new GetCommand({
                 TableName: this.tableName,
@@ -69,16 +60,12 @@ export class CategoryRepository extends BaseRepository<Category> {
             if (item.deletedAt) return Success(null);
 
             const { pk, sk, entityType, ...clean } = item;
-            return Success(clean as Category);
+            return Success(clean as Genre);
         } catch (error: any) {
-            return Failure(`Lỗi tìm category: ${error.message}`, 500);
+            return Failure(`Lỗi tìm genre: ${error.message}`, 500);
         }
     }
 
-    /**
-     * Atomically increment (or decrement) songCount by delta using ADD expression.
-     * id is the category slug.
-     */
     async incrementSongCount(id: string, delta: number): Promise<Result<void>> {
         try {
             await docClient.send(new UpdateCommand({
@@ -94,7 +81,7 @@ export class CategoryRepository extends BaseRepository<Category> {
             return Success(undefined);
         } catch (error: any) {
             if (error.name === "ConditionalCheckFailedException") {
-                return Failure("Category không tồn tại", 404);
+                return Failure("Genre không tồn tại", 404);
             }
             return Failure(`Lỗi cập nhật songCount: ${error.message}`, 500);
         }

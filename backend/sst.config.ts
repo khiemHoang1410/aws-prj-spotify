@@ -27,7 +27,7 @@ export default $config({
     const { adminRoutes } = await import("./src/infrastructure/routes/admin.routes.js");
     const { playlistProtectedRoutes, playlistPublicRoutes } = await import("./src/infrastructure/routes/playlist.routes.js");
     const { userPublicRoutes, userProtectedRoutes } = await import("./src/infrastructure/routes/user.routes.js");
-    const { categoryPublicRoutes, categoryAdminRoutes } = await import("./src/infrastructure/routes/category.routes.js");
+    const { genrePublicRoutes, genreAdminRoutes } = await import("./src/infrastructure/routes/genre.routes.js");
     const { mediaProtectedRoutes } = await import("./src/infrastructure/routes/media.routes.js");
     const { searchPublicRoutes } = await import("./src/infrastructure/routes/search.routes.js");
     const { systemPublicRoutes } = await import("./src/infrastructure/routes/system.routes.js");
@@ -75,7 +75,7 @@ export default $config({
         artistId: "string",
         entityType: "string",
         userId: "string",
-        genre: "string",
+        genre: "string",   // primary genre slug — GSI key cho GenreIndex
       },
       primaryIndex: { hashKey: "pk", rangeKey: "sk" },
       globalIndexes: {
@@ -151,7 +151,7 @@ export default $config({
     Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
-    Object.entries(categoryPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    Object.entries(genrePublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(editorialPlaylistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
 
     // Protected routes
@@ -164,7 +164,7 @@ export default $config({
     Object.entries(notificationRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(mediaProtectedRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(editorialPlaylistAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
-    Object.entries(categoryAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
+    Object.entries(genreAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
     return {
       api: api.url,
