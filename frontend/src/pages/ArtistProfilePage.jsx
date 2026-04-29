@@ -13,8 +13,10 @@ import SkeletonCard from '../components/ui/SkeletonCard';
 const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
 
 function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const total = Number(seconds);
+  if (!total || isNaN(total)) return '0:00';
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
@@ -136,7 +138,7 @@ export default function ArtistProfilePage() {
             )}
             <h1 className="text-5xl font-extrabold text-white mb-2">{artist.name}</h1>
             <p className="text-sm text-neutral-300">
-              {artist.monthly_listeners} người nghe hàng tháng • {followerCount.toLocaleString()} người theo dõi
+              {Number(artist.monthly_listeners) > 0 && `${Number(artist.monthly_listeners).toLocaleString()} người nghe hàng tháng • `}{followerCount.toLocaleString()} người theo dõi
             </p>
           </div>
         </div>
@@ -194,10 +196,9 @@ export default function ArtistProfilePage() {
                   onClick={() => handlePlaySong(song)}
                 >
                   <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-                  <Play
-                    size={16}
-                    className="text-white hidden group-hover:flex items-center fill-white cursor-pointer"
-                  />
+                  <span className="hidden group-hover:flex items-center justify-center">
+                    <Play size={16} className="text-white fill-white cursor-pointer" />
+                  </span>
                   <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={song.image_url}

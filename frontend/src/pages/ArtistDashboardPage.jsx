@@ -10,7 +10,7 @@ import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs } from '../services/ArtistService';
+import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs, getMyArtistProfile } from '../services/ArtistService';
 import { getArtistProfileFromStorage } from '../services/AuthService';
 import { getSongs as _getSongs, deleteSong } from '../services/SongService';
 import {
@@ -33,8 +33,10 @@ const STAT_CARDS = [
 ];
 
 function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const total = Number(seconds);
+  if (!total || isNaN(total)) return '0:00';
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
@@ -340,17 +342,21 @@ export default function ArtistDashboardPage() {
     const resolveArtistProfile = async () => {
       const userId = user.user_id || user.id;
 
-      // 1. Thß╗¡ gß╗ìi API trß╗▒c tiß║┐p bß║▒ng artist_id (fast path)
+      // 1. Fast path: dùng artist_id đã có trong Redux
       if (user.artist_id) {
         const p = await getArtistById(user.artist_id);
         if (p) return p;
       }
 
-      // 2. API 503/lß╗ùi ΓÇö d├╣ng localStorage cache (l╞░u khi login th├ánh c├┤ng tr╞░ß╗¢c ─æ├│)
+      // 2. Gọi /me/artist-profile — backend tự resolve theo userId (chuẩn nhất)
+      const myProfile = await getMyArtistProfile();
+      if (myProfile?.id) return myProfile;
+
+      // 3. Fallback: localStorage cache (khi API lỗi tạm thời)
       const cached = getArtistProfileFromStorage(userId);
       if (cached?.id) return cached;
 
-      // 3. Thß╗¡ query theo userId (tr╞░ß╗¥ng hß╗úp artist_id ch╞░a c├│ trong Redux)
+      // 4. Last resort: query theo userId
       return getArtistByUserId(userId);
     };
 
@@ -380,7 +386,7 @@ export default function ArtistDashboardPage() {
           followers: apiStats.followers || profile?.followers || 0,
           monthlyListeners: apiStats.monthlyListeners || Number(profile?.monthly_listeners) || 0,
         });
-        setMySongs(songsByArtist);
+        setMySongs(songsByArtist.filter((s) => s && s.song_id && s.audio_url));
         setMyAlbums(albumsWithCount);
       }).finally(() => setIsLoading(false));
     });
