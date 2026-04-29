@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { ChevronLeft, ChevronRight, Home, Bell, Users, BadgeCheck, Upload, ShieldCheck, BarChart3, User,LogIn,UserRoundPlus,TextAlignJustify } from 'lucide-react';
@@ -26,10 +26,14 @@ export default function Navbar() {
   const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
   const isHome = location.pathname === '/';
 
-  const refreshNotifications = async () => {
+  const refreshNotifications = useCallback(async () => {
     const data = await getNotifications();
     dispatch(setNotifications(data));
-  };
+  }, [dispatch]);
+
+  // Ref để poll callback đọc được giá trị dropdown hiện tại mà không restart interval
+  const isDropdownOpenRef = useRef(isDropdownOpen);
+  useEffect(() => { isDropdownOpenRef.current = isDropdownOpen; }, [isDropdownOpen]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -38,6 +42,34 @@ export default function Navbar() {
       dispatch(setFollowedArtists(artists.map((a) => a.name)));
     });
   }, [isAuthenticated, dispatch]);
+
+  // Real-time polling: 30s khi tab visible, dừng khi ẩn tab
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const POLL_MS = 30_000;
+    let timerId;
+
+    const poll = () => {
+      // Bỏ qua khi dropdown đang mở tránh race với optimistic mark-as-read
+      if (!isDropdownOpenRef.current) refreshNotifications();
+    };
+
+    const start = () => { timerId = setInterval(poll, POLL_MS); };
+    const stop = () => { clearInterval(timerId); timerId = undefined; };
+
+    const handleVisibility = () => {
+      if (document.hidden) stop();
+      else { poll(); start(); }
+    };
+
+    start();
+    document.addEventListener('visibilitychange', handleVisibility);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [isAuthenticated, refreshNotifications]);
 
   // Fetch profile từ /me + kiểm tra artist-request để cập nhật role mới nhất
   useEffect(() => {
