@@ -9,10 +9,29 @@ import {
     CreateGroupCommand,
     AdminAddUserToGroupCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+// Đọc .env file thủ công (tsx không tự load dotenv)
+function loadEnv() {
+    try {
+        const raw = readFileSync(join(process.cwd(), ".env"), "utf-8");
+        for (const line of raw.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith("#")) continue;
+            const idx = trimmed.indexOf("=");
+            if (idx === -1) continue;
+            const key = trimmed.slice(0, idx).trim();
+            const val = trimmed.slice(idx + 1).trim();
+            if (key && !process.env[key]) process.env[key] = val;
+        }
+    } catch { /* ignore nếu không có .env */ }
+}
+loadEnv();
 
 const client = new CognitoIdentityProviderClient({ region: "ap-southeast-1" });
 
-// Lấy từ sst dev output
+// Lấy từ .env hoặc env vars
 const USER_POOL_ID = process.env.USER_POOL_ID || "";
 const ADMIN_EMAIL = "admin@spotify.local";
 const ADMIN_PASSWORD = "Admin@12345";
