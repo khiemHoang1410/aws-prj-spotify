@@ -15,6 +15,7 @@ export class SongRepository extends BaseRepository<Song> {
                 TableName: this.tableName,
                 IndexName: "ArtistIdIndex",
                 KeyConditionExpression: "artistId = :artistId AND sk = :sk",
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: { ":artistId": artistId, ":sk": "METADATA" },
             }));
             return Success((response.Items as Song[]) || []);
