@@ -11,3 +11,4 @@ ntmp-audio
 /node_modules
 
 response*.json
+/backend/scripts

@@ -6,7 +6,8 @@
 export const adaptSong = (song) => {
   if (!song) return null;
   return {
-    song_id: song.id || song.songId || song.song_id,
+    song_id: song.id || song.songId || song.song_id
+            || (song.pk ? song.pk.replace(/^SONG#/, '') : undefined),
     title: song.title,
     artist_name: song.artistName || song.artist_name || '',
     artist_id: song.artistId || song.artist_id || null,
