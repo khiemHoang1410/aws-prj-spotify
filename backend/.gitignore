@@ -41,3 +41,4 @@ response*.json
 scan-*.json
 env*.json
 invoke*.json
+/scripts
