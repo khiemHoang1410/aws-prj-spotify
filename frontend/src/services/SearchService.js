@@ -8,12 +8,20 @@ export const search = async (query, type = 'all') => {
   try {
     const data = await api.get(`/search?q=${encodeURIComponent(q)}&type=${encodeURIComponent(type)}`);
 
-    // OpenSearch đã rank đúng theo relevance score + playCount
-    // Không filter lại ở FE để tránh loại bỏ kết quả match theo artistName
+    // Adapt và giữ lại _score từ OpenSearch để sort đúng thứ tự relevance
+    const adaptWithScore = (item, adaptFn) => {
+      const adapted = adaptFn(item);
+      if (adapted && item._score != null) adapted._score = item._score;
+      return adapted;
+    };
+
+    const sortByScore = (arr) =>
+      [...arr].sort((a, b) => (b._score ?? 0) - (a._score ?? 0));
+
     return {
-      songs:   (Array.isArray(data?.songs)   ? data.songs   : []).map(adaptSong),
-      artists: (Array.isArray(data?.artists) ? data.artists : []).map(adaptArtist),
-      albums:  (Array.isArray(data?.albums)  ? data.albums  : []).map(adaptAlbum),
+      songs:   sortByScore((Array.isArray(data?.songs)   ? data.songs   : []).map(s => adaptWithScore(s, adaptSong))),
+      artists: sortByScore((Array.isArray(data?.artists) ? data.artists : []).map(a => adaptWithScore(a, adaptArtist))),
+      albums:  sortByScore((Array.isArray(data?.albums)  ? data.albums  : []).map(a => adaptWithScore(a, adaptAlbum))),
     };
   } catch (error) {
     console.error('Search error:', error);
