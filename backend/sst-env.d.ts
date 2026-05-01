@@ -18,6 +18,10 @@ declare module "sst" {
       "name": string
       "type": "sst.aws.Function"
     }
+    "SpotifyFrontend": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
     "SpotifyMedia": {
       "name": string
       "type": "sst.aws.Bucket"

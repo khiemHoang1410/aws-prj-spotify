@@ -19,7 +19,7 @@ export const sstEnv = {
 
 
     // CORS (prod)
-    prodCorsOrigins: (process.env.PROD_CORS_ORIGINS || "https://hskhiem.io.vn,https://www.hskhiem.io.vn").split(","),
+    prodCorsOrigins: (process.env.PROD_CORS_ORIGINS || "https://hskhiem.io.vn,https://www.hskhiem.io.vn,https://dxt0oq4osec6k.cloudfront.net").split(","),
 
     // Cognito password policy
     passwordMinLength: Number(process.env.PASSWORD_MIN_LENGTH) || 8,

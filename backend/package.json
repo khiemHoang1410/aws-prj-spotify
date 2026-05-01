@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "sst dev",
     "deploy": "sst deploy --stage prod",
+    "deploy:khiemhoang": "sst deploy --stage khiemhoang",
     "remove": "sst remove",
     "console": "sst console",
     "typecheck": "tsc --noEmit",
