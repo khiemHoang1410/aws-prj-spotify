@@ -2,8 +2,12 @@ import { useNavigate } from 'react-router-dom';
 
 export default function CardGenre({ category }) {
   const navigate = useNavigate();
+  const GENRE_FALLBACK = '/pictures/CategoryDefault.png';
   const fallbackColor = 'bg-gradient-to-br from-purple-600 to-blue-500';
-  const imageSrc = category?.img || '/pictures/GenreDefault.png';
+  // Chỉ dùng img từ API nếu là chuỗi hợp lệ, tránh nhấp nháy khi null/empty
+  const imageSrc = (category?.img && typeof category.img === 'string' && category.img.trim())
+    ? category.img
+    : GENRE_FALLBACK;
 
   return (
     <div
@@ -14,14 +18,14 @@ export default function CardGenre({ category }) {
       {category?.songCount > 0 && (
         <p className="text-white/80 text-sm mt-1 relative z-10">{category.songCount} songs</p>
       )}
-      
+
       <img
         src={imageSrc}
         alt={category?.name || 'Genre'}
         className="absolute right-2 bottom-2 w-20 h-20 rotate-[12deg] shadow-xl rounded object-cover group-hover:scale-110 transition-transform opacity-95 z-0"
         onError={(e) => {
           e.currentTarget.onerror = null;
-          e.currentTarget.src = '/pictures/GenreDefault.png';
+          e.currentTarget.src = GENRE_FALLBACK;
         }}
       />
     </div>
