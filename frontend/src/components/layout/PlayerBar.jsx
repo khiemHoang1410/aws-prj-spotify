@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat } from '../../store/playerSlice';
+import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat, refillQueueIfNeeded } from '../../store/playerSlice';
 import { toggleLikeSongThunk, openModal } from '../../store/authSlice';
 import { toggleRightSidebar, setPiP } from '../../store/uiSlice';
 import { getSongs, recordView } from '../../services/SongService';
@@ -213,6 +213,7 @@ export default function PlayerBar() {
 
     if (queue && queue.length > 0) {
       dispatch(playNextSong());
+      dispatch(refillQueueIfNeeded());
       return;
     }
 
@@ -367,7 +368,7 @@ export default function PlayerBar() {
               {isPlaying ? <Pause size={16} fill="currentColor" /> : <Play size={16} fill="currentColor" className="ml-0.5" />}
             </button>
 
-            <button className="text-[#b3b3b3] hover:text-white" onClick={() => dispatch(playNextSong())} title="Tiếp theo"><SkipForward size={20} fill="currentColor" /></button>
+            <button className="text-[#b3b3b3] hover:text-white" onClick={() => { dispatch(playNextSong()); dispatch(refillQueueIfNeeded()); }} title="Tiếp theo"><SkipForward size={20} fill="currentColor" /></button>
             <button
               className={`transition hover:scale-105 ${repeatMode !== REPEAT_MODE.OFF ? 'text-green-400' : 'text-[#b3b3b3] hover:text-white'}`}
               onClick={() => dispatch(cycleRepeat())}
