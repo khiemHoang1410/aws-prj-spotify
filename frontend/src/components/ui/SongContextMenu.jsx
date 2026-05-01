@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Heart, HeartOff, PlusCircle, ListPlus, EyeOff, Share2, Flag, ChevronRight } from 'lucide-react';
 import { toggleLikeSongThunk } from '../../store/authSlice';
@@ -66,11 +67,11 @@ export default function SongContextMenu({ song, position, onClose }) {
     onClose();
   };
 
-  return (
+  const menu = (
     <div
       ref={menuRef}
-      style={{ position: 'fixed', top: safeY, left: safeX }}
-      className="w-56 bg-[#282828] rounded-md shadow-2xl z-50 p-1 border border-[#3e3e3e]"
+      style={{ position: 'fixed', top: safeY, left: safeX, zIndex: 9999 }}
+      className="w-56 bg-[#282828] rounded-md shadow-2xl p-1 border border-[#3e3e3e]"
       onClick={(e) => e.stopPropagation()}
       onContextMenu={(e) => e.stopPropagation()}
     >
@@ -147,4 +148,8 @@ export default function SongContextMenu({ song, position, onClose }) {
       </button>
     </div>
   );
+
+  // Dùng Portal để render thẳng vào document.body, thoát khỏi mọi
+  // parent có CSS transform/will-change/filter làm hỏng position:fixed
+  return createPortal(menu, document.body);
 }
