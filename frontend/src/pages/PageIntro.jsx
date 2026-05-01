@@ -7,6 +7,7 @@ import PartnerLogos from "../components/intro/PartnerLogos";
 import SubscribeSection from "../components/intro/SubscribeSection";
 import Banner from "../components/intro/Banner";
 import Header from "../components/intro/Header";
+import ContactForm from "../components/intro/ContactForm";
 
 
 function PageIntro() {
@@ -34,6 +35,7 @@ function PageIntro() {
       <div id="subscribe">
         <SubscribeSection />
       </div>
+      <ContactForm />
     </div>
   );
 }

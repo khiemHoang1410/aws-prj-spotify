@@ -21,7 +21,7 @@ function Header() {
     { id: "stats", label: "About us" },
     { id: "trending", label: "Trending" },
     { id: "top-artists", label: "Top" },
-    { id: "subscribe", label: "Contact Us" },
+    { id: "contact", label: "Contact Us" },
   ];
 
   return (

@@ -148,6 +148,22 @@ export default function SongDetailPage() {
     dispatch(toggleLikeSongThunk(song));
   };
 
+  // Khoá scroll khi context menu đang mở.
+  // Scroll container thực sự là <main class="...overflow-y-auto"> trong AppLayout,
+  // không phải document.body (body đã bị overflow-hidden từ root div rồi).
+  useEffect(() => {
+    if (!contextMenu.open) return;
+
+    // querySelector('main') — thẻ main duy nhất trong AppLayout
+    const scrollEl = document.querySelector('main');
+    if (!scrollEl) return;
+
+    const prev = scrollEl.style.overflowY;
+    scrollEl.style.overflowY = 'hidden';
+
+    return () => { scrollEl.style.overflowY = prev; };
+  }, [contextMenu.open]);
+
   const handleContextMenuOpen = (e) => {
     e.preventDefault();
     setContextMenu({ open: true, x: e.clientX, y: e.clientY });
