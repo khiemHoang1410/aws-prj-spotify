@@ -1,5 +1,5 @@
 import api from './apiClient';
-import { adaptArtist, adaptSong, adaptPaginatedResponse } from './adapters';
+import { adaptArtist, adaptSong, adaptAlbum, adaptPaginatedResponse } from './adapters';
 
 export const getArtists = async () => {
   try {
@@ -126,6 +126,16 @@ export const getRelatedArtists = async (artistId) => {
     const data = await api.get(`/artists/${artistId}/related`);
     const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
     return arr.map(adaptArtist).filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+export const getArtistAlbums = async (artistId) => {
+  try {
+    const data = await api.get(`/artists/${artistId}/albums`, { silent: true });
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptAlbum).filter(Boolean);
   } catch {
     return [];
   }
