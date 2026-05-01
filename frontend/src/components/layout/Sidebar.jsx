@@ -402,10 +402,10 @@ export default function Sidebar() {
                         }}
                       >
                         <img
-                          src={entry.image_url || '/pictures/whiteBackground.jpg'}
+                          src={entry.image_url || '/pictures/artworkDefault.png'}
                           alt={entry.title}
                           className="w-11 h-11 rounded object-cover flex-shrink-0"
-                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
                         />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-white truncate">{entry.title}</p>

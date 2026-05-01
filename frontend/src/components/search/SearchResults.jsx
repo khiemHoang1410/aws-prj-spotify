@@ -8,7 +8,7 @@ import { setCurrentSong } from '../../store/playerSlice';
 import { openModal } from '../../store/authSlice';
 import ArtistContextSections from './ArtistContextSections';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 const FILTERS = [
   { id: 'all',       label: 'Tất cả' },

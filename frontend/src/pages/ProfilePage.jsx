@@ -14,7 +14,7 @@ import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
 import { selectPlaylistIds } from '../store/playlistSlice';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();

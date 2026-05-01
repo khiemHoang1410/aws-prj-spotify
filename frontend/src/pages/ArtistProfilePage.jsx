@@ -10,7 +10,7 @@ import { getAlbumsByArtist, getAllAlbums } from '../services/AlbumService';
 import EmptyState from '../components/ui/EmptyState';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 function formatDuration(seconds) {
   const total = Number(seconds);

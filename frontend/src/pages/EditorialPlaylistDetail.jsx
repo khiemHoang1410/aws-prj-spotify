@@ -8,7 +8,7 @@ import { openModal } from '../store/authSlice';
 import CardSong from '../components/cards/CardSong';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
-const COVER_FALLBACK = '/pictures/whiteBackground.jpg';
+const COVER_FALLBACK = '/pictures/artworkDefault.png';
 const PAGE_SIZE = 20;
 
 export default function EditorialPlaylistDetail() {

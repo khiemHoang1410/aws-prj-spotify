@@ -1,7 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 /**
  * Generic card component — shared layout for songs, playlists, artists.
