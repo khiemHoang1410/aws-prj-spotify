@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { getArtistInfo, followArtist } from '../../services/ArtistService';
 import { showToast } from '../../store/uiSlice';
 import { toggleFollowArtist } from '../../store/authSlice';
-import { setCurrentSong } from '../../store/playerSlice';
+import { setCurrentSong, playWithContext } from '../../store/playerSlice';
 import { BadgeCheck, X, Music, ExternalLink, ListMusic } from 'lucide-react';
 
 export default function BottomInfo({ currentSong }) {
@@ -150,7 +150,7 @@ export default function BottomInfo({ currentSong }) {
                   <div
                     key={song.song_id || i}
                     className="flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-white/5 cursor-pointer transition group"
-                    onClick={() => dispatch(setCurrentSong(song))}
+                    onClick={() => dispatch(playWithContext({ song, songs: queue }))}
                   >
                     <span className="text-xs text-neutral-600 w-4 flex-shrink-0 text-right">{i + 1}</span>
                     <img

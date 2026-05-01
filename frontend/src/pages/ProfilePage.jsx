@@ -9,7 +9,7 @@ import { getArtistById, getFollowedArtists } from '../services/ArtistService';
 import { uploadCoverImage } from '../services/UploadService';
 import { ROLES, VERIFY_STATUS } from '../constants/enums';
 import CardSong from '../components/cards/CardSong';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
 import { selectPlaylistIds } from '../store/playlistSlice';
@@ -149,7 +149,7 @@ export default function ProfilePage() {
   };
 
   const handlePlayLiked = (song) => {
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: likedSongs }));
   };
 
   if (!user) return null;

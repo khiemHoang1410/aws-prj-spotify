@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { getSongs } from '../services/SongService';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getPersonalizedSongs, getDiscoverMix, fetchTrendingSongs, fetchNewReleases } from '../services/RecommendationService';
 import { getAllAlbums } from '../services/AlbumService';
@@ -55,9 +55,9 @@ export default function HomePage() {
     setDiscoverSongs(getDiscoverMix(likedSongs || [], songs));
   }, [songs, likedSongs]);
 
-  const handlePlaySong = (song) => {
+  const handlePlaySong = (song, contextSongs) => {
     if (!isAuthenticated) { dispatch(openModal('login')); return; }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: contextSongs || [] }));
   };
 
   if (loading) {
@@ -105,7 +105,7 @@ export default function HomePage() {
         {isAuthenticated && personalizedSongs.length > 0 && (
           <SectionRow title="Dành cho bạn" sectionKey="personalized">
             {personalizedSongs.slice(0, 12).map((song) => (
-              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              <CardSong key={song.song_id} song={song} onPlay={(s) => handlePlaySong(s, personalizedSongs)} />
             ))}
           </SectionRow>
         )}
@@ -114,7 +114,7 @@ export default function HomePage() {
         {trendingSongs.length > 0 && (
           <SectionRow title="Thịnh hành" sectionKey="trending">
             {trendingSongs.slice(0, 12).map((song) => (
-              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              <CardSong key={song.song_id} song={song} onPlay={(s) => handlePlaySong(s, trendingSongs)} />
             ))}
           </SectionRow>
         )}
@@ -123,7 +123,7 @@ export default function HomePage() {
         {newReleases.length > 0 && (
           <SectionRow title="Mới phát hành" sectionKey="newReleases">
             {newReleases.slice(0, 12).map((song) => (
-              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              <CardSong key={song.song_id} song={song} onPlay={(s) => handlePlaySong(s, newReleases)} />
             ))}
           </SectionRow>
         )}
@@ -132,7 +132,7 @@ export default function HomePage() {
         {isAuthenticated && discoverSongs.length > 0 && (
           <SectionRow title="Khám phá" sectionKey="discover">
             {discoverSongs.slice(0, 12).map((song) => (
-              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              <CardSong key={song.song_id} song={song} onPlay={(s) => handlePlaySong(s, discoverSongs)} />
             ))}
           </SectionRow>
         )}
@@ -141,7 +141,7 @@ export default function HomePage() {
         {songs.length > 0 && (
           <SectionRow title="Tất cả bài hát" sectionKey="allSongs">
             {songs.slice(0, 12).map((song) => (
-              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+              <CardSong key={song.song_id} song={song} onPlay={(s) => handlePlaySong(s, songs)} />
             ))}
           </SectionRow>
         )}

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { search } from '../../services/SearchService';
 import { followArtist, getArtistTopTracks, getArtistAlbums } from '../../services/ArtistService';
-import { setCurrentSong } from '../../store/playerSlice';
+import { playWithContext } from '../../store/playerSlice';
 import { openModal } from '../../store/authSlice';
 import ArtistContextSections from './ArtistContextSections';
 
@@ -191,7 +191,7 @@ export default function SearchResults({ query }) {
 
   const handlePlay = (song) => {
     if (!isAuthenticated) { dispatch(openModal('login')); return; }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: results.songs }));
   };
 
   // ── Loading ───────────────────────────────────────────────────────────────

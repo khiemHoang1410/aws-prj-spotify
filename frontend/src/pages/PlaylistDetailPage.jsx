@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import { DragDropContext, Droppable } from '@hello-pangea/dnd';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Play, Shuffle, Clock, Music, Search, Globe, Lock, Edit3 } from 'lucide-react';
-import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
+import { setCurrentSong, playWithContext, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import {
   selectPlaylistById,
@@ -69,7 +69,7 @@ export default function PlaylistDetailPage() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs }));
   };
 
   const handlePlayAll = () => {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Clock, BadgeCheck, UserPlus, UserCheck } from 'lucide-react';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { showToast } from '../store/uiSlice';
 import { getArtistById, followArtist, getRelatedArtists, getFollowedArtists, getArtistTopTracks } from '../services/ArtistService';
@@ -67,7 +67,7 @@ export default function ArtistProfilePage() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: artistSongs }));
   };
 
   const handlePlayAll = () => {
@@ -195,10 +195,10 @@ export default function ArtistProfilePage() {
                   className="grid grid-cols-[24px_1fr_1fr_56px] gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition"
                   onClick={() => handlePlaySong(song)}
                 >
-                  <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-                  <span className="hidden group-hover:flex items-center justify-center">
-                    <Play size={16} className="text-white fill-white cursor-pointer" />
-                  </span>
+                  <div className="flex items-center justify-center">
+                    <span className="text-sm text-neutral-400 group-hover:hidden">{idx + 1}</span>
+                    <Play size={16} className="text-white hidden group-hover:block fill-white cursor-pointer" />
+                  </div>
                   <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={song.image_url}

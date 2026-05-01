@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Play, Shuffle, Clock, Heart, Music } from 'lucide-react';
-import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
+import { playWithContext, clearQueue, addToQueue, playNextSong, setShuffleMode } from '../store/playerSlice';
 import { openModal, toggleLikeSongThunk } from '../store/authSlice';
 import EmptyState from '../components/ui/EmptyState';
 
@@ -20,7 +20,7 @@ export default function LikedSongsPage() {
 
   const handlePlaySong = (song) => {
     if (!isAuthenticated) { dispatch(openModal('login')); return; }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: likedSongs }));
   };
 
   const handlePlayAll = () => {
@@ -99,8 +99,10 @@ export default function LikedSongsPage() {
               className="grid grid-cols-[24px_1fr_1fr_56px_40px] gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition"
               onClick={() => handlePlaySong(song)}
             >
-              <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-              <Play size={16} className="text-white hidden group-hover:flex items-center fill-white cursor-pointer" />
+              <div className="flex items-center justify-center">
+                <span className="text-sm text-neutral-400 group-hover:hidden">{idx + 1}</span>
+                <Play size={16} className="text-white hidden group-hover:block fill-white cursor-pointer" />
+              </div>
               <div className="flex items-center gap-3 min-w-0">
                 <img
                   src={song.image_url || IMG_FALLBACK}

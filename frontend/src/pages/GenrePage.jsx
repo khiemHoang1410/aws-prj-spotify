@@ -2,7 +2,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Music, Play } from 'lucide-react';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getSongsByGenre } from '../services/SongService';
 import { getGenres } from '../services/GenreService';
@@ -75,7 +75,7 @@ export default function GenrePage() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: sortedSongs }));
   };
 
   return (
