@@ -174,10 +174,6 @@ export default function Navbar() {
           </>
         ) : (
           <div className="flex items-center gap-5 relative">
-            <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition" title="Trò chuyện">
-              <Users size={20} />
-            </button>
-
             {/* Notifications */}
             <div className="relative" ref={notifRef}>
               <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition relative" title="Thông báo" onClick={() => dispatch(toggleNotificationDropdown())}>
