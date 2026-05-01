@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2 } from 'lucide-react';
+import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2, Shuffle } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { setCurrentSong } from '../store/playerSlice';
+import { setCurrentSong, clearQueue, addToQueue, setShuffleMode, playNextSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getAlbumById, getAlbumSongs, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
 import { getSongs } from '../services/SongService';
@@ -23,6 +23,9 @@ export default function AlbumDetailPage() {
   const { id: activeAlbumId } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+
+  const { history: playHistory } = useSelector((state) => state.player);
+  const [isShuffleActive, setIsShuffleActive] = useState(false);
 
   const [album, setAlbum] = useState(null);
   const [songs, setSongs] = useState([]);
@@ -63,6 +66,38 @@ export default function AlbumDetailPage() {
 
   const handlePlayAll = () => {
     if (songs.length > 0) handlePlaySong(songs[0]);
+  };
+
+  const handleShuffle = () => {
+    if (!songs.length) return;
+
+    if (!isShuffleActive) {
+      // Ưu tiên bài chưa phát trong album (không có trong Redux history)
+      const playedIds = new Set(playHistory.map((s) => s.song_id));
+      const unplayed = songs.filter((s) => !playedIds.has(s.song_id));
+      const played   = songs.filter((s) =>  playedIds.has(s.song_id));
+
+      const shuffleArr = (arr) => {
+        const a = [...arr];
+        for (let i = a.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [a[i], a[j]] = [a[j], a[i]];
+        }
+        return a;
+      };
+
+      // Unplayed trước (đã xáo trộn) → played sau (cũng xáo trộn)
+      const ordered = [...shuffleArr(unplayed), ...shuffleArr(played)];
+
+      dispatch(clearQueue());
+      ordered.forEach((s) => dispatch(addToQueue(s)));
+      dispatch(setShuffleMode(true));
+      dispatch(playNextSong());
+      setIsShuffleActive(true);
+    } else {
+      dispatch(setShuffleMode(false));
+      setIsShuffleActive(false);
+    }
   };
 
   const handleToggleSongPicker = async () => {
@@ -176,6 +211,26 @@ export default function AlbumDetailPage() {
         >
           <Play size={24} className="text-black fill-black ml-1" />
         </button>
+
+        {/* Shuffle */}
+        <button
+          onClick={handleShuffle}
+          disabled={!songs.length}
+          className={`transition relative ${
+            !songs.length
+              ? 'text-neutral-400 opacity-50 cursor-not-allowed'
+              : isShuffleActive
+                ? 'text-green-500 hover:text-green-400'
+                : 'text-neutral-400 hover:text-white'
+          }`}
+          title="Phát ngẫu nhiên"
+        >
+          <Shuffle size={24} />
+          {isShuffleActive && (
+            <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-green-500 rounded-full" />
+          )}
+        </button>
+
         {isOwner && (
           <button
             onClick={handleToggleSongPicker}

@@ -22,7 +22,7 @@ export default function Card({ image, title, subtitle, onClick, onPlay, imageSha
 
   return (
     <div
-      className="bg-[#181818] p-3 rounded-md hover:bg-[#282828] transition duration-300 group cursor-pointer flex flex-col flex-shrink-0"
+      className="bg-[#181818] p-3 rounded-md hover:bg-[#282828] transition duration-300 group/card cursor-pointer flex flex-col flex-shrink-0"
       onClick={onClick}
     >
       <div className="relative mb-4">
@@ -38,7 +38,7 @@ export default function Card({ image, title, subtitle, onClick, onPlay, imageSha
         {onPlay && (
           <button
             className="absolute bottom-2 right-2 bg-green-500 text-black rounded-full p-3
-                       opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0
+                       opacity-0 translate-y-2 group-hover/card:opacity-100 group-hover/card:translate-y-0
                        transition-all duration-300 shadow-xl hover:scale-105 hover:bg-green-400"
             onClick={handlePlayClick}
           >
