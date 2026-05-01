@@ -5,7 +5,7 @@ import { setCurrentSong, clearQueue, addToQueue, playNextSong, setShuffleMode } 
 import { openModal, toggleLikeSongThunk } from '../store/authSlice';
 import EmptyState from '../components/ui/EmptyState';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 function formatDuration(seconds) {
   const m = Math.floor(seconds / 60);

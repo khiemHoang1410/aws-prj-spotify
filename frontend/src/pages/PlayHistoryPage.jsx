@@ -5,7 +5,7 @@ import { setCurrentSong } from '../store/playerSlice';
 import { deleteEntry, clearAllHistory, loadMoreHistory } from '../store/historySlice';
 import { getSongById } from '../services/SongService';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 // ─── groupByDate utility ──────────────────────────────────────────────────────
 

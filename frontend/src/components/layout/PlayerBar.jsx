@@ -11,7 +11,7 @@ import Audio from './Audio';
 import { Play, Pause, SkipBack, SkipForward, Shuffle, Repeat, Repeat1, Heart, Mic2, ListMusic, MonitorSpeaker, Volume2, Volume1, VolumeX, Maximize2, Shrink } from 'lucide-react';
 import { REPEAT_MODE } from '../../constants/enums';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 const PLAYER_VOLUME_STORAGE_KEY = 'spotify_player_volume_v1';
 
 const readInitialVolume = () => {

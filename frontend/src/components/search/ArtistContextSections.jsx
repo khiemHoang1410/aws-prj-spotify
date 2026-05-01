@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 // ── Skeleton ──────────────────────────────────────────────────────────────────
 

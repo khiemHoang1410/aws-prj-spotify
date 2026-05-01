@@ -236,8 +236,8 @@ export default function Navbar() {
                               }
                             }}
                           >
-                            <img src={notif.image_url || '/pictures/whiteBackground.jpg'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }} />
+                            <img src={notif.image_url || '/pictures/artworkDefault.png'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm text-white leading-tight">
                                 {notif.message || notif.title || 'Thông báo mới'}

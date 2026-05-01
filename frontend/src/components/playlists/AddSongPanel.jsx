@@ -6,7 +6,7 @@ import { isSongInPlaylist } from '../../store/playlistUtils';
 import { searchSongs } from '../../services/SongService';
 import { showToast } from '../../store/uiSlice';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 export default function AddSongPanel({ playlistId, currentSongs, onClose }) {
   const dispatch = useDispatch();
