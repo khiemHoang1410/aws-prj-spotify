@@ -1,9 +1,24 @@
 import { makeHandler } from "../../middlewares/makeHandler";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
 import { Failure, Success } from "../../../../shared/utils/Result";
 import { validateUUID } from "../../../../shared/utils/validate";
 
 const songRepo = new SongRepository();
+const artistRepo = new ArtistRepository();
+
+/** Enrich a list of raw songs with artistName by batching artist lookups */
+async function enrichWithArtistName(songs: any[]): Promise<any[]> {
+    const artistIds = [...new Set(songs.map(s => s.artistId).filter(Boolean))];
+    const artistMap = new Map<string, string>();
+    await Promise.all(
+        artistIds.map(async (id) => {
+            const r = await artistRepo.findById(id);
+            if (r.success && r.data) artistMap.set(id, r.data.name);
+        })
+    );
+    return songs.map(s => ({ ...s, artistName: artistMap.get(s.artistId) ?? null }));
+}
 
 // GET /songs/{id}/related
 // Returns up to 10 songs sharing categories with this song, excluding itself
@@ -19,9 +34,8 @@ export const handler = makeHandler(async (_body, params) => {
         // Fallback: same artist
         const artistSongs = await songRepo.findByArtistId(songResult.data.artistId);
         if (!artistSongs.success) return Success([]);
-        return Success(
-            artistSongs.data.filter(s => s.id !== idResult.data).slice(0, 10)
-        );
+        const filtered = artistSongs.data.filter(s => s.id !== idResult.data).slice(0, 10);
+        return Success(await enrichWithArtistName(filtered));
     }
 
     const seen = new Set<string>([idResult.data]);
@@ -38,5 +52,5 @@ export const handler = makeHandler(async (_body, params) => {
         }
     }
 
-    return Success(related);
+    return Success(await enrichWithArtistName(related));
 });
