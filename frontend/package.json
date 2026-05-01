@@ -14,7 +14,7 @@
   "dependencies": {
     "@hello-pangea/dnd": "^18.0.1",
     "@reduxjs/toolkit": "^2.11.2",
-    "@tanstack/react-virtual": "^3.13.23",
+    "@tanstack/react-virtual": "^3.13.24",
     "aws-amplify": "^6.16.3",
     "clsx": "2.1.1",
     "colorthief": "^3.3.1",

@@ -55,6 +55,8 @@ export default function PlayerBar() {
   const progressBarRef = useRef(null);
   const volumeBarRef = useRef(null);
   const countedSongIdsRef = useRef(new Set());
+  // Tránh trigger handleSongEnded nhiều lần cho cùng 1 bài khi time >= duration
+  const songEndedByDurationRef = useRef(false);
 
   useEffect(() => {
     const songId = currentSong?.song_id;
@@ -81,6 +83,8 @@ export default function PlayerBar() {
     if (!currentSong) return;
     const restoredTime = Number.isFinite(currentTime) ? currentTime : 0;
     setCurrentTimeLocal(restoredTime);
+    // Reset flag mỗi khi đổi bài để có thể trigger lại cho bài mới
+    songEndedByDurationRef.current = false;
     if (restoredTime <= 0) return;
 
     isSeeking.current = true;
@@ -316,6 +320,20 @@ export default function PlayerBar() {
         seekTime={seekTime}
         onTimeUpdate={(time) => {
           if (!isDraggingProgress && !isSeeking.current) {
+            const artistDuration = currentSong?.duration;
+            // Nếu artist đặt duration ngắn hơn file thực → kết thúc sớm
+            if (
+              artistDuration &&
+              time >= artistDuration &&
+              !songEndedByDurationRef.current
+            ) {
+              songEndedByDurationRef.current = true;
+              // Hiển thị đúng điểm kết thúc rồi chuyển bài
+              setCurrentTimeLocal(artistDuration);
+              dispatch(updateCurrentTime(artistDuration));
+              void handleSongEnded();
+              return;
+            }
             setCurrentTimeLocal(time);
             dispatch(updateCurrentTime(time));
           }
