@@ -36,8 +36,12 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
             }));
             const item = response.Item as any;
-            if (item?.deletedAt) return Success(null);
-            return Success((item as T) || null);
+            if (!item) return Success(null);
+            if (item.deletedAt) return Success(null);
+            // Strip DynamoDB metadata và inject `id` — giống pattern trong save()
+            const { pk, sk, entityType, ...clean } = item;
+            const extractedId = pk ? pk.split('#')[1] : id;
+            return Success({ ...clean, id: extractedId } as T);
         } catch (error: any) {
             return Failure(`Lỗi truy vấn ${this.entityPrefix}: ${error.message}`, 500);
         }
