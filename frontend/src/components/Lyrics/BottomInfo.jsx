@@ -58,10 +58,10 @@ export default function BottomInfo({ currentSong }) {
           onClick={() => setShowModal(true)}
         >
           <img
-            src={artistData.photo_url || artistData.image_url || '/pictures/whiteBackground.jpg'}
+            src={artistData.photo_url || artistData.image_url || '/pictures/artworkDefault.png'}
             className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition duration-300"
             alt={artistData.name}
-            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+            onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
           />
           {/* gradient overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
@@ -102,10 +102,10 @@ export default function BottomInfo({ currentSong }) {
             </div>
             <div className="flex items-center gap-3">
               <img
-                src={artistData.photo_url || artistData.image_url || '/pictures/whiteBackground.jpg'}
+                src={artistData.photo_url || artistData.image_url || '/pictures/artworkDefault.png'}
                 alt={artistData.name}
                 className="w-12 h-12 rounded-full object-cover flex-shrink-0 ring-2 ring-white/10"
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
               />
               <div className="flex-1 min-w-0">
                 <p
@@ -154,10 +154,10 @@ export default function BottomInfo({ currentSong }) {
                   >
                     <span className="text-xs text-neutral-600 w-4 flex-shrink-0 text-right">{i + 1}</span>
                     <img
-                      src={song.image_url || '/pictures/whiteBackground.jpg'}
+                      src={song.image_url || '/pictures/artworkDefault.png'}
                       alt={song.title}
                       className="w-8 h-8 rounded object-cover flex-shrink-0"
-                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                      onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
                     />
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-white truncate group-hover:text-green-400 transition">{song.title}</p>
@@ -188,10 +188,10 @@ export default function BottomInfo({ currentSong }) {
             {/* Artist cover */}
             <div className="relative h-56">
               <img
-                src={artistData.photo_url || artistData.image_url || '/pictures/whiteBackground.jpg'}
+                src={artistData.photo_url || artistData.image_url || '/pictures/artworkDefault.png'}
                 className="w-full h-full object-cover"
                 alt={artistData.name}
-                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#181818] via-transparent to-transparent" />
             </div>

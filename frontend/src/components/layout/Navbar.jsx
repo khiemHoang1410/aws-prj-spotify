@@ -125,7 +125,7 @@ export default function Navbar() {
   }, [isUserMenuOpen]);
 
   return (
-    <div className="flex items-center justify-between sticky top-[-6] bg-black backdrop-blur z-20 p-4 -mt-6 -mx-6 shadow-md gap-1 sm:h-auto h-[60px]">
+    <div className="flex items-center justify-between sticky top-0 bg-[#121212]/95 backdrop-blur-sm z-20 px-6 py-3 shadow-md gap-1 sm:h-auto h-[60px]">
 
       {/* Back / Forward */}
       <div className="sm:flex hidden items-center gap-2 w-auto min-w-0 gap-2 shrink-1 md:flex-1 ">
@@ -232,8 +232,8 @@ export default function Navbar() {
                               }
                             }}
                           >
-                            <img src={notif.image_url || '/pictures/whiteBackground.jpg'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }} />
+                            <img src={notif.image_url || '/pictures/artworkDefault.png'} alt="" className="w-10 h-10 rounded-full object-cover flex-shrink-0"
+                              onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }} />
                             <div className="min-w-0 flex-1">
                               <p className="text-sm text-white leading-tight">
                                 {notif.message || notif.title || 'Thông báo mới'}

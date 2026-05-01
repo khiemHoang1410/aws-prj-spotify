@@ -15,7 +15,14 @@ export class SongRepository extends BaseRepository<Song> {
                 TableName: this.tableName,
                 IndexName: "ArtistIdIndex",
                 KeyConditionExpression: "artistId = :artistId AND sk = :sk",
-                ExpressionAttributeValues: { ":artistId": artistId, ":sk": "METADATA" },
+                // Filter entityType = SONG to exclude User records that also have artistId
+                // (artist-linked users share the same ArtistIdIndex and would pollute results)
+                FilterExpression: "attribute_not_exists(deletedAt) AND entityType = :entityType",
+                ExpressionAttributeValues: {
+                    ":artistId": artistId,
+                    ":sk": "METADATA",
+                    ":entityType": this.entityPrefix, // "SONG"
+                },
             }));
             return Success((response.Items as Song[]) || []);
         } catch (error: any) {

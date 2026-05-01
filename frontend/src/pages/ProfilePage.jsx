@@ -14,7 +14,7 @@ import { clearAllHistory } from '../store/historySlice';
 import { setVerifyStatus, loginSuccess } from '../store/authSlice';
 import { selectPlaylistIds } from '../store/playlistSlice';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 export default function ProfilePage() {
   const dispatch = useDispatch();
@@ -40,9 +40,18 @@ export default function ProfilePage() {
     setIsUploadingAvatar(true);
     try {
       const { url } = await uploadCoverImage(file);
+
+      // Update user profile avatar
       const result = await updateProfile({ avatarUrl: url });
       if (result && !result.success && result.error) throw new Error(result.error);
       dispatch(loginSuccess({ ...user, avatar_url: url }));
+
+      // Nếu là artist → update luôn photoUrl của artist record
+      if (user?.role === ROLES.ARTIST && artistProfile?.id) {
+        await api.put(`/artists/${artistProfile.id}`, { photoUrl: url });
+        setArtistProfile((prev) => prev ? { ...prev, photoUrl: url } : prev);
+      }
+
       dispatch(showToast({ message: 'Cập nhật ảnh đại diện thành công', type: 'success' }));
     } catch (err) {
       console.error('[avatar upload]', err);
@@ -57,12 +66,11 @@ export default function ProfilePage() {
     if (user?.role !== ROLES.ARTIST) return;
 
     (async () => {
-      const artistId = user.artist_id;
-      if (artistId) {
-        const artistData = await getArtistById(artistId);
+      // Fast path: dùng artist_id đã có trong Redux
+      if (user.artist_id) {
+        const artistData = await getArtistById(user.artist_id);
         if (artistData) {
           setArtistProfile(artistData);
-          // Cập nhật displayName với tên từ artist record
           setDisplayName(artistData.name || user.name || user.username || '');
           if (artistData.isVerified) {
             dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
@@ -71,7 +79,24 @@ export default function ProfilePage() {
         }
       }
 
-      // Fallback: check artist-request flow
+      // Fallback: gọi /me/artist-profile để backend tự resolve
+      try {
+        const artistData = await api.get('/me/artist-profile');
+        if (artistData?.id) {
+          setArtistProfile(artistData);
+          setDisplayName(artistData.name || user.name || user.username || '');
+          // Cập nhật Redux để lần sau fast path hoạt động
+          dispatch(loginSuccess({ ...user, artist_id: artistData.id }));
+          if (artistData.isVerified) {
+            dispatch(setVerifyStatus({ status: VERIFY_STATUS.APPROVED }));
+            return;
+          }
+        }
+      } catch {
+        // artist chưa có profile (chưa được approve)
+      }
+
+      // Check artist-request flow
       try {
         const data = await api.get('/me/artist-request');
         const status = String(data?.status || '').toLowerCase();
@@ -82,7 +107,7 @@ export default function ProfilePage() {
             : VERIFY_STATUS.IDLE;
         dispatch(setVerifyStatus({ status: mappedStatus }));
       } catch {
-        // If the backend is unavailable or endpoint is missing, do nothing.
+        // ignore
       }
     })();
   }, [dispatch, user?.role, user?.artist_id]);

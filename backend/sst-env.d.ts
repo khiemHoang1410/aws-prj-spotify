@@ -10,6 +10,18 @@ declare module "sst" {
       "type": "sst.aws.ApiGatewayV2"
       "url": string
     }
+    "OpenSearchSetupV2": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "SearchIndexer": {
+      "name": string
+      "type": "sst.aws.Function"
+    }
+    "SpotifyFrontend": {
+      "type": "sst.aws.StaticSite"
+      "url": string
+    }
     "SpotifyMedia": {
       "name": string
       "type": "sst.aws.Bucket"

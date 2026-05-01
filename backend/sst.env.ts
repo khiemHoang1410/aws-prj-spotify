@@ -13,10 +13,13 @@ export const sstEnv = {
     publicSubnetId: process.env.PUBLIC_SUBNET_ID || "subnet-0019b6c4b78790035",    // 10.0.2.0/24
     lambdaSecurityGroupId: process.env.LAMBDA_SG_ID || "sg-025f66f667f5365b2",
 
+    // OpenSearch
+    openSearchEndpoint: process.env.OPENSEARCH_ENDPOINT || "https://vpc-spotify-domain-b56x73efwiu5vzn6lrj2qymr54.ap-southeast-1.es.amazonaws.com",
+
 
 
     // CORS (prod)
-    prodCorsOrigins: (process.env.PROD_CORS_ORIGINS || "https://hskhiem.io.vn,https://www.hskhiem.io.vn").split(","),
+    prodCorsOrigins: (process.env.PROD_CORS_ORIGINS || "https://hskhiem.io.vn,https://www.hskhiem.io.vn,https://dxt0oq4osec6k.cloudfront.net").split(","),
 
     // Cognito password policy
     passwordMinLength: Number(process.env.PASSWORD_MIN_LENGTH) || 8,

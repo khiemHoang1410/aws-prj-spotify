@@ -1,18 +1,18 @@
-﻿import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Music, Headphones, Users, TrendingUp,
-  Play, Clock, Pencil, Trash2, PlusCircle, Disc3, X,
+  Play, Clock, Pencil, Trash2, PlusCircle, X,
   Image as ImageIcon, Calendar, CheckSquare, Square,
 } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
 import { setCurrentSong } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
-import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs } from '../services/ArtistService';
+import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs, getMyArtistProfile } from '../services/ArtistService';
 import { getArtistProfileFromStorage } from '../services/AuthService';
-import { getSongs as _getSongs, deleteSong } from '../services/SongService';
+import { deleteSong } from '../services/SongService';
 import {
   getAllAlbums,
   createAlbum,
@@ -23,44 +23,46 @@ import {
   removeSongFromAlbum,
 } from '../services/AlbumService';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 const STAT_CARDS = [
-  { key: 'totalSongs',      label: 'Tß╗òng b├ái h├ít',    icon: Music,      color: 'text-blue-400' },
-  { key: 'totalPlays',      label: 'Tß╗òng l╞░ß╗út nghe',  icon: Headphones, color: 'text-green-400' },
-  { key: 'followers',       label: 'Ng╞░ß╗¥i theo d├╡i',  icon: Users,      color: 'text-purple-400' },
-  { key: 'monthlyListeners',label: 'L╞░ß╗út nghe th├íng', icon: TrendingUp, color: 'text-yellow-400' },
+  { key: 'totalSongs',       label: 'Tổng bài hát',      icon: Music,      color: 'text-blue-400' },
+  { key: 'totalPlays',       label: 'Tổng lượt nghe',    icon: Headphones, color: 'text-green-400' },
+  { key: 'followers',        label: 'Người theo dõi',    icon: Users,      color: 'text-purple-400' },
+  { key: 'monthlyListeners', label: 'Lượt nghe tháng',   icon: TrendingUp, color: 'text-yellow-400' },
 ];
 
 function formatDuration(seconds) {
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const total = Number(seconds);
+  if (!total || isNaN(total)) return '0:00';
+  const m = Math.floor(total / 60);
+  const s = total % 60;
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// ΓöÇΓöÇΓöÇ Album Modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Album Modal ──────────────────────────────────────────────────────────────
 
 function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
   const dispatch = useDispatch();
 
-  const [title, setTitle]           = useState(album?.title || '');
-  const [coverUrl, setCoverUrl]     = useState(album?.image_url || album?.coverUrl || '');
+  const [title, setTitle]             = useState(album?.title || '');
+  const [coverUrl, setCoverUrl]       = useState(album?.image_url || album?.coverUrl || '');
   const [releaseDate, setReleaseDate] = useState(
     album?.release_date ? album.release_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
   );
-  const [saving, setSaving]         = useState(false);
+  const [saving, setSaving]           = useState(false);
 
-  // Song management (chß╗ë khi edit ΓÇö sau khi album ─æ├ú tß╗ôn tß║íi)
+  // Song management (chỉ khi edit — sau khi album đã tồn tại)
   const [albumSongIds, setAlbumSongIds] = useState(new Set());
   const [songLoading, setSongLoading]   = useState(false);
   const [togglingId, setTogglingId]     = useState(null);
 
-  // Saved album id (─æß╗â add/remove songs sau khi create)
+  // Saved album id (để add/remove songs sau khi create)
   const [savedAlbumId, setSavedAlbumId] = useState(album?.id || null);
-  const [phase, setPhase]               = useState(mode === 'edit' ? 'details' : 'details');
+  const [phase, setPhase]               = useState('details');
   // phase: 'details' | 'songs'
 
-  // Load songs hiß╗çn tß║íi cß╗ºa album (khi edit)
+  // Load songs hiện tại của album (khi edit)
   useEffect(() => {
     if (!savedAlbumId) return;
     setSongLoading(true);
@@ -71,7 +73,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
 
   const handleSaveDetails = async () => {
     if (!title.trim()) {
-      dispatch(showToast({ message: 'T├¬n album kh├┤ng ─æ╞░ß╗úc trß╗æng', type: 'error' }));
+      dispatch(showToast({ message: 'Tên album không được trống', type: 'error' }));
       return;
     }
     setSaving(true);
@@ -83,19 +85,19 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
           releaseDate: releaseDate || undefined,
         });
         if (!result.success || !result.data?.id) {
-          dispatch(showToast({ message: 'Tß║ío album thß║Ñt bß║íi', type: 'error' }));
+          dispatch(showToast({ message: 'Tạo album thất bại', type: 'error' }));
           return;
         }
         setSavedAlbumId(result.data.id);
         setPhase('songs');
-        dispatch(showToast({ message: '─É├ú tß║ío album ΓÇö chß╗ìn b├ái h├ít b├¬n d╞░ß╗¢i', type: 'success' }));
+        dispatch(showToast({ message: 'Đã tạo album — chọn bài hát bên dưới', type: 'success' }));
       } else {
         await updateAlbum(savedAlbumId, {
           title: title.trim(),
           coverUrl: coverUrl.trim() || undefined,
           releaseDate: releaseDate || undefined,
         });
-        dispatch(showToast({ message: '─É├ú cß║¡p nhß║¡t album', type: 'success' }));
+        dispatch(showToast({ message: 'Đã cập nhật album', type: 'success' }));
         setPhase('songs');
       }
     } finally {
@@ -112,11 +114,11 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
       if (isInAlbum) {
         const res = await removeSongFromAlbum(savedAlbumId, songId);
         if (res.success) setAlbumSongIds((prev) => { const s = new Set(prev); s.delete(songId); return s; });
-        else dispatch(showToast({ message: 'Kh├┤ng thß╗â xo├í b├ái h├ít', type: 'error' }));
+        else dispatch(showToast({ message: 'Không thể xoá bài hát', type: 'error' }));
       } else {
         const res = await addSongToAlbum(savedAlbumId, songId);
         if (res.success) setAlbumSongIds((prev) => new Set([...prev, songId]));
-        else dispatch(showToast({ message: 'Kh├┤ng thß╗â th├¬m b├ái h├ít', type: 'error' }));
+        else dispatch(showToast({ message: 'Không thể thêm bài hát', type: 'error' }));
       }
     } finally {
       setTogglingId(null);
@@ -134,7 +136,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
           <h2 className="text-lg font-bold text-white">
-            {mode === 'create' ? 'Tß║ío album mß╗¢i' : `Chß╗ënh sß╗¡a: ${album?.title}`}
+            {mode === 'create' ? 'Tạo album mới' : `Chỉnh sửa: ${album?.title}`}
           </h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-white transition">
             <X size={20} />
@@ -149,7 +151,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               phase === 'details' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
             }`}
           >
-            Th├┤ng tin
+            Thông tin
           </button>
           <button
             onClick={() => savedAlbumId && setPhase('songs')}
@@ -158,7 +160,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               phase === 'songs' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
-            B├ái h├ít ({albumSongIds.size})
+            Bài hát ({albumSongIds.size})
           </button>
         </div>
 
@@ -169,13 +171,13 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Title */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 block">
-                  T├¬n album <span className="text-red-400">*</span>
+                  Tên album <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Nhß╗»ng b├ái h├ít hay nhß║Ñt"
+                  placeholder="VD: Những bài hát hay nhất"
                   className="w-full bg-neutral-800 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveDetails()}
                 />
@@ -184,7 +186,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Cover URL */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
-                  <ImageIcon size={12} /> ß║ónh b├¼a (URL, tuß╗│ chß╗ìn)
+                  <ImageIcon size={12} /> Ảnh bìa (URL, tuỳ chọn)
                 </label>
                 <input
                   type="url"
@@ -206,7 +208,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Release date */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
-                  <Calendar size={12} /> Ng├áy ph├ít h├ánh (tuß╗│ chß╗ìn)
+                  <Calendar size={12} /> Ngày phát hành (tuỳ chọn)
                 </label>
                 <input
                   type="date"
@@ -222,7 +224,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
                 disabled={saving}
                 className="mt-2 w-full py-2 rounded-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black text-sm font-bold transition"
               >
-                {saving ? '─Éang l╞░u...' : mode === 'create' ? 'Tß║ío album & chß╗ìn b├ái h├ít ΓåÆ' : 'L╞░u & quß║ún l├╜ b├ái h├ít ΓåÆ'}
+                {saving ? 'Đang lưu...' : mode === 'create' ? 'Tạo album & chọn bài hát →' : 'Lưu & quản lý bài hát →'}
               </button>
             </div>
           )}
@@ -230,12 +232,12 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
           {phase === 'songs' && (
             <div>
               <p className="text-xs text-neutral-400 mb-3">
-                Chß╗ìn b├ái h├ít cß╗ºa bß║ín ─æß╗â th├¬m v├áo album. Thay ─æß╗òi ─æ╞░ß╗úc ├íp dß╗Ñng ngay.
+                Chọn bài hát của bạn để thêm vào album. Thay đổi được áp dụng ngay.
               </p>
               {songLoading ? (
-                <div className="text-center text-neutral-400 text-sm py-6">─Éang tß║úi...</div>
+                <div className="text-center text-neutral-400 text-sm py-6">Đang tải...</div>
               ) : artistSongs.length === 0 ? (
-                <div className="text-center text-neutral-400 text-sm py-6">Bß║ín ch╞░a c├│ b├ái h├ít n├áo.</div>
+                <div className="text-center text-neutral-400 text-sm py-6">Bạn chưa có bài hát nào.</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {artistSongs.map((song) => {
@@ -287,14 +289,14 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
             onClick={onClose}
             className="px-4 py-2 rounded-full border border-neutral-600 text-white text-sm font-semibold hover:border-white transition"
           >
-            ─É├│ng
+            Đóng
           </button>
           {phase === 'songs' && (
             <button
               onClick={handleDone}
               className="px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-bold transition"
             >
-              Xong Γ£ô
+              Xong ✓
             </button>
           )}
         </div>
@@ -303,15 +305,15 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
   );
 }
 
-// ΓöÇΓöÇΓöÇ Main Page ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Main Page ────────────────────────────────────────────────────────────────
 
 export default function ArtistDashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  const [stats, setStats]     = useState(null);
-  const [mySongs, setMySongs] = useState([]);
+  const [stats, setStats]       = useState(null);
+  const [mySongs, setMySongs]   = useState([]);
   const [myAlbums, setMyAlbums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -325,10 +327,9 @@ export default function ArtistDashboardPage() {
   const refreshAlbums = useCallback(async (artistId) => {
     const rawAlbums = await getAllAlbums();
     const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
-    const songsByArtist = mySongs; // already loaded
     const albumsWithCount = albums.map((a) => ({
       ...a,
-      songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
+      songCount: mySongs.filter((s) => s.album_id === a.id).length,
     }));
     setMyAlbums(albumsWithCount);
   }, [mySongs]);
@@ -340,24 +341,28 @@ export default function ArtistDashboardPage() {
     const resolveArtistProfile = async () => {
       const userId = user.user_id || user.id;
 
-      // 1. Thß╗¡ gß╗ìi API trß╗▒c tiß║┐p bß║▒ng artist_id (fast path)
+      // 1. Fast path: dùng artist_id đã có trong Redux
       if (user.artist_id) {
         const p = await getArtistById(user.artist_id);
         if (p) return p;
       }
 
-      // 2. API 503/lß╗ùi ΓÇö d├╣ng localStorage cache (l╞░u khi login th├ánh c├┤ng tr╞░ß╗¢c ─æ├│)
+      // 2. Gọi /me/artist-profile — backend tự resolve theo userId (chuẩn nhất)
+      const myProfile = await getMyArtistProfile();
+      if (myProfile?.id) return myProfile;
+
+      // 3. Fallback: localStorage cache (khi API lỗi tạm thời)
       const cached = getArtistProfileFromStorage(userId);
       if (cached?.id) return cached;
 
-      // 3. Thß╗¡ query theo userId (tr╞░ß╗¥ng hß╗úp artist_id ch╞░a c├│ trong Redux)
+      // 4. Last resort: query theo userId
       return getArtistByUserId(userId);
     };
 
     resolveArtistProfile().then((artistProfile) => {
       const artistId = artistProfile?.id || null;
       if (!artistId) {
-        dispatch(showToast({ message: 'Kh├┤ng t├¼m thß║Ñy hß╗ô s╞í nghß╗ç s─⌐. Vui l├▓ng x├íc minh lß║íi.', type: 'warning' }));
+        dispatch(showToast({ message: 'Không tìm thấy hồ sơ nghệ sĩ. Vui lòng xác minh lại.', type: 'warning' }));
         navigate('/artist-verify');
         setIsLoading(false);
         return;
@@ -380,7 +385,7 @@ export default function ArtistDashboardPage() {
           followers: apiStats.followers || profile?.followers || 0,
           monthlyListeners: apiStats.monthlyListeners || Number(profile?.monthly_listeners) || 0,
         });
-        setMySongs(songsByArtist);
+        setMySongs(songsByArtist.filter((s) => s && s.song_id && s.audio_url));
         setMyAlbums(albumsWithCount);
       }).finally(() => setIsLoading(false));
     });
@@ -392,24 +397,24 @@ export default function ArtistDashboardPage() {
   };
   const handleEditSong   = (song) => navigate(`/edit-song/${song.song_id}`);
   const handleDeleteSong = async (songId) => {
-    if (!window.confirm('Bß║ín c├│ chß║»c muß╗æn xo├í b├ái h├ít n├áy?')) return;
+    if (!window.confirm('Bạn có chắc muốn xoá bài hát này?')) return;
     const result = await deleteSong(songId);
     if (result.success) {
       setMySongs((prev) => prev.filter((s) => s.song_id !== songId));
-      dispatch(showToast({ message: '─É├ú xo├í b├ái h├ít', type: 'success' }));
+      dispatch(showToast({ message: 'Đã xoá bài hát', type: 'success' }));
     }
   };
   const handleDeleteAlbum = async (albumId) => {
-    if (!window.confirm('Bß║ín c├│ chß║»c muß╗æn xo├í album n├áy?')) return;
+    if (!window.confirm('Bạn có chắc muốn xoá album này?')) return;
     const result = await deleteAlbum(albumId);
     if (result.success) {
       setMyAlbums((prev) => prev.filter((a) => a.id !== albumId));
-      dispatch(showToast({ message: '─É├ú xo├í album', type: 'success' }));
+      dispatch(showToast({ message: 'Đã xoá album', type: 'success' }));
     }
   };
 
-  // Gß╗ìi sau khi modal l╞░u xong ΓåÆ refresh danh s├ích album
-  const handleModalSaved = async (savedAlbumId) => {
+  // Gọi sau khi modal lưu xong — refresh danh sách album
+  const handleModalSaved = async () => {
     const artistId = user?.artist_id;
     if (!artistId) return;
     const rawAlbums = await getAllAlbums();
@@ -435,7 +440,7 @@ export default function ArtistDashboardPage() {
         />
       )}
 
-      <h1 className="text-xl font-bold text-white mb-6">Thß╗æng k├¬ nghß╗ç s─⌐</h1>
+      <h1 className="text-xl font-bold text-white mb-6">Thống kê nghệ sĩ</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -444,7 +449,7 @@ export default function ArtistDashboardPage() {
             <div className={color}><Icon size={28} /></div>
             <div>
               <p className="text-2xl font-bold text-white">
-                {isLoading ? 'ΓÇö' : (stats?.[key]?.toLocaleString?.() ?? stats?.[key] ?? 'ΓÇö')}
+                {isLoading ? '—' : (stats?.[key]?.toLocaleString?.() ?? stats?.[key] ?? '—')}
               </p>
               <p className="text-sm text-neutral-400">{label}</p>
             </div>
@@ -454,21 +459,21 @@ export default function ArtistDashboardPage() {
 
       {/* My songs table */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-white">B├ái h├ít cß╗ºa t├┤i</h2>
+        <h2 className="text-lg font-semibold text-white">Bài hát của tôi</h2>
         <button
           onClick={() => navigate('/upload')}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
         >
-          <PlusCircle size={16} /> Th├¬m b├ái h├ít
+          <PlusCircle size={16} /> Thêm bài hát
         </button>
       </div>
 
       {mySongs.length > 0 ? (
         <>
           <div className="grid grid-cols-[24px_1fr_1fr_56px_80px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
-            <span>#</span><span>Ti├¬u ─æß╗ü</span><span>Thß╗â loß║íi</span>
+            <span>#</span><span>Tiêu đề</span><span>Thể loại</span>
             <span className="flex justify-center"><Clock size={14} /></span>
-            <span className="text-center">Thao t├íc</span>
+            <span className="text-center">Thao tác</span>
           </div>
           <div className="flex flex-col">
             {mySongs.map((song, idx) => (
@@ -488,14 +493,14 @@ export default function ArtistDashboardPage() {
                   <span className="text-sm font-medium text-white truncate">{song.title}</span>
                 </div>
                 <span className="text-sm text-neutral-400 flex items-center truncate">
-                  {song.categories?.join(', ') || 'ΓÇö'}
+                  {song.categories?.join(', ') || '—'}
                 </span>
                 <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 <div className="flex items-center justify-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); handleEditSong(song); }} className="text-neutral-400 hover:text-white transition" title="Chß╗ënh sß╗¡a">
+                  <button onClick={(e) => { e.stopPropagation(); handleEditSong(song); }} className="text-neutral-400 hover:text-white transition" title="Chỉnh sửa">
                     <Pencil size={16} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }} className="text-neutral-400 hover:text-red-400 transition" title="Xo├í">
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }} className="text-neutral-400 hover:text-red-400 transition" title="Xoá">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -505,7 +510,7 @@ export default function ArtistDashboardPage() {
         </>
       ) : (
         <div className="text-neutral-400 text-sm mt-4">
-          {isLoading ? '─Éang tß║úi...' : 'Bß║ín ch╞░a c├│ b├ái h├ít n├áo tr├¬n hß╗ç thß╗æng.'}
+          {isLoading ? 'Đang tải...' : 'Bạn chưa có bài hát nào trên hệ thống.'}
         </div>
       )}
 
@@ -517,7 +522,7 @@ export default function ArtistDashboardPage() {
             onClick={openCreateModal}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
           >
-            <PlusCircle size={16} /> Tß║ío album mß╗¢i
+            <PlusCircle size={16} /> Tạo album mới
           </button>
         </div>
 
@@ -537,21 +542,20 @@ export default function ArtistDashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{album.title}</p>
-                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} b├ái h├ít ΓÇó {album.release_date || 'ΓÇö'}</p>
+                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} bài hát · {album.release_date || '—'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Chß╗ë Pencil mß╗¢i mß╗ƒ edit modal */}
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditModal(album); }}
                     className="text-neutral-400 hover:text-white transition"
-                    title="Chß╗ënh sß╗¡a album"
+                    title="Chỉnh sửa album"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteAlbum(album.id); }}
                     className="text-neutral-400 hover:text-red-400 transition"
-                    title="Xo├í album"
+                    title="Xoá album"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -561,7 +565,7 @@ export default function ArtistDashboardPage() {
           </div>
         ) : (
           <div className="text-neutral-400 text-sm mt-2">
-            {isLoading ? '─Éang tß║úi...' : 'Bß║ín ch╞░a c├│ album n├áo.'}
+            {isLoading ? 'Đang tải...' : 'Bạn chưa có album nào.'}
           </div>
         )}
       </div>

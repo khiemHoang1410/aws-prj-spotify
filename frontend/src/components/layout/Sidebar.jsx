@@ -186,28 +186,93 @@ export default function Sidebar() {
             <Library size={24} />
             <span>Thư viện</span>
           </button>
-          <button
-            className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
-            onClick={handleCreatePlaylistClick}
-            title="Tạo playlist mới"
-          >
-            <Plus size={20} />
-          </button>
+          {isAuthenticated && (
+            <button
+              className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
+              onClick={handleCreatePlaylistClick}
+              title="Tạo playlist mới"
+            >
+              <Plus size={20} />
+            </button>
+          )}
         </div>
 
-        <div className="flex gap-2 px-2 mb-3">
-          {FILTER_OPTIONS.map((option) => (
-            <button
-              key={option}
-              className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-                filter === option ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
-              }`}
-              onClick={() => setFilter(option)}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
+        {/* Chưa đăng nhập — hiện card mời đăng nhập */}
+        {!isAuthenticated ? (
+          <div className="flex flex-col gap-2 px-2 pb-2">
+            {/* Card tạo playlist */}
+            <div className="bg-[#242424] hover:bg-[#2a2a2a] transition-colors rounded-lg p-4 cursor-default">
+              <p className="text-white font-bold text-sm mb-1 leading-snug">
+                Tạo playlist đầu tiên của bạn
+              </p>
+              <p className="text-[#a7a7a7] text-xs mb-4 leading-relaxed">
+                Dễ lắm, chúng tôi sẽ giúp bạn
+              </p>
+              <button
+                onClick={() => dispatch(openModal('login'))}
+                className="px-4 py-1.5 bg-white text-black text-sm font-bold rounded-full
+                           hover:bg-[#f0f0f0] active:scale-95 transition-all duration-150"
+              >
+                Tạo playlist
+              </button>
+            </div>
+
+            {/* Card theo dõi nghệ sĩ */}
+            <div className="bg-[#242424] hover:bg-[#2a2a2a] transition-colors rounded-lg p-4 cursor-default">
+              <p className="text-white font-bold text-sm mb-1 leading-snug">
+                Theo dõi nghệ sĩ yêu thích
+              </p>
+              <p className="text-[#a7a7a7] text-xs mb-4 leading-relaxed">
+                Cập nhật nhạc mới nhất từ các nghệ sĩ bạn yêu thích
+              </p>
+              <button
+                onClick={() => dispatch(openModal('login'))}
+                className="px-4 py-1.5 bg-white text-black text-sm font-bold rounded-full
+                           hover:bg-[#f0f0f0] active:scale-95 transition-all duration-150"
+              >
+                Duyệt tìm nghệ sĩ
+              </button>
+            </div>
+
+            {/* Divider + CTA đăng nhập */}
+            <div className="mt-2 px-1">
+              <div className="h-px bg-[#2a2a2a] mb-4" />
+              <p className="text-[#a7a7a7] text-xs leading-relaxed mb-3">
+                Đăng nhập để xem thư viện, playlist và lịch sử nghe nhạc của bạn.
+              </p>
+              <div className="flex flex-col gap-2">
+                <button
+                  onClick={() => dispatch(openModal('register'))}
+                  className="w-full py-2 bg-[#1DB954] text-black text-sm font-bold rounded-full
+                             hover:bg-[#1ed760] active:scale-95 transition-all duration-150"
+                >
+                  Đăng ký miễn phí
+                </button>
+                <button
+                  onClick={() => dispatch(openModal('login'))}
+                  className="w-full py-2 border border-[#727272] text-white text-sm font-bold rounded-full
+                             hover:border-white active:scale-95 transition-all duration-150"
+                >
+                  Đăng nhập
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex gap-2 px-2 mb-3">
+              {FILTER_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition ${
+                    filter === option ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
+                  }`}
+                  onClick={() => setFilter(option)}
+                >
+                  {option}
+                </button>
+              ))}
+            </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {/* Nghệ sĩ */}
@@ -337,10 +402,10 @@ export default function Sidebar() {
                         }}
                       >
                         <img
-                          src={entry.image_url || '/pictures/whiteBackground.jpg'}
+                          src={entry.image_url || '/pictures/artworkDefault.png'}
                           alt={entry.title}
                           className="w-11 h-11 rounded object-cover flex-shrink-0"
-                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+                          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
                         />
                         <div className="min-w-0">
                           <p className="text-sm font-medium text-white truncate">{entry.title}</p>
@@ -355,6 +420,8 @@ export default function Sidebar() {
             )
           )}
         </div>
+          </>
+        )}
       </div>
 
       {/* Context menu cho playlist (chuột phải) */}

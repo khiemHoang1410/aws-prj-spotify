@@ -3,7 +3,7 @@ import { Draggable } from '@hello-pangea/dnd';
 import { Trash2 } from 'lucide-react';
 import DragHandle from './DragHandle';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 function formatDuration(seconds) {
   if (!seconds) return '0:00';

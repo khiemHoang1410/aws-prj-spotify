@@ -1,7 +1,7 @@
 import React from 'react';
 import { Play } from 'lucide-react';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 /**
  * Generic card component — shared layout for songs, playlists, artists.
@@ -22,7 +22,7 @@ export default function Card({ image, title, subtitle, onClick, onPlay, imageSha
 
   return (
     <div
-      className="bg-[#181818] p-4 rounded-md hover:bg-[#282828] transition duration-300 group cursor-pointer flex flex-col flex-shrink-0 w-40"
+      className="bg-[#181818] p-3 rounded-md hover:bg-[#282828] transition duration-300 group cursor-pointer flex flex-col flex-shrink-0"
       onClick={onClick}
     >
       <div className="relative mb-4">

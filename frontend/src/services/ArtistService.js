@@ -1,5 +1,5 @@
 import api from './apiClient';
-import { adaptArtist, adaptSong, adaptPaginatedResponse } from './adapters';
+import { adaptArtist, adaptSong, adaptAlbum, adaptPaginatedResponse } from './adapters';
 
 export const getArtists = async () => {
   try {
@@ -48,6 +48,19 @@ export const getArtistByUserId = async (userId) => {
   }
 };
 
+/**
+ * Lấy artist profile của chính user đang đăng nhập.
+ * Backend tự resolve theo userId → không cần biết artistId trước.
+ */
+export const getMyArtistProfile = async () => {
+  try {
+    const data = await api.get('/me/artist-profile', { silent: true });
+    return data ? adaptArtist(data) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const getArtistStats = async (artistId) => {
   try {
     const data = await api.get(`/artists/${artistId}/stats`, { silent: true });
@@ -66,7 +79,7 @@ export const getArtistSongs = async (artistId) => {
   try {
     const data = await api.get(`/artists/${artistId}/songs`, { silent: true });
     const items = Array.isArray(data) ? data : (data?.items || []);
-    return items.map(adaptSong);
+    return items.map(adaptSong).filter((s) => s && s.song_id && s.audio_url);
   } catch {
     return [];
   }
@@ -76,7 +89,7 @@ export const getArtistTopTracks = async (artistId) => {
   try {
     const data = await api.get(`/artists/${artistId}/top-tracks`, { silent: true });
     const items = Array.isArray(data) ? data : (data?.items || []);
-    return items.map(adaptSong);
+    return items.map(adaptSong).filter((s) => s && s.song_id && s.audio_url);
   } catch {
     return [];
   }
@@ -113,6 +126,16 @@ export const getRelatedArtists = async (artistId) => {
     const data = await api.get(`/artists/${artistId}/related`);
     const arr = Array.isArray(data) ? data : (data?.items || data?.data || []);
     return arr.map(adaptArtist).filter(Boolean);
+  } catch {
+    return [];
+  }
+};
+
+export const getArtistAlbums = async (artistId) => {
+  try {
+    const data = await api.get(`/artists/${artistId}/albums`, { silent: true });
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptAlbum).filter(Boolean);
   } catch {
     return [];
   }
