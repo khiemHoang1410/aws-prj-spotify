@@ -93,6 +93,8 @@ export default $config({
           args.retainOnDelete = true;
           // Enable TTL — tự động xóa play history sau 90 ngày
           args.timeToLiveSpecification = { attributeName: "ttl", enabled: true };
+          // Enable DynamoDB Streams để sync vào OpenSearch
+          args.streamSpecification = { streamEnabled: true, streamViewType: "NEW_AND_OLD_IMAGES" };
         },
       },
     });
@@ -113,10 +115,12 @@ export default $config({
 
     // VPC config cho Lambda (chạy trong private subnet)
     // Yêu cầu VPC Endpoints: S3, DynamoDB, cognito-idp
+    // Dùng Pulumi/CloudFormation format cho transform.function
     const lambdaVpcConfig = {
-        vpc: sstEnv.vpcId,
-        vpcSubnets: [sstEnv.privateSubnetId],
-        securityGroups: [sstEnv.lambdaSecurityGroupId],
+        vpcConfig: {
+            subnetIds: [sstEnv.privateSubnetId],
+            securityGroupIds: [sstEnv.lambdaSecurityGroupId],
+        },
     };
 
     const api = new sst.aws.ApiGatewayV2("MyApi", {
@@ -148,7 +152,12 @@ export default $config({
     Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
-    Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
+    // Search route — inject OPENSEARCH_ENDPOINT qua FunctionArgs object
+    api.route("GET /search", {
+        handler: "src/interfaces/http/handlers/search/search.handler",
+        environment: { OPENSEARCH_ENDPOINT: sstEnv.openSearchEndpoint },
+        transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } },
+    });
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(genrePublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
@@ -166,12 +175,72 @@ export default $config({
     Object.entries(editorialPlaylistAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
     Object.entries(genreAdminRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndAuth));
 
+    // VPC EC2 permissions — cần để Lambda attach vào VPC (CreateNetworkInterface, etc.)
+    const vpcPermissions = [
+        { actions: ["ec2:CreateNetworkInterface", "ec2:DescribeNetworkInterfaces", "ec2:DeleteNetworkInterface", "ec2:AssignPrivateIpAddresses", "ec2:UnassignPrivateIpAddresses"], resources: ["*"] },
+    ];
+
+    // 7. DynamoDB Streams → OpenSearch indexer
+    new sst.aws.Function("SearchIndexer", {
+        handler: "src/infrastructure/search/indexer.handler",
+        link: [table],
+        timeout: "60 seconds",
+        environment: { OPENSEARCH_ENDPOINT: sstEnv.openSearchEndpoint },
+        permissions: vpcPermissions,
+        transform: {
+            function: (args: any) => {
+                Object.assign(args, lambdaVpcConfig);
+                args.eventSourceMappings = [{
+                    eventSourceArn: $interpolate`${table.arn}/stream/latest`,
+                    startingPosition: "LATEST",
+                    batchSize: 100,
+                    bisectBatchOnFunctionError: true,
+                }];
+            },
+        },
+    });
+
+    // 8. One-time setup Lambda — invoke thủ công 1 lần để tạo indices + bulk index
+    const setupFn = new sst.aws.Function("OpenSearchSetupV2", {
+        handler: "src/infrastructure/search/setupHandler.handler",
+        link: [table],
+        timeout: "300 seconds",
+        environment: { OPENSEARCH_ENDPOINT: sstEnv.openSearchEndpoint },
+        permissions: vpcPermissions,
+        transform: {
+            function: (args: any) => {
+                Object.assign(args, lambdaVpcConfig);
+            },
+        },
+    });
+
+    // 9. Frontend — S3 + CloudFront + custom domain
+    const web = new sst.aws.StaticSite("SpotifyFrontend", {
+      path: "../frontend",
+      build: {
+        command: "npm run build",
+        output: "dist",
+        environment: {
+          VITE_API_URL: api.url,
+        },
+      },
+      // React Router cần redirect 404 → index.html để client-side routing hoạt động
+      errorPage: "index.html",
+      domain: (isProd || $app.stage === "khiemhoang") ? {
+        name: "hskhiem.io.vn",
+        redirects: ["www.hskhiem.io.vn"],
+        dns: sst.aws.dns(),
+      } : undefined,
+    });
+
     return {
       api: api.url,
       bucketName: bucket.name,
       tableName: table.name,
       userPoolId: userPool.id,
       userPoolClientId: userPoolClient.id,
+      openSearchSetupFn: setupFn.name,
+      frontendUrl: web.url,
     };
   },
 });

@@ -5,6 +5,7 @@ export interface AuthContext {
     userId: string;
     email: string;
     role: string;
+    name?: string;
 }
 
 export const extractAuth = (event: any): Result<AuthContext> => {
@@ -25,7 +26,9 @@ export const extractAuth = (event: any): Result<AuthContext> => {
         : groups.includes("artist") ? "artist"
         : "listener";
 
-    return { success: true, data: { userId, email, role } };
+    const name = claims.name || claims["cognito:username"] || undefined;
+
+    return { success: true, data: { userId, email, role, name } };
 };
 
 export const makeAuthHandler = (

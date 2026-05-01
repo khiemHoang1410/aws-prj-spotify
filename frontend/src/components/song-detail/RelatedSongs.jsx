@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Play } from 'lucide-react';
 import { toSongUrl } from '../../utils/songUrl';
 
-const IMG_FALLBACK = '/pictures/whiteBackground.jpg';
+const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 function formatDuration(seconds) {
   if (!seconds) return '0:00';

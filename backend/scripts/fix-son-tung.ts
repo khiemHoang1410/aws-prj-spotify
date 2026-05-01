@@ -1,0 +1,279 @@
+/**
+ * Fix Sơn Tùng M-TP seed data:
+ *   1. Xóa ARTIST#artist-001 (fake record không có userId)
+ *   2. Xóa tất cả SONG/ALBUM records có artistId = "artist-001"
+ *   3. Seed lại 30 bài + 5 albums vào đúng ARTIST có userId (tài khoản thật)
+ *
+ * Usage: cd backend && npx tsx scripts/fix-son-tung.ts
+ */
+
+import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import {
+    DynamoDBDocumentClient,
+    PutCommand,
+    DeleteCommand,
+    ScanCommand,
+    GetCommand,
+} from "@aws-sdk/lib-dynamodb";
+import { readFileSync } from "fs";
+import { join } from "path";
+
+// ─── Config ────────────────────────────────────────────────────────────────
+
+function loadEnv() {
+    try {
+        const raw = readFileSync(join(process.cwd(), ".env"), "utf-8");
+        for (const line of raw.split("\n")) {
+            const trimmed = line.trim();
+            if (!trimmed || trimmed.startsWith("#")) continue;
+            const idx = trimmed.indexOf("=");
+            if (idx === -1) continue;
+            const key = trimmed.slice(0, idx).trim();
+            const val = trimmed.slice(idx + 1).trim();
+            if (key && !process.env[key]) process.env[key] = val;
+        }
+    } catch { /* ignore */ }
+}
+loadEnv();
+
+function getTableName(): string {
+    if (process.env.TABLE_NAME) return process.env.TABLE_NAME;
+    try {
+        const outputs = JSON.parse(readFileSync(join(process.cwd(), ".sst/outputs.json"), "utf-8"));
+        return outputs.tableName;
+    } catch {
+        throw new Error("Không tìm thấy TABLE_NAME.");
+    }
+}
+
+const TABLE_NAME = getTableName();
+const REGION = "ap-southeast-1";
+const db = DynamoDBDocumentClient.from(new DynamoDBClient({ region: REGION }), {
+    marshallOptions: { removeUndefinedValues: true },
+});
+
+// ─── ID thật của Sơn Tùng (có userId = tài khoản Cognito) ─────────────────
+const REAL_ARTIST_ID = "019d470b-a1b2-7612-a373-a250868d5901";
+const OLD_ARTIST_ID  = "artist-001";
+
+const now = new Date().toISOString();
+
+// ─── Audio placeholder ─────────────────────────────────────────────────────
+const AUDIO_URLS = Array.from({ length: 17 }, (_, i) =>
+    `https://www.soundhelix.com/examples/mp3/SoundHelix-Song-${i + 1}.mp3`
+);
+let audioIdx = 0;
+const nextAudio = () => AUDIO_URLS[audioIdx++ % AUDIO_URLS.length];
+
+// ─── Albums ────────────────────────────────────────────────────────────────
+
+const ALBUMS = [
+    {
+        id: "album-sontung-001",
+        title: "m-tp M-TP",
+        coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052",
+        releaseDate: "2017-08-18",
+        songIds: [
+            "song-st-001", "song-st-002", "song-st-003", "song-st-004",
+            "song-st-005", "song-st-006", "song-st-007",
+        ],
+    },
+    {
+        id: "album-sontung-002",
+        title: "Sky Tour Movie",
+        coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052",
+        releaseDate: "2020-10-30",
+        songIds: ["song-st-008", "song-st-009", "song-st-010", "song-st-011"],
+    },
+    {
+        id: "album-sontung-003",
+        title: "There's No One At All (Single)",
+        coverUrl: "https://i.scdn.co/image/ab67616d0000b273a2e0e66e40af40424e05779f",
+        releaseDate: "2021-09-10",
+        songIds: ["song-st-012"],
+    },
+    {
+        id: "album-sontung-004",
+        title: "Making My Way (Single)",
+        coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052",
+        releaseDate: "2022-04-28",
+        songIds: ["song-st-013"],
+    },
+    {
+        id: "album-sontung-005",
+        title: "Chúng Ta Của Hiện Tại (Single)",
+        coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052",
+        releaseDate: "2020-12-20",
+        songIds: ["song-st-014"],
+    },
+];
+
+// ─── Songs ─────────────────────────────────────────────────────────────────
+
+const SONGS = [
+    // Album m-tp M-TP
+    { id: "song-st-001", title: "Chạy Ngay Đi",         albumId: "album-sontung-001", duration: 245, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 125000000, year: 2017 },
+    { id: "song-st-002", title: "Lạc Trôi",              albumId: "album-sontung-001", duration: 258, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 98000000,  year: 2017 },
+    { id: "song-st-003", title: "Nơi Này Có Anh",        albumId: "album-sontung-001", duration: 272, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 87000000,  year: 2017 },
+    { id: "song-st-004", title: "Hãy Trao Cho Anh",      albumId: "album-sontung-001", duration: 234, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop","r&b"],    playCount: 210000000, year: 2019 },
+    { id: "song-st-005", title: "Âm Thầm Bên Em",        albumId: "album-sontung-001", duration: 261, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 45000000,  year: 2013 },
+    { id: "song-st-006", title: "Cơn Mưa Ngang Qua",     albumId: "album-sontung-001", duration: 248, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 38000000,  year: 2013 },
+    { id: "song-st-007", title: "Em Của Ngày Hôm Qua",   albumId: "album-sontung-001", duration: 255, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 72000000,  year: 2014 },
+    // Album Sky Tour Movie
+    { id: "song-st-008", title: "Muộn Rồi Mà Sao Còn",  albumId: "album-sontung-002", duration: 287, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 185000000, year: 2021 },
+    { id: "song-st-009", title: "Sóng Gió",              albumId: "album-sontung-002", duration: 241, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 95000000,  year: 2018 },
+    { id: "song-st-010", title: "Nắng Ấm Xa Dần",        albumId: "album-sontung-002", duration: 263, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 42000000,  year: 2014 },
+    { id: "song-st-011", title: "Thái Bình Mồ Hôi Rơi", albumId: "album-sontung-002", duration: 238, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 55000000,  year: 2019 },
+    // Singles có album
+    { id: "song-st-012", title: "There's No One At All", albumId: "album-sontung-003", duration: 196, coverUrl: "https://i.scdn.co/image/ab67616d0000b273a2e0e66e40af40424e05779f", genres: ["pop","indie"],         playCount: 320000000, year: 2021 },
+    { id: "song-st-013", title: "Making My Way",         albumId: "album-sontung-004", duration: 183, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["pop","r&b"],           playCount: 145000000, year: 2022 },
+    { id: "song-st-014", title: "Chúng Ta Của Hiện Tại", albumId: "album-sontung-005", duration: 276, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 160000000, year: 2020 },
+    // Singles không album
+    { id: "song-st-015", title: "Kẻ Thứ Ba",                        albumId: null, duration: 252, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 35000000,  year: 2012 },
+    { id: "song-st-016", title: "Tâm Sự Với Người Lạ",              albumId: null, duration: 244, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 28000000,  year: 2012 },
+    { id: "song-st-017", title: "Cách Một Tầng Mây",                albumId: null, duration: 267, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 31000000,  year: 2013 },
+    { id: "song-st-018", title: "Chắc Ai Đó Sẽ Về",                 albumId: null, duration: 271, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 62000000,  year: 2014 },
+    { id: "song-st-019", title: "Bi Hài Kịch",                      albumId: null, duration: 249, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 22000000,  year: 2015 },
+    { id: "song-st-020", title: "Anh Đang Ở Đâu Đấy Anh",           albumId: null, duration: 258, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 48000000,  year: 2015 },
+    { id: "song-st-021", title: "Không Phải Dạng Vừa Đâu",          albumId: null, duration: 236, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 75000000,  year: 2016 },
+    { id: "song-st-022", title: "Buông Đôi Tay Nhau Ra",            albumId: null, duration: 253, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 33000000,  year: 2016 },
+    { id: "song-st-023", title: "Chúng Ta",                         albumId: null, duration: 261, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 41000000,  year: 2016 },
+    { id: "song-st-024", title: "Nắng Ấm Xa Dần (Acoustic)",        albumId: null, duration: 270, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","acoustic"],     playCount: 18000000,  year: 2016 },
+    { id: "song-st-025", title: "Vì Tôi Còn Sống",                  albumId: null, duration: 243, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop"],          playCount: 29000000,  year: 2017 },
+    { id: "song-st-026", title: "Hãy Trao Cho Anh (ft. Snoop Dogg)",albumId: null, duration: 234, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop","r&b"],    playCount: 210000000, year: 2019 },
+    { id: "song-st-027", title: "Nắng Ấm Xa Dần (Live)",            albumId: null, duration: 285, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","ballad"],       playCount: 12000000,  year: 2019 },
+    { id: "song-st-028", title: "Chạy Ngay Đi (Remix)",             albumId: null, duration: 258, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","pop","edm"],    playCount: 55000000,  year: 2018 },
+    { id: "song-st-029", title: "Nơi Này Có Anh (Piano Version)",   albumId: null, duration: 280, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","acoustic"],     playCount: 20000000,  year: 2018 },
+    { id: "song-st-030", title: "Muộn Rồi Mà Sao Còn (Acoustic)",  albumId: null, duration: 295, coverUrl: "https://i.scdn.co/image/ab67616d0000b273c50961b7b7be0034ea366052", genres: ["vpop","acoustic","ballad"], playCount: 48000000, year: 2021 },
+];
+
+// ─── Step 1: Xóa ARTIST#artist-001 ─────────────────────────────────────────
+
+async function deleteOldArtist() {
+    await db.send(new DeleteCommand({
+        TableName: TABLE_NAME,
+        Key: { pk: `ARTIST#${OLD_ARTIST_ID}`, sk: "METADATA" },
+    }));
+    console.log(`🗑️  Đã xóa ARTIST#${OLD_ARTIST_ID}`);
+}
+
+// ─── Step 2: Xóa songs/albums cũ có artistId = artist-001 ─────────────────
+
+async function deleteOldSongsAndAlbums() {
+    // Xóa songs
+    for (const song of SONGS) {
+        try {
+            await db.send(new DeleteCommand({
+                TableName: TABLE_NAME,
+                Key: { pk: `SONG#${song.id}`, sk: "METADATA" },
+            }));
+        } catch { /* không tồn tại thì bỏ qua */ }
+    }
+    console.log(`🗑️  Đã xóa ${SONGS.length} song records cũ`);
+
+    // Xóa albums
+    for (const album of ALBUMS) {
+        try {
+            await db.send(new DeleteCommand({
+                TableName: TABLE_NAME,
+                Key: { pk: `ALBUM#${album.id}`, sk: "METADATA" },
+            }));
+        } catch { /* không tồn tại thì bỏ qua */ }
+    }
+    console.log(`🗑️  Đã xóa ${ALBUMS.length} album records cũ`);
+}
+
+// ─── Step 3: Kiểm tra ARTIST thật ─────────────────────────────────────────
+
+async function verifyRealArtist() {
+    const res = await db.send(new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { pk: `ARTIST#${REAL_ARTIST_ID}`, sk: "METADATA" },
+    }));
+    if (!res.Item) throw new Error(`Không tìm thấy ARTIST#${REAL_ARTIST_ID}`);
+    console.log(`✅ Artist thật: ${res.Item.name} (userId: ${res.Item.userId})`);
+    return res.Item;
+}
+
+// ─── Step 4: Seed albums với đúng artistId ─────────────────────────────────
+
+async function seedAlbums() {
+    for (const album of ALBUMS) {
+        await db.send(new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+                pk: `ALBUM#${album.id}`,
+                sk: "METADATA",
+                entityType: "ALBUM",
+                id: album.id,
+                title: album.title,
+                artistId: REAL_ARTIST_ID,
+                artistName: "Sơn Tùng M-TP",
+                coverUrl: album.coverUrl,
+                releaseDate: album.releaseDate,
+                songIds: album.songIds,
+                createdAt: now,
+                updatedAt: now,
+            },
+        }));
+        console.log(`  📀 ${album.title}`);
+    }
+}
+
+// ─── Step 5: Seed songs với đúng artistId ──────────────────────────────────
+
+async function seedSongs() {
+    for (const song of SONGS) {
+        await db.send(new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+                pk: `SONG#${song.id}`,
+                sk: "METADATA",
+                entityType: "SONG",
+                id: song.id,
+                title: song.title,
+                artistId: REAL_ARTIST_ID,
+                artistName: "Sơn Tùng M-TP",
+                albumId: song.albumId,
+                duration: song.duration,
+                fileUrl: nextAudio(),
+                coverUrl: song.coverUrl,
+                genre: song.genres[0],
+                genres: song.genres,
+                lyrics: null,
+                playCount: song.playCount,
+                createdAt: `${song.year}-01-01T00:00:00.000Z`,
+                updatedAt: now,
+            },
+        }));
+        console.log(`  🎵 ${song.title}`);
+    }
+}
+
+// ─── Main ───────────────────────────────────────────────────────────────────
+
+async function main() {
+    console.log(`\n🔧 Fix Sơn Tùng M-TP data → ${TABLE_NAME}\n`);
+
+    console.log("── Step 1: Xóa ARTIST record cũ (artist-001)...");
+    await deleteOldArtist();
+
+    console.log("\n── Step 2: Xóa songs/albums cũ...");
+    await deleteOldSongsAndAlbums();
+
+    console.log("\n── Step 3: Kiểm tra artist thật...");
+    await verifyRealArtist();
+
+    console.log("\n── Step 4: Seed albums...");
+    await seedAlbums();
+
+    console.log("\n── Step 5: Seed songs...");
+    await seedSongs();
+
+    console.log(`\n✅ Xong!`);
+    console.log(`   Artist ID : ${REAL_ARTIST_ID}`);
+    console.log(`   Albums    : ${ALBUMS.length}`);
+    console.log(`   Songs     : ${SONGS.length}\n`);
+}
+
+main().catch(console.error);

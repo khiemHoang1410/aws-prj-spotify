@@ -117,10 +117,10 @@ function ArtistInfoPanel({ song }) {
         onClick={() => artistId && navigate(`/artist/${artistId}`)}
       >
         <img
-          src={artist.photo_url || artist.image_url || '/pictures/whiteBackground.jpg'}
+          src={artist.photo_url || artist.image_url || '/pictures/artworkDefault.png'}
           alt={artist.name}
           className="absolute inset-0 w-full h-full object-cover transition duration-500 group-hover:scale-105"
-          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/whiteBackground.jpg'; }}
+          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = '/pictures/artworkDefault.png'; }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
         <div className="absolute bottom-0 left-0 right-0 p-6">

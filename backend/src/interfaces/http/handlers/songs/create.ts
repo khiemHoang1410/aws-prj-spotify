@@ -18,7 +18,7 @@ const CreateSongSchema = z.object({
     title: z.string().min(1).max(255),
     artistId: z.uuid(),
     albumId: z.uuid().nullable().optional(),
-    duration: z.number().int().min(1),
+    duration: z.number().int().min(0),
     fileUrl: z.url(),
     coverUrl: z.url().nullable().optional(),
     mvUrl: z.url().nullable().optional(),
