@@ -9,6 +9,7 @@ import { getAllAlbums } from '../services/AlbumService';
 import CardSong from '../components/cards/CardSong';
 import Card from '../components/cards/Card';
 import SkeletonCard from '../components/ui/SkeletonCard';
+import SectionRow from '../components/ui/SectionRow';
 import FeaturedPlaylists from '../components/editorial/FeaturedPlaylists';
 import PageFooter from '../components/layout/PageFooter';
 
@@ -24,7 +25,6 @@ export default function HomePage() {
   const [newReleases, setNewReleases] = useState([]);
   const [personalizedSongs, setPersonalizedSongs] = useState([]);
   const [discoverSongs, setDiscoverSongs] = useState([]);
-  const [expandedSections, setExpandedSections] = useState({});
 
   useEffect(() => {
     const fetchMusic = async () => {
@@ -33,13 +33,13 @@ export default function HomePage() {
         const [songsData, albumsData, trendingData, newReleasesData] = await Promise.all([
           getSongs(),
           getAllAlbums(),
-          fetchTrendingSongs(10),
-          fetchNewReleases(10),
+          fetchTrendingSongs(12),
+          fetchNewReleases(12),
         ]);
         setSongs(songsData);
         setAlbums(albumsData);
-        setTrendingSongs(trendingData.length > 0 ? trendingData : songsData.slice(0, 10));
-        setNewReleases(newReleasesData.length > 0 ? newReleasesData : songsData.slice(0, 10));
+        setTrendingSongs(trendingData.length > 0 ? trendingData : songsData.slice(0, 12));
+        setNewReleases(newReleasesData.length > 0 ? newReleasesData : songsData.slice(0, 12));
       } catch (error) {
         console.error('Lỗi khi tải dữ liệu:', error);
       } finally {
@@ -60,85 +60,18 @@ export default function HomePage() {
     dispatch(setCurrentSong(song));
   };
 
-  const toggleSection = (key) => setExpandedSections((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  // Section album: horizontal scroll trên mobile, grid trên desktop
-  const AlbumSection = ({ title, items }) => {
-    if (!items?.length) return null;
-    return (
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-4">{title}</h2>
-        {/* Mobile: horizontal scroll */}
-        <div className="sm:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {items.map((album) => (
-            <div key={album.id} className="flex-shrink-0 w-40">
-              <Card
-                image={album.image_url || album.coverUrl}
-                title={album.title || album.name}
-                subtitle={album.artist_name || album.artistName || 'Album'}
-                onClick={() => navigate(`/album/${album.id}`)}
-              />
-            </div>
-          ))}
-        </div>
-        {/* Desktop: responsive grid */}
-        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-          {items.slice(0, 10).map((album) => (
-            <Card
-              key={album.id}
-              image={album.image_url || album.coverUrl}
-              title={album.title || album.name}
-              subtitle={album.artist_name || album.artistName || 'Album'}
-              onClick={() => navigate(`/album/${album.id}`)}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  // Section bài hát: grid trên desktop, horizontal scroll trên mobile
-  const Section = ({ title, sectionKey, items }) => {
-    if (!items?.length) return null;
-    const expanded = expandedSections[sectionKey];
-    return (
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-2xl font-bold text-white">{title}</h2>
-          <button onClick={() => toggleSection(sectionKey)} className="text-sm font-bold text-[#b3b3b3] hover:text-white transition hidden sm:block">
-            {expanded ? 'Thu gọn' : 'Hiện tất cả'}
-          </button>
-        </div>
-        {/* Mobile: horizontal scroll. Desktop: grid */}
-        <div className="sm:hidden flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-          {items.map((song) => (
-            <div key={song.song_id} className="flex-shrink-0 w-40">
-              <CardSong song={song} onPlay={handlePlaySong} />
-            </div>
-          ))}
-        </div>
-        <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-          {(expanded ? items : items.slice(0, 5)).map((song) => (
-            <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-
   if (loading) {
     return (
-      <div className="space-y-8">
-        {[1, 2].map((s) => (
+      <div className="space-y-10 pb-24">
+        {[1, 2, 3].map((s) => (
           <div key={s}>
-            <div className="h-6 w-40 bg-neutral-800 rounded animate-pulse mb-4" />
-            <div className="hidden sm:grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2">
-              {Array.from({ length: 5 }).map((_, i) => <SkeletonCard key={i} />)}
+            <div className="flex items-center justify-between mb-4">
+              <div className="h-7 w-44 bg-neutral-800 rounded animate-pulse" />
+              <div className="h-4 w-20 bg-neutral-800 rounded animate-pulse" />
             </div>
-            <div className="sm:hidden flex gap-4 overflow-x-auto pb-2">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex-shrink-0 w-40"><SkeletonCard /></div>
+            <div className="flex gap-3 overflow-hidden">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex-shrink-0 w-[180px]"><SkeletonCard /></div>
               ))}
             </div>
           </div>
@@ -149,14 +82,73 @@ export default function HomePage() {
 
   return (
     <>
-      <div className="sm:p-3 pt-4 mb-20">
+      <div className="sm:p-3 pt-4 pb-24">
+        {/* Editorial playlists */}
         <FeaturedPlaylists />
-        <AlbumSection title="Album nổi bật" items={albums} />
-        {isAuthenticated && <Section title="Dành cho bạn" sectionKey="personalized" items={personalizedSongs} />}
-        <Section title="Thịnh hành" sectionKey="trending" items={trendingSongs} />
-        <Section title="Mới phát hành" sectionKey="newReleases" items={newReleases} />
-        {isAuthenticated && <Section title="Khám phá" sectionKey="discover" items={discoverSongs} />}
-        {songs.length === 0 && <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>}
+
+        {/* Albums nổi bật */}
+        {albums.length > 0 && (
+          <SectionRow title="Album nổi bật" sectionKey="albums">
+            {albums.slice(0, 12).map((album) => (
+              <Card
+                key={album.id}
+                image={album.image_url || album.coverUrl}
+                title={album.title || album.name}
+                subtitle={album.artist_name || album.artistName || 'Album'}
+                onClick={() => navigate(`/album/${album.id}`)}
+              />
+            ))}
+          </SectionRow>
+        )}
+
+        {/* Dành cho bạn — chỉ khi đăng nhập */}
+        {isAuthenticated && personalizedSongs.length > 0 && (
+          <SectionRow title="Dành cho bạn" sectionKey="personalized">
+            {personalizedSongs.slice(0, 12).map((song) => (
+              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+            ))}
+          </SectionRow>
+        )}
+
+        {/* Thịnh hành */}
+        {trendingSongs.length > 0 && (
+          <SectionRow title="Thịnh hành" sectionKey="trending">
+            {trendingSongs.slice(0, 12).map((song) => (
+              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+            ))}
+          </SectionRow>
+        )}
+
+        {/* Mới phát hành */}
+        {newReleases.length > 0 && (
+          <SectionRow title="Mới phát hành" sectionKey="newReleases">
+            {newReleases.slice(0, 12).map((song) => (
+              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+            ))}
+          </SectionRow>
+        )}
+
+        {/* Khám phá — chỉ khi đăng nhập */}
+        {isAuthenticated && discoverSongs.length > 0 && (
+          <SectionRow title="Khám phá" sectionKey="discover">
+            {discoverSongs.slice(0, 12).map((song) => (
+              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+            ))}
+          </SectionRow>
+        )}
+
+        {/* Tất cả bài hát */}
+        {songs.length > 0 && (
+          <SectionRow title="Tất cả bài hát" sectionKey="allSongs">
+            {songs.slice(0, 12).map((song) => (
+              <CardSong key={song.song_id} song={song} onPlay={handlePlaySong} />
+            ))}
+          </SectionRow>
+        )}
+
+        {songs.length === 0 && !loading && (
+          <div className="text-[#b3b3b3] text-center mt-10">Không có bài hát nào.</div>
+        )}
       </div>
       <PageFooter />
     </>

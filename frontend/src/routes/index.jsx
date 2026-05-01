@@ -26,6 +26,7 @@ import TodoListPage from '../pages/TodoListPage';
 import PlayHistoryPage from '../pages/PlayHistoryPage';
 import MyLibraryPage from '../pages/MyLibraryPage';
 import SongDetailPage from '../pages/SongDetailPage';
+import SectionPage from '../pages/SectionPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -43,6 +44,7 @@ export const router = createBrowserRouter([
       { path: '/song/:songSlug', element: <SongDetailPage /> },
       { path: '/artist/:id', element: <ArtistProfilePage /> },      { path: '/album/:id', element: <AlbumDetailPage /> },
       { path: '/genre/:id', element: <GenrePage /> },
+      { path: '/section/:sectionKey', element: <SectionPage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
       { path: '/jokes', element: <JokeGeneratorPage /> },
       { path: '/todos', element: <TodoListPage /> },
