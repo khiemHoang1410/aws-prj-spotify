@@ -141,31 +141,9 @@ export class SearchService {
 
         await Promise.all(promises);
 
-        // Nếu search "all" và có artist match → thêm bài hát của artist đó vào kết quả
-        if (searchAll && result.artists?.length > 0) {
-            const topArtistId = result.artists[0].id;
-            const existingSongIds = new Set((result.songs || []).map((s: any) => s.id));
-
-            const artistSongsRes = await client.search({
-                index: INDICES.SONGS,
-                body: {
-                    size,
-                    query: {
-                        bool: {
-                            must: [{ term: { artistId: topArtistId } }],
-                            must_not: [{ exists: { field: "deletedAt" } }],
-                        },
-                    },
-                    sort: [{ playCount: "desc" }],
-                },
-            });
-
-            const artistSongs = artistSongsRes.body.hits.hits
-                .map((h: any) => ({ ...h._source, _score: h._score }))
-                .filter((s: any) => !existingSongIds.has(s.id));
-
-            result.songs = [...(result.songs || []), ...artistSongs].slice(0, size);
-        }
+        // KHÔNG tự động nhét bài hát của artist vào search results
+        // ArtistContextSections ở frontend sẽ tự fetch top tracks riêng
+        // để tránh làm nhiễu kết quả search (e.g. search "stungg" ra 30 bài Sơn Tùng)
 
         return Success(result);
     }
@@ -203,11 +181,11 @@ export class SearchService {
         if (searchAll || type === "song") {
             const songs = await this.songRepo.findAll();
             if (!songs.success) return songs;
+            // Chỉ match theo title hoặc artistName — KHÔNG nhét toàn bộ bài của artist
             result.songs = songs.data
                 .filter((s) =>
                     matches(s.title, keyword) ||
-                    matches((s as any).artistName || "", keyword) ||
-                    matchedArtistIds.has((s as any).artistId || "")
+                    matches((s as any).artistName || "", keyword)
                 )
                 .slice(0, config.searchMaxResults);
         }
