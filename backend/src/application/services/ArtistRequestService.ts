@@ -3,6 +3,7 @@ import { ArtistRequest, ArtistRequestSchema } from "../../domain/entities/Artist
 import { ArtistRequestRepository } from "../../infrastructure/database/ArtistRequestRepository";
 import { ArtistRepository } from "../../infrastructure/database/ArtistRepository";
 import { UserRepository } from "../../infrastructure/database/UserRepository";
+import { NotificationRepository } from "../../infrastructure/database/NotificationRepository";
 import { AuthService } from "./AuthService";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 import { Artist } from "../../domain/entities/Artist";
@@ -100,6 +101,22 @@ export class ArtistRequestService {
                     Username: email,
                     GroupName: "artist",
                 }));
+            }
+
+            // 6. Gửi thông báo cho user được duyệt (chỉ user này, không ai khác)
+            try {
+                const notificationRepo = new NotificationRepository();
+                await notificationRepo.save({
+                    id: uuidv7(),
+                    userId: request.userId,
+                    type: "artist_approved",
+                    message: `Chúc mừng! Yêu cầu trở thành nghệ sĩ "${request.stageName}" của bạn đã được duyệt.`,
+                    isRead: false,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                });
+            } catch {
+                // Notification failure không block approve flow
             }
 
             return Success(artist);
