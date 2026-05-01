@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
   Music, Headphones, Users, TrendingUp,
-  Play, Clock, Pencil, Trash2, PlusCircle, Disc3, X,
+  Play, Clock, Pencil, Trash2, PlusCircle, X,
   Image as ImageIcon, Calendar, CheckSquare, Square,
 } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
@@ -12,7 +12,7 @@ import { openModal } from '../store/authSlice';
 import { ROLES } from '../constants/enums';
 import { getArtistById, getArtistByUserId, getArtistStats, getArtistSongs, getMyArtistProfile } from '../services/ArtistService';
 import { getArtistProfileFromStorage } from '../services/AuthService';
-import { getSongs as _getSongs, deleteSong } from '../services/SongService';
+import { deleteSong } from '../services/SongService';
 import {
   getAllAlbums,
   createAlbum,
@@ -26,10 +26,10 @@ import {
 const IMG_FALLBACK = '/pictures/artworkDefault.png';
 
 const STAT_CARDS = [
-  { key: 'totalSongs',      label: 'Tﬂ+Úng b+·i h+Ìt',    icon: Music,      color: 'text-blue-400' },
-  { key: 'totalPlays',      label: 'Tﬂ+Úng l¶¶ﬂ+˙t nghe',  icon: Headphones, color: 'text-green-400' },
-  { key: 'followers',       label: 'Ng¶¶ﬂ+•i theo d+¶i',  icon: Users,      color: 'text-purple-400' },
-  { key: 'monthlyListeners',label: 'L¶¶ﬂ+˙t nghe th+Ìng', icon: TrendingUp, color: 'text-yellow-400' },
+  { key: 'totalSongs',       label: 'T·ªïng b√†i h√°t',      icon: Music,      color: 'text-blue-400' },
+  { key: 'totalPlays',       label: 'T·ªïng l∆∞·ª£t nghe',    icon: Headphones, color: 'text-green-400' },
+  { key: 'followers',        label: 'Ng∆∞·ªùi theo d√µi',    icon: Users,      color: 'text-purple-400' },
+  { key: 'monthlyListeners', label: 'L∆∞·ª£t nghe th√°ng',   icon: TrendingUp, color: 'text-yellow-400' },
 ];
 
 function formatDuration(seconds) {
@@ -40,29 +40,29 @@ function formatDuration(seconds) {
   return `${m}:${s.toString().padStart(2, '0')}`;
 }
 
-// Gˆ«Gˆ«Gˆ« Album Modal Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«
+// ‚îÄ‚îÄ‚îÄ Album Modal ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
 function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
   const dispatch = useDispatch();
 
-  const [title, setTitle]           = useState(album?.title || '');
-  const [coverUrl, setCoverUrl]     = useState(album?.image_url || album?.coverUrl || '');
+  const [title, setTitle]             = useState(album?.title || '');
+  const [coverUrl, setCoverUrl]       = useState(album?.image_url || album?.coverUrl || '');
   const [releaseDate, setReleaseDate] = useState(
     album?.release_date ? album.release_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
   );
-  const [saving, setSaving]         = useState(false);
+  const [saving, setSaving]           = useState(false);
 
-  // Song management (chﬂ+Î khi edit G«ˆ sau khi album -Ê+˙ tﬂ+Ùn tﬂ¶Ìi)
+  // Song management (ch·ªâ khi edit ‚Äî sau khi album ƒë√£ t·ªìn t·∫°i)
   const [albumSongIds, setAlbumSongIds] = useState(new Set());
   const [songLoading, setSongLoading]   = useState(false);
   const [togglingId, setTogglingId]     = useState(null);
 
-  // Saved album id (-Êﬂ+‚ add/remove songs sau khi create)
+  // Saved album id (ƒë·ªÉ add/remove songs sau khi create)
   const [savedAlbumId, setSavedAlbumId] = useState(album?.id || null);
-  const [phase, setPhase]               = useState(mode === 'edit' ? 'details' : 'details');
+  const [phase, setPhase]               = useState('details');
   // phase: 'details' | 'songs'
 
-  // Load songs hiﬂ+Án tﬂ¶Ìi cﬂ+∫a album (khi edit)
+  // Load songs hi·ªán t·∫°i c·ªßa album (khi edit)
   useEffect(() => {
     if (!savedAlbumId) return;
     setSongLoading(true);
@@ -73,7 +73,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
 
   const handleSaveDetails = async () => {
     if (!title.trim()) {
-      dispatch(showToast({ message: 'T+¨n album kh+¶ng -Ê¶¶ﬂ+˙c trﬂ+Êng', type: 'error' }));
+      dispatch(showToast({ message: 'T√™n album kh√¥ng ƒë∆∞·ª£c tr·ªëng', type: 'error' }));
       return;
     }
     setSaving(true);
@@ -85,19 +85,19 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
           releaseDate: releaseDate || undefined,
         });
         if (!result.success || !result.data?.id) {
-          dispatch(showToast({ message: 'Tﬂ¶Ìo album thﬂ¶—t bﬂ¶Ìi', type: 'error' }));
+          dispatch(showToast({ message: 'T·∫°o album th·∫•t b·∫°i', type: 'error' }));
           return;
         }
         setSavedAlbumId(result.data.id);
         setPhase('songs');
-        dispatch(showToast({ message: '-…+˙ tﬂ¶Ìo album G«ˆ chﬂ+Ïn b+·i h+Ìt b+¨n d¶¶ﬂ+¢i', type: 'success' }));
+        dispatch(showToast({ message: 'ƒê√£ t·∫°o album ‚Äî ch·ªçn b√†i h√°t b√™n d∆∞·ªõi', type: 'success' }));
       } else {
         await updateAlbum(savedAlbumId, {
           title: title.trim(),
           coverUrl: coverUrl.trim() || undefined,
           releaseDate: releaseDate || undefined,
         });
-        dispatch(showToast({ message: '-…+˙ cﬂ¶°p nhﬂ¶°t album', type: 'success' }));
+        dispatch(showToast({ message: 'ƒê√£ c·∫≠p nh·∫≠t album', type: 'success' }));
         setPhase('songs');
       }
     } finally {
@@ -114,11 +114,11 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
       if (isInAlbum) {
         const res = await removeSongFromAlbum(savedAlbumId, songId);
         if (res.success) setAlbumSongIds((prev) => { const s = new Set(prev); s.delete(songId); return s; });
-        else dispatch(showToast({ message: 'Kh+¶ng thﬂ+‚ xo+Ì b+·i h+Ìt', type: 'error' }));
+        else dispatch(showToast({ message: 'Kh√¥ng th·ªÉ xo√° b√†i h√°t', type: 'error' }));
       } else {
         const res = await addSongToAlbum(savedAlbumId, songId);
         if (res.success) setAlbumSongIds((prev) => new Set([...prev, songId]));
-        else dispatch(showToast({ message: 'Kh+¶ng thﬂ+‚ th+¨m b+·i h+Ìt', type: 'error' }));
+        else dispatch(showToast({ message: 'Kh√¥ng th·ªÉ th√™m b√†i h√°t', type: 'error' }));
       }
     } finally {
       setTogglingId(null);
@@ -136,7 +136,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-800">
           <h2 className="text-lg font-bold text-white">
-            {mode === 'create' ? 'Tﬂ¶Ìo album mﬂ+¢i' : `Chﬂ+Înh sﬂ+°a: ${album?.title}`}
+            {mode === 'create' ? 'T·∫°o album m·ªõi' : `Ch·ªânh s·ª≠a: ${album?.title}`}
           </h2>
           <button onClick={onClose} className="text-neutral-400 hover:text-white transition">
             <X size={20} />
@@ -151,7 +151,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               phase === 'details' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
             }`}
           >
-            Th+¶ng tin
+            Th√¥ng tin
           </button>
           <button
             onClick={() => savedAlbumId && setPhase('songs')}
@@ -160,7 +160,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               phase === 'songs' ? 'text-green-400 border-b-2 border-green-400' : 'text-neutral-400 hover:text-white'
             } disabled:opacity-40 disabled:cursor-not-allowed`}
           >
-            B+·i h+Ìt ({albumSongIds.size})
+            B√†i h√°t ({albumSongIds.size})
           </button>
         </div>
 
@@ -171,13 +171,13 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Title */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 block">
-                  T+¨n album <span className="text-red-400">*</span>
+                  T√™n album <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="VD: Nhﬂ+ªng b+·i h+Ìt hay nhﬂ¶—t"
+                  placeholder="VD: Nh·ªØng b√†i h√°t hay nh·∫•t"
                   className="w-full bg-neutral-800 text-white text-sm rounded-md px-3 py-2 outline-none focus:ring-2 focus:ring-green-500"
                   onKeyDown={(e) => e.key === 'Enter' && handleSaveDetails()}
                 />
@@ -186,7 +186,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Cover URL */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
-                  <ImageIcon size={12} /> ﬂ¶Ûnh b+ºa (URL, tuﬂ+¶ chﬂ+Ïn)
+                  <ImageIcon size={12} /> ·∫¢nh b√¨a (URL, tu·ª≥ ch·ªçn)
                 </label>
                 <input
                   type="url"
@@ -208,7 +208,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
               {/* Release date */}
               <div>
                 <label className="text-xs text-neutral-400 font-semibold mb-1 flex items-center gap-1">
-                  <Calendar size={12} /> Ng+·y ph+Ìt h+·nh (tuﬂ+¶ chﬂ+Ïn)
+                  <Calendar size={12} /> Ng√†y ph√°t h√†nh (tu·ª≥ ch·ªçn)
                 </label>
                 <input
                   type="date"
@@ -224,7 +224,7 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
                 disabled={saving}
                 className="mt-2 w-full py-2 rounded-full bg-green-500 hover:bg-green-400 disabled:opacity-50 text-black text-sm font-bold transition"
               >
-                {saving ? '-…ang l¶¶u...' : mode === 'create' ? 'Tﬂ¶Ìo album & chﬂ+Ïn b+·i h+Ìt GÂ∆' : 'L¶¶u & quﬂ¶˙n l++ b+·i h+Ìt GÂ∆'}
+                {saving ? 'ƒêang l∆∞u...' : mode === 'create' ? 'T·∫°o album & ch·ªçn b√†i h√°t ‚Üí' : 'L∆∞u & qu·∫£n l√Ω b√†i h√°t ‚Üí'}
               </button>
             </div>
           )}
@@ -232,12 +232,12 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
           {phase === 'songs' && (
             <div>
               <p className="text-xs text-neutral-400 mb-3">
-                Chﬂ+Ïn b+·i h+Ìt cﬂ+∫a bﬂ¶Ìn -Êﬂ+‚ th+¨m v+·o album. Thay -Êﬂ+Úi -Ê¶¶ﬂ+˙c +Ìp dﬂ+—ng ngay.
+                Ch·ªçn b√†i h√°t c·ªßa b·∫°n ƒë·ªÉ th√™m v√†o album. Thay ƒë·ªïi ƒë∆∞·ª£c √°p d·ª•ng ngay.
               </p>
               {songLoading ? (
-                <div className="text-center text-neutral-400 text-sm py-6">-…ang tﬂ¶˙i...</div>
+                <div className="text-center text-neutral-400 text-sm py-6">ƒêang t·∫£i...</div>
               ) : artistSongs.length === 0 ? (
-                <div className="text-center text-neutral-400 text-sm py-6">Bﬂ¶Ìn ch¶¶a c+¶ b+·i h+Ìt n+·o.</div>
+                <div className="text-center text-neutral-400 text-sm py-6">B·∫°n ch∆∞a c√≥ b√†i h√°t n√†o.</div>
               ) : (
                 <div className="flex flex-col gap-1">
                   {artistSongs.map((song) => {
@@ -289,14 +289,14 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
             onClick={onClose}
             className="px-4 py-2 rounded-full border border-neutral-600 text-white text-sm font-semibold hover:border-white transition"
           >
-            -…+¶ng
+            ƒê√≥ng
           </button>
           {phase === 'songs' && (
             <button
               onClick={handleDone}
               className="px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-bold transition"
             >
-              Xong G£Ù
+              Xong ‚úì
             </button>
           )}
         </div>
@@ -305,15 +305,15 @@ function AlbumModal({ mode, album, artistSongs, onClose, onSaved }) {
   );
 }
 
-// Gˆ«Gˆ«Gˆ« Main Page Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«Gˆ«
+// ‚îÄ‚îÄ‚îÄ Main Page ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ‚îÄ
 
 export default function ArtistDashboardPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  const [stats, setStats]     = useState(null);
-  const [mySongs, setMySongs] = useState([]);
+  const [stats, setStats]       = useState(null);
+  const [mySongs, setMySongs]   = useState([]);
   const [myAlbums, setMyAlbums] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -327,10 +327,9 @@ export default function ArtistDashboardPage() {
   const refreshAlbums = useCallback(async (artistId) => {
     const rawAlbums = await getAllAlbums();
     const albums = (Array.isArray(rawAlbums) ? rawAlbums : []).filter((a) => a.artist_id === artistId);
-    const songsByArtist = mySongs; // already loaded
     const albumsWithCount = albums.map((a) => ({
       ...a,
-      songCount: songsByArtist.filter((s) => s.album_id === a.id).length,
+      songCount: mySongs.filter((s) => s.album_id === a.id).length,
     }));
     setMyAlbums(albumsWithCount);
   }, [mySongs]);
@@ -342,17 +341,17 @@ export default function ArtistDashboardPage() {
     const resolveArtistProfile = async () => {
       const userId = user.user_id || user.id;
 
-      // 1. Fast path: d˘ng artist_id d„ cÛ trong Redux
+      // 1. Fast path: d√πng artist_id ƒë√£ c√≥ trong Redux
       if (user.artist_id) {
         const p = await getArtistById(user.artist_id);
         if (p) return p;
       }
 
-      // 2. G?i /me/artist-profile ó backend t? resolve theo userId (chu?n nh?t)
+      // 2. G·ªçi /me/artist-profile ‚Äî backend t·ª± resolve theo userId (chu·∫©n nh·∫•t)
       const myProfile = await getMyArtistProfile();
       if (myProfile?.id) return myProfile;
 
-      // 3. Fallback: localStorage cache (khi API l?i t?m th?i)
+      // 3. Fallback: localStorage cache (khi API l·ªói t·∫°m th·ªùi)
       const cached = getArtistProfileFromStorage(userId);
       if (cached?.id) return cached;
 
@@ -363,7 +362,7 @@ export default function ArtistDashboardPage() {
     resolveArtistProfile().then((artistProfile) => {
       const artistId = artistProfile?.id || null;
       if (!artistId) {
-        dispatch(showToast({ message: 'Kh+¶ng t+ºm thﬂ¶—y hﬂ+Ù s¶Ì nghﬂ+Á s-¨. Vui l+¶ng x+Ìc minh lﬂ¶Ìi.', type: 'warning' }));
+        dispatch(showToast({ message: 'Kh√¥ng t√¨m th·∫•y h·ªì s∆° ngh·ªá sƒ©. Vui l√≤ng x√°c minh l·∫°i.', type: 'warning' }));
         navigate('/artist-verify');
         setIsLoading(false);
         return;
@@ -398,24 +397,24 @@ export default function ArtistDashboardPage() {
   };
   const handleEditSong   = (song) => navigate(`/edit-song/${song.song_id}`);
   const handleDeleteSong = async (songId) => {
-    if (!window.confirm('Bﬂ¶Ìn c+¶ chﬂ¶ªc muﬂ+Ên xo+Ì b+·i h+Ìt n+·y?')) return;
+    if (!window.confirm('B·∫°n c√≥ ch·∫Øc mu·ªën xo√° b√†i h√°t n√†y?')) return;
     const result = await deleteSong(songId);
     if (result.success) {
       setMySongs((prev) => prev.filter((s) => s.song_id !== songId));
-      dispatch(showToast({ message: '-…+˙ xo+Ì b+·i h+Ìt', type: 'success' }));
+      dispatch(showToast({ message: 'ƒê√£ xo√° b√†i h√°t', type: 'success' }));
     }
   };
   const handleDeleteAlbum = async (albumId) => {
-    if (!window.confirm('Bﬂ¶Ìn c+¶ chﬂ¶ªc muﬂ+Ên xo+Ì album n+·y?')) return;
+    if (!window.confirm('B·∫°n c√≥ ch·∫Øc mu·ªën xo√° album n√†y?')) return;
     const result = await deleteAlbum(albumId);
     if (result.success) {
       setMyAlbums((prev) => prev.filter((a) => a.id !== albumId));
-      dispatch(showToast({ message: '-…+˙ xo+Ì album', type: 'success' }));
+      dispatch(showToast({ message: 'ƒê√£ xo√° album', type: 'success' }));
     }
   };
 
-  // Gﬂ+Ïi sau khi modal l¶¶u xong GÂ∆ refresh danh s+Ìch album
-  const handleModalSaved = async (savedAlbumId) => {
+  // G·ªçi sau khi modal l∆∞u xong ‚Äî refresh danh s√°ch album
+  const handleModalSaved = async () => {
     const artistId = user?.artist_id;
     if (!artistId) return;
     const rawAlbums = await getAllAlbums();
@@ -441,7 +440,7 @@ export default function ArtistDashboardPage() {
         />
       )}
 
-      <h1 className="text-xl font-bold text-white mb-6">Thﬂ+Êng k+¨ nghﬂ+Á s-¨</h1>
+      <h1 className="text-xl font-bold text-white mb-6">Th·ªëng k√™ ngh·ªá sƒ©</h1>
 
       {/* Stat cards */}
       <div className="grid grid-cols-2 gap-4 mb-8">
@@ -450,7 +449,7 @@ export default function ArtistDashboardPage() {
             <div className={color}><Icon size={28} /></div>
             <div>
               <p className="text-2xl font-bold text-white">
-                {isLoading ? 'G«ˆ' : (stats?.[key]?.toLocaleString?.() ?? stats?.[key] ?? 'G«ˆ')}
+                {isLoading ? '‚Äî' : (stats?.[key]?.toLocaleString?.() ?? stats?.[key] ?? '‚Äî')}
               </p>
               <p className="text-sm text-neutral-400">{label}</p>
             </div>
@@ -460,21 +459,21 @@ export default function ArtistDashboardPage() {
 
       {/* My songs table */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-lg font-semibold text-white">B+·i h+Ìt cﬂ+∫a t+¶i</h2>
+        <h2 className="text-lg font-semibold text-white">B√†i h√°t c·ªßa t√¥i</h2>
         <button
           onClick={() => navigate('/upload')}
           className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
         >
-          <PlusCircle size={16} /> Th+¨m b+·i h+Ìt
+          <PlusCircle size={16} /> Th√™m b√†i h√°t
         </button>
       </div>
 
       {mySongs.length > 0 ? (
         <>
           <div className="grid grid-cols-[24px_1fr_1fr_56px_80px] gap-4 px-4 py-2 text-xs font-semibold text-neutral-400 uppercase border-b border-neutral-800 mb-1">
-            <span>#</span><span>Ti+¨u -Êﬂ+¸</span><span>Thﬂ+‚ loﬂ¶Ìi</span>
+            <span>#</span><span>Ti√™u ƒë·ªÅ</span><span>Th·ªÉ lo·∫°i</span>
             <span className="flex justify-center"><Clock size={14} /></span>
-            <span className="text-center">Thao t+Ìc</span>
+            <span className="text-center">Thao t√°c</span>
           </div>
           <div className="flex flex-col">
             {mySongs.map((song, idx) => (
@@ -494,14 +493,14 @@ export default function ArtistDashboardPage() {
                   <span className="text-sm font-medium text-white truncate">{song.title}</span>
                 </div>
                 <span className="text-sm text-neutral-400 flex items-center truncate">
-                  {song.categories?.join(', ') || 'G«ˆ'}
+                  {song.categories?.join(', ') || '‚Äî'}
                 </span>
                 <span className="text-sm text-neutral-400 flex items-center justify-center">{formatDuration(song.duration)}</span>
                 <div className="flex items-center justify-center gap-2">
-                  <button onClick={(e) => { e.stopPropagation(); handleEditSong(song); }} className="text-neutral-400 hover:text-white transition" title="Chﬂ+Înh sﬂ+°a">
+                  <button onClick={(e) => { e.stopPropagation(); handleEditSong(song); }} className="text-neutral-400 hover:text-white transition" title="Ch·ªânh s·ª≠a">
                     <Pencil size={16} />
                   </button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }} className="text-neutral-400 hover:text-red-400 transition" title="Xo+Ì">
+                  <button onClick={(e) => { e.stopPropagation(); handleDeleteSong(song.song_id); }} className="text-neutral-400 hover:text-red-400 transition" title="Xo√°">
                     <Trash2 size={16} />
                   </button>
                 </div>
@@ -511,7 +510,7 @@ export default function ArtistDashboardPage() {
         </>
       ) : (
         <div className="text-neutral-400 text-sm mt-4">
-          {isLoading ? '-…ang tﬂ¶˙i...' : 'Bﬂ¶Ìn ch¶¶a c+¶ b+·i h+Ìt n+·o tr+¨n hﬂ+Á thﬂ+Êng.'}
+          {isLoading ? 'ƒêang t·∫£i...' : 'B·∫°n ch∆∞a c√≥ b√†i h√°t n√†o tr√™n h·ªá th·ªëng.'}
         </div>
       )}
 
@@ -523,7 +522,7 @@ export default function ArtistDashboardPage() {
             onClick={openCreateModal}
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-500 hover:bg-green-400 text-black text-sm font-semibold transition"
           >
-            <PlusCircle size={16} /> Tﬂ¶Ìo album mﬂ+¢i
+            <PlusCircle size={16} /> T·∫°o album m·ªõi
           </button>
         </div>
 
@@ -543,21 +542,20 @@ export default function ArtistDashboardPage() {
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-white truncate">{album.title}</p>
-                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} b+·i h+Ìt G«Û {album.release_date || 'G«ˆ'}</p>
+                  <p className="text-xs text-neutral-400">{album.songCount ?? 0} b√†i h√°t ¬∑ {album.release_date || '‚Äî'}</p>
                 </div>
                 <div className="flex items-center gap-2">
-                  {/* Chﬂ+Î Pencil mﬂ+¢i mﬂ+É edit modal */}
                   <button
                     onClick={(e) => { e.stopPropagation(); openEditModal(album); }}
                     className="text-neutral-400 hover:text-white transition"
-                    title="Chﬂ+Înh sﬂ+°a album"
+                    title="Ch·ªânh s·ª≠a album"
                   >
                     <Pencil size={16} />
                   </button>
                   <button
                     onClick={(e) => { e.stopPropagation(); handleDeleteAlbum(album.id); }}
                     className="text-neutral-400 hover:text-red-400 transition"
-                    title="Xo+Ì album"
+                    title="Xo√° album"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -567,7 +565,7 @@ export default function ArtistDashboardPage() {
           </div>
         ) : (
           <div className="text-neutral-400 text-sm mt-2">
-            {isLoading ? '-…ang tﬂ¶˙i...' : 'Bﬂ¶Ìn ch¶¶a c+¶ album n+·o.'}
+            {isLoading ? 'ƒêang t·∫£i...' : 'B·∫°n ch∆∞a c√≥ album n√†o.'}
           </div>
         )}
       </div>

@@ -214,6 +214,25 @@ export default $config({
         },
     });
 
+    // 9. Frontend — S3 + CloudFront + custom domain
+    const web = new sst.aws.StaticSite("SpotifyFrontend", {
+      path: "../frontend",
+      build: {
+        command: "npm run build",
+        output: "dist",
+        environment: {
+          VITE_API_URL: api.url,
+        },
+      },
+      // React Router cần redirect 404 → index.html để client-side routing hoạt động
+      errorPage: "index.html",
+      domain: (isProd || $app.stage === "khiemhoang") ? {
+        name: "hskhiem.io.vn",
+        redirects: ["www.hskhiem.io.vn"],
+        dns: sst.aws.dns(),
+      } : undefined,
+    });
+
     return {
       api: api.url,
       bucketName: bucket.name,
@@ -221,6 +240,7 @@ export default $config({
       userPoolId: userPool.id,
       userPoolClientId: userPoolClient.id,
       openSearchSetupFn: setupFn.name,
+      frontendUrl: web.url,
     };
   },
 });
