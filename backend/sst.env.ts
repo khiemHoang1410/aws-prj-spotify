@@ -13,6 +13,9 @@ export const sstEnv = {
     publicSubnetId: process.env.PUBLIC_SUBNET_ID || "subnet-0019b6c4b78790035",    // 10.0.2.0/24
     lambdaSecurityGroupId: process.env.LAMBDA_SG_ID || "sg-025f66f667f5365b2",
 
+    // OpenSearch
+    openSearchEndpoint: process.env.OPENSEARCH_ENDPOINT || "https://vpc-spotify-domain-b56x73efwiu5vzn6lrj2qymr54.ap-southeast-1.es.amazonaws.com",
+
 
 
     // CORS (prod)
