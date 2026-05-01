@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { Play } from 'lucide-react';
 import { getPlaylist } from '../services/EditorialService';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import CardSong from '../components/cards/CardSong';
 import SkeletonCard from '../components/ui/SkeletonCard';
@@ -65,7 +65,7 @@ export default function EditorialPlaylistDetail() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs }));
   };
 
   if (isLoading) {

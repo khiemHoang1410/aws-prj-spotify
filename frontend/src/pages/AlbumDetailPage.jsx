@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Play, Clock, ArrowLeft, PlusCircle, MinusCircle, Settings2 } from 'lucide-react';
 import { showToast } from '../store/uiSlice';
-import { setCurrentSong } from '../store/playerSlice';
+import { setCurrentSong, playWithAutoQueue } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import { getAlbumById, getAlbumSongs, addSongToAlbum, removeSongFromAlbum } from '../services/AlbumService';
 import { getSongs } from '../services/SongService';
@@ -58,7 +58,8 @@ export default function AlbumDetailPage() {
       dispatch(openModal('login'));
       return;
     }
-    dispatch(setCurrentSong(song));
+    // Nếu album chỉ có 1 bài, truyền songs bình thường — PlayerBar sẽ fallback trending khi hết
+    dispatch(playWithAutoQueue({ song, songs }));
   };
 
   const handlePlayAll = () => {
@@ -242,11 +243,13 @@ export default function AlbumDetailPage() {
                 className={`grid ${isOwner ? 'grid-cols-[24px_1fr_1fr_56px_40px]' : 'grid-cols-[24px_1fr_1fr_56px]'} gap-4 px-4 py-2 rounded-md hover:bg-white/5 cursor-pointer group transition`}
                 onClick={() => handlePlaySong(song)}
               >
-                <span className="text-sm text-neutral-400 flex items-center group-hover:hidden">{idx + 1}</span>
-                <Play
-                  size={16}
-                  className="text-white hidden group-hover:flex items-center fill-white cursor-pointer"
-                />
+                <div className="flex items-center justify-center">
+                  <span className="text-sm text-neutral-400 group-hover:hidden">{idx + 1}</span>
+                  <Play
+                    size={16}
+                    className="text-white hidden group-hover:block fill-white cursor-pointer"
+                  />
+                </div>
                 <div className="flex items-center gap-3 min-w-0">
                   <img
                     src={song.image_url}

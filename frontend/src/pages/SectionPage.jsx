@@ -5,7 +5,7 @@ import { ChevronLeft } from 'lucide-react';
 import { getSongs } from '../services/SongService';
 import { getAllAlbums } from '../services/AlbumService';
 import { fetchTrendingSongs, fetchNewReleases, getPersonalizedSongs, getDiscoverMix } from '../services/RecommendationService';
-import { setCurrentSong } from '../store/playerSlice';
+import { playWithContext } from '../store/playerSlice';
 import { openModal } from '../store/authSlice';
 import CardSong from '../components/cards/CardSong';
 import Card from '../components/cards/Card';
@@ -72,7 +72,7 @@ export default function SectionPage() {
 
   const handlePlay = (song) => {
     if (!isAuthenticated) { dispatch(openModal('login')); return; }
-    dispatch(setCurrentSong(song));
+    dispatch(playWithContext({ song, songs: items.filter(i => i.song_id) }));
   };
 
   return (
