@@ -80,9 +80,9 @@ export const uploadSong = async ({ title, artistId, duration, lyrics, categories
     mvUrl = result.url;
   }
 
-  // Ưu tiên "categories" (tên mới), fallback về "genres" (backward compat)
-  const categoryList = categories?.length ? categories : (genres || []);
+  // Backend schema yêu cầu field "genres" (required), "categories" là optional
+  const genreList = categories?.length ? categories : (genres || []);
 
-  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, mvUrl, lyrics: lyrics || null, categories: categoryList });
+  const data = await createSongRecord({ title, artistId, duration, fileUrl, coverUrl, mvUrl, lyrics: lyrics || null, genres: genreList });
   return data;
 };
