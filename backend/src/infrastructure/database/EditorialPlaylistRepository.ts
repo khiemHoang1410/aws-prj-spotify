@@ -6,6 +6,7 @@ import {
     DeleteCommand,
     UpdateCommand,
     BatchWriteCommand,
+    TransactWriteCommand,
 } from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { EditorialPlaylist } from "../../domain/entities/EditorialPlaylist";
@@ -198,19 +199,102 @@ export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylis
         }
     }
 
-    // Atomically increment/decrement songCount
-    async incrementSongCount(id: string, delta: number): Promise<Result<void>> {
+    /**
+     * Atomic: thêm song entry + tăng songCount trong một DynamoDB Transaction.
+     * Đảm bảo không bao giờ có trạng thái song đã thêm nhưng songCount chưa tăng.
+     */
+    async transactAddSong(
+        playlistId: string,
+        song: Pick<Song, "id" | "title" | "artistId" | "duration" | "fileUrl" | "coverUrl">,
+    ): Promise<Result<void>> {
         try {
-            await docClient.send(new UpdateCommand({
-                TableName: this.tableName,
-                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
-                UpdateExpression: "ADD songCount :delta",
-                ExpressionAttributeValues: { ":delta": delta },
-                ConditionExpression: "attribute_exists(pk)",
+            await docClient.send(new TransactWriteCommand({
+                TransactItems: [
+                    {
+                        Put: {
+                            TableName: this.tableName,
+                            Item: {
+                                pk: `${this.entityPrefix}#${playlistId}`,
+                                sk: `SONG#${song.id}`,
+                                songId: song.id,
+                                title: song.title,
+                                artistId: song.artistId,
+                                duration: song.duration,
+                                fileUrl: song.fileUrl,
+                                coverUrl: song.coverUrl ?? null,
+                                addedAt: new Date().toISOString(),
+                            },
+                            // Không cho thêm bài đã có
+                            ConditionExpression: "attribute_not_exists(sk)",
+                        },
+                    },
+                    {
+                        Update: {
+                            TableName: this.tableName,
+                            Key: { pk: `${this.entityPrefix}#${playlistId}`, sk: "METADATA" },
+                            UpdateExpression: "ADD songCount :one",
+                            ExpressionAttributeValues: { ":one": 1 },
+                            ConditionExpression: "attribute_exists(pk)",
+                        },
+                    },
+                ],
             }));
             return Success(undefined);
         } catch (error: any) {
-            return Failure(`Lỗi cập nhật songCount: ${error.message}`, 500);
+            if (error.name === "TransactionCanceledException") {
+                const reasons: any[] = error.CancellationReasons ?? [];
+                // Index 0 = Put (song entry), Index 1 = Update (metadata)
+                if (reasons[0]?.Code === "ConditionalCheckFailed") {
+                    return Failure("Bài hát đã có trong playlist", 409);
+                }
+                if (reasons[1]?.Code === "ConditionalCheckFailed") {
+                    return Failure("Editorial playlist không tồn tại", 404);
+                }
+            }
+            return Failure(`Lỗi thêm bài hát: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Atomic: xóa song entry + giảm songCount trong một DynamoDB Transaction.
+     * Đảm bảo không bao giờ có trạng thái song đã xóa nhưng songCount chưa giảm.
+     */
+    async transactRemoveSong(playlistId: string, songId: string): Promise<Result<void>> {
+        try {
+            await docClient.send(new TransactWriteCommand({
+                TransactItems: [
+                    {
+                        Delete: {
+                            TableName: this.tableName,
+                            Key: {
+                                pk: `${this.entityPrefix}#${playlistId}`,
+                                sk: `SONG#${songId}`,
+                            },
+                            // Bài phải tồn tại trong playlist
+                            ConditionExpression: "attribute_exists(pk)",
+                        },
+                    },
+                    {
+                        Update: {
+                            TableName: this.tableName,
+                            Key: { pk: `${this.entityPrefix}#${playlistId}`, sk: "METADATA" },
+                            UpdateExpression: "ADD songCount :neg",
+                            // Không cho songCount xuống dưới 0
+                            ConditionExpression: "attribute_exists(pk) AND songCount > :zero",
+                            ExpressionAttributeValues: { ":neg": -1, ":zero": 0 },
+                        },
+                    },
+                ],
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            if (error.name === "TransactionCanceledException") {
+                const reasons: any[] = error.CancellationReasons ?? [];
+                if (reasons[0]?.Code === "ConditionalCheckFailed") {
+                    return Failure("Bài hát không có trong playlist", 404);
+                }
+            }
+            return Failure(`Lỗi xóa bài hát: ${error.message}`, 500);
         }
     }
 }

@@ -27,19 +27,22 @@ export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) 
         items = items.filter((a) => a.name?.toLowerCase().includes(q));
     }
 
-    // Enrich with linked user email
-    const enriched = await Promise.all(
-        items.map(async (artist) => {
-            let userEmail: string | null = null;
-            if (artist.userId) {
-                const userResult = await userRepo.findById(artist.userId);
-                if (userResult.success && userResult.data) {
-                    userEmail = userResult.data.email;
-                }
-            }
-            return { ...artist, userEmail };
-        })
-    );
+    if (items.length === 0) {
+        return Success({ items: [], nextCursor: result.data.nextCursor });
+    }
+
+    // Batch fetch linked users — 1 request thay vì N requests
+    const userIds = [...new Set(items.map((a) => a.userId).filter((id): id is string => !!id))];
+    const usersMap = await userRepo.findByIds(userIds);
+
+    const enriched = items.map((artist) => {
+        let userEmail: string | null = null;
+        if (artist.userId && usersMap.success) {
+            const user = usersMap.data.get(artist.userId);
+            if (user) userEmail = user.email;
+        }
+        return { ...artist, userEmail };
+    });
 
     return Success({ items: enriched, nextCursor: result.data.nextCursor });
 }, "admin");

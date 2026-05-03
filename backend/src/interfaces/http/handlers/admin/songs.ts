@@ -15,23 +15,28 @@ export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) 
     const result = await songRepo.findAllPaginated(limit, cursor);
     if (!result.success) return result;
 
-    // Apply title search filter client-side (DynamoDB FilterExpression on paginated results)
+    // Apply title search filter in-memory (DynamoDB FilterExpression on paginated results)
     let items = result.data.items;
     if (search) {
         const q = search.toLowerCase();
         items = items.filter((s) => s.title?.toLowerCase().includes(q));
     }
 
-    // Enrich with artistName
-    const enriched = await Promise.all(
-        items.map(async (song) => {
-            const artistResult = await artistRepo.findById(song.artistId);
-            return {
-                ...song,
-                artistName: artistResult.success && artistResult.data ? artistResult.data.name : song.artistId,
-            };
-        })
-    );
+    if (items.length === 0) {
+        return Success({ items: [], nextCursor: result.data.nextCursor });
+    }
+
+    // Batch fetch artists — 1 request thay vì N requests
+    const artistIds = [...new Set(items.map((s) => s.artistId).filter(Boolean))];
+    const artistsMap = await artistRepo.findByIds(artistIds);
+
+    const enriched = items.map((song) => {
+        const artist = artistsMap.success ? artistsMap.data.get(song.artistId) : undefined;
+        return {
+            ...song,
+            artistName: artist ? artist.name : song.artistId,
+        };
+    });
 
     return Success({ items: enriched, nextCursor: result.data.nextCursor });
 }, "admin");

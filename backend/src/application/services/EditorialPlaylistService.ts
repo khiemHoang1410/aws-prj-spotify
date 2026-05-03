@@ -73,10 +73,10 @@ export class EditorialPlaylistService {
         if (!songResult.success) return songResult;
         if (!songResult.data) return Failure("Bài hát không tồn tại", 404);
 
-        const addResult = await this.repo.addSong(playlistId, songResult.data);
+        // Atomic: thêm song + tăng songCount trong một transaction
+        const addResult = await this.repo.transactAddSong(playlistId, songResult.data);
         if (!addResult.success) return addResult;
 
-        await this.repo.incrementSongCount(playlistId, 1);
         return Success({ message: "Đã thêm bài hát" });
     }
 
@@ -85,10 +85,10 @@ export class EditorialPlaylistService {
         if (!existing.success) return existing;
         if (!existing.data) return Failure("Editorial playlist không tồn tại", 404);
 
-        const removeResult = await this.repo.removeSong(playlistId, songId);
+        // Atomic: xóa song + giảm songCount trong một transaction
+        const removeResult = await this.repo.transactRemoveSong(playlistId, songId);
         if (!removeResult.success) return removeResult;
 
-        await this.repo.incrementSongCount(playlistId, -1);
         return Success({ message: "Đã xóa bài hát" });
     }
 

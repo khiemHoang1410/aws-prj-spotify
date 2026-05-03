@@ -1,6 +1,6 @@
 import { Resource } from "sst";
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 
 const client = new DynamoDBClient({});
@@ -129,6 +129,110 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 return Failure(`${this.entityPrefix} không tồn tại`, 404);
             }
             return Failure(`Lỗi xóa ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Đếm số lượng items (không load data về memory).
+     * Dùng Select: COUNT trên EntityTypeIndex — không tốn RCU đọc attributes.
+     */
+    async count(): Promise<Result<number>> {
+        try {
+            let total = 0;
+            let lastKey: Record<string, any> | undefined;
+
+            do {
+                const params: any = {
+                    TableName: this.tableName,
+                    IndexName: "EntityTypeIndex",
+                    KeyConditionExpression: "entityType = :type AND sk = :sk",
+                    FilterExpression: "attribute_not_exists(deletedAt)",
+                    ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
+                    Select: "COUNT",
+                };
+                if (lastKey) params.ExclusiveStartKey = lastKey;
+
+                const response = await docClient.send(new QueryCommand(params));
+                total += response.Count ?? 0;
+                lastKey = response.LastEvaluatedKey;
+            } while (lastKey);
+
+            return Success(total);
+        } catch (error: any) {
+            return Failure(`Lỗi đếm ${this.entityPrefix}: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Đếm items được tạo từ một mốc thời gian trở đi.
+     * Dùng FilterExpression trên createdAt — vẫn cần scan nhưng không load attributes.
+     */
+    async countSince(isoTimestamp: string): Promise<Result<number>> {
+        try {
+            let total = 0;
+            let lastKey: Record<string, any> | undefined;
+
+            do {
+                const params: any = {
+                    TableName: this.tableName,
+                    IndexName: "EntityTypeIndex",
+                    KeyConditionExpression: "entityType = :type AND sk = :sk",
+                    FilterExpression: "attribute_not_exists(deletedAt) AND createdAt >= :since",
+                    ExpressionAttributeValues: {
+                        ":type": this.entityPrefix,
+                        ":sk": "METADATA",
+                        ":since": isoTimestamp,
+                    },
+                    Select: "COUNT",
+                };
+                if (lastKey) params.ExclusiveStartKey = lastKey;
+
+                const response = await docClient.send(new QueryCommand(params));
+                total += response.Count ?? 0;
+                lastKey = response.LastEvaluatedKey;
+            } while (lastKey);
+
+            return Success(total);
+        } catch (error: any) {
+            return Failure(`Lỗi đếm ${this.entityPrefix} theo thời gian: ${error.message}`, 500);
+        }
+    }
+
+    /**
+     * Batch fetch nhiều items theo danh sách IDs.
+     * Dùng DynamoDB BatchGetItem — tối đa 100 keys mỗi lần, tự động chunk nếu vượt.
+     * Trả về Map<id, T> để caller lookup O(1).
+     */
+    async findByIds(ids: string[]): Promise<Result<Map<string, T>>> {
+        if (ids.length === 0) return Success(new Map());
+        try {
+            const uniqueIds = [...new Set(ids)];
+            const map = new Map<string, T>();
+
+            // BatchGetItem giới hạn 100 keys mỗi request
+            const CHUNK_SIZE = 100;
+            for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+                const chunk = uniqueIds.slice(i, i + CHUNK_SIZE);
+                const keys = chunk.map((id) => ({ pk: `${this.entityPrefix}#${id}`, sk: "METADATA" }));
+
+                const response = await docClient.send(new BatchGetCommand({
+                    RequestItems: {
+                        [this.tableName]: { Keys: keys },
+                    },
+                }));
+
+                const items = response.Responses?.[this.tableName] || [];
+                for (const item of items) {
+                    if (item.deletedAt) continue;
+                    const { pk, sk, entityType, ...clean } = item as any;
+                    const extractedId = pk ? pk.split("#")[1] : "";
+                    map.set(extractedId, { ...clean, id: extractedId } as T);
+                }
+            }
+
+            return Success(map);
+        } catch (error: any) {
+            return Failure(`Lỗi batch fetch ${this.entityPrefix}: ${error.message}`, 500);
         }
     }
 
