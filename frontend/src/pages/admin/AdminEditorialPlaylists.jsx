@@ -181,6 +181,9 @@ export default function AdminEditorialPlaylists() {
         <EditorialSongManager
           playlistId={selectedRow.id}
           onClose={() => { setModal(null); setSelectedRow(null); }}
+          onSongCountChange={(delta) =>
+            table.updateItem(selectedRow.id, { songCount: (selectedRow.songCount ?? 0) + delta })
+          }
         />
       )}
     </div>

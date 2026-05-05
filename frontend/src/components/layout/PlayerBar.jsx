@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { setCurrentSong, togglePlay, updateCurrentTime, clearSeekTime, playNextSong, playPreviousSong, toggleShuffle, cycleRepeat, refillQueueIfNeeded } from '../../store/playerSlice';
@@ -102,14 +102,13 @@ export default function PlayerBar() {
     }
   }, [volume]);
 
-  const updateProgress = (e) => {
+  const updateProgress = useCallback((e) => {
     if (!currentSong?.duration) return;
-
     const rect = e.currentTarget.getBoundingClientRect();
     let percent = (e.clientX - rect.left) / rect.width;
     percent = Math.max(0, Math.min(1, percent));
     setDragTime(percent * currentSong.duration);
-  };
+  }, [currentSong?.duration]);
 
   useEffect(() => {
     if (isDraggingProgress) {
@@ -133,7 +132,7 @@ export default function PlayerBar() {
     }
   }, [isDraggingProgress, dragTime]);
 
-  const updateVolume = (e) => {
+  const updateVolume = useCallback((e) => {
     if (!volumeBarRef.current) return;
     const rect = volumeBarRef.current.getBoundingClientRect();
     let percent = (e.clientX - rect.left) / rect.width;
@@ -144,7 +143,7 @@ export default function PlayerBar() {
     } else if (isMuted) {
       setIsMuted(false);
     }
-  };
+  }, [isMuted]);
 
   useEffect(() => {
     if (isDraggingVolume) {
@@ -159,7 +158,7 @@ export default function PlayerBar() {
     }
   }, [isDraggingVolume]);
 
-  const handleMuteToggle = () => {
+  const handleMuteToggle = useCallback(() => {
     if (isMuted) {
       setVolume(volumeBeforeMute);
       setIsMuted(false);
@@ -168,7 +167,7 @@ export default function PlayerBar() {
       setVolume(0);
       setIsMuted(true);
     }
-  };
+  }, [isMuted, volume, volumeBeforeMute]);
 
   const handleSkipBack = () => {
     if (currentTimeLocal > 3 || history.length === 0) {

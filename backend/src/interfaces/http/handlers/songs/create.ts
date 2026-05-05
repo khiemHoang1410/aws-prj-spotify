@@ -8,6 +8,7 @@ import { GenreRepository } from "../../../../infrastructure/database/GenreReposi
 import { NotificationRepository } from "../../../../infrastructure/database/NotificationRepository";
 import { FollowRepository } from "../../../../infrastructure/database/FollowRepository";
 import { validate } from "../../../../shared/utils/validate";
+import { logger } from "../../../../shared/utils/logger";
 
 const songService = new SongService(new SongRepository(), new ArtistRepository(), new GenreRepository());
 const artistRepo = new ArtistRepository();
@@ -51,8 +52,8 @@ const notifyFollowersNewSong = async (song: any) => {
                 updatedAt: new Date().toISOString(),
             })
         ));
-    } catch {
-        // Notification fail không block create song
+    } catch (err: any) {
+        logger.warn("notifyFollowersNewSong failed", { songId: song.id, error: err?.message });
     }
 };
 

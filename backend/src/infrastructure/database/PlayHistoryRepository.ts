@@ -4,6 +4,7 @@ import { v7 as uuidv7 } from "uuid";
 import { dynamoDb } from "./dynamoClient";
 import { PlayHistory } from "../../domain/entities/PlayHistory";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { decodeCursor, encodeCursor } from "./BaseRepository";
 
 const TABLE = () => Resource.SpotifyTable.name;
 const SK_PREFIX = "HISTORY#";
@@ -58,11 +59,11 @@ export class PlayHistoryRepository {
                 ScanIndexForward: false,
             };
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
             const response = await dynamoDb.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
 
             const items = (response.Items || []).map((item: any) => {

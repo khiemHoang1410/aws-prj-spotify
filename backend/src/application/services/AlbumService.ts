@@ -54,25 +54,21 @@ export class AlbumService {
 
         const songIds: string[] = (albumResult.data as any).songIds || [];
 
-        // Fallback: nếu album chưa có songIds (data cũ), dùng GSI để tìm songs có albumId này
+        // Fallback: nếu album chưa có songIds (data cũ), query theo artistId rồi filter albumId
         if (songIds.length === 0) {
-            const allResult = await this.songRepo.findAll();
-            if (!allResult.success) return { success: true, data: [] };
-            const legacy = allResult.data.filter((s: any) => s.albumId === albumId && !s.deletedAt);
+            const artistId = (albumResult.data as any).artistId as string | undefined;
+            if (!artistId) return { success: true, data: [] };
+            const byArtistResult = await this.songRepo.findByArtistId(artistId);
+            if (!byArtistResult.success) return { success: true, data: [] };
+            const legacy = byArtistResult.data.filter((s: any) => s.albumId === albumId && !s.deletedAt);
             if (legacy.length === 0) return { success: true, data: [] };
             // Migrate: cập nhật songIds trên album cho lần sau
-            await this.albumRepo.update(albumId, {
-                songIds: legacy.map((s: any) => s.id),
-            } as any);
-            const artistIds2 = [...new Set(legacy.map((s: any) => s.artistId).filter(Boolean))];
-            const artistMap2 = new Map<string, string>();
-            await Promise.all(artistIds2.map(async (id) => {
-                const r = await this.artistRepo.findById(id as string);
-                if (r.success && r.data) artistMap2.set(id as string, r.data.name);
-            }));
+            await this.albumRepo.update(albumId, { songIds: legacy.map((s: any) => s.id) } as any);
+            const artistResult2 = await this.artistRepo.findById(artistId);
+            const artistName = artistResult2.success && artistResult2.data ? artistResult2.data.name : null;
             return {
                 success: true,
-                data: legacy.map((s: any) => ({ ...s, artistName: artistMap2.get(s.artistId) ?? null })),
+                data: legacy.map((s: any) => ({ ...s, artistName })),
             };
         }
 

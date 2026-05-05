@@ -160,13 +160,9 @@ export class SongService {
     }
 
     private async _buildArtistMap(artistIds: string[]): Promise<Map<string, string>> {
-        const map = new Map<string, string>();
-        await Promise.all(
-            artistIds.map(async (id) => {
-                const r = await this.artistRepo.findById(id);
-                if (r.success && r.data) map.set(id, r.data.name);
-            })
-        );
-        return map;
+        if (artistIds.length === 0) return new Map();
+        const r = await this.artistRepo.findByIds(artistIds);
+        if (!r.success) return new Map();
+        return new Map(Array.from(r.data.entries()).map(([id, artist]) => [id, artist.name]));
     }
 }

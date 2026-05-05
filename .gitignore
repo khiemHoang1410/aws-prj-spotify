@@ -12,3 +12,4 @@ ntmp-audio
 
 response*.json
 /backend/scripts
+sst*.ts

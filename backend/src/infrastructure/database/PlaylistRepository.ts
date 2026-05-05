@@ -1,19 +1,11 @@
 import { Resource } from "sst";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-    DynamoDBDocumentClient,
-    PutCommand,
-    GetCommand,
-    QueryCommand,
-    DeleteCommand,
-    UpdateCommand,
-    BatchGetCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { Playlist } from "../../domain/entities/Playlist";
 import { Song } from "../../domain/entities/Song";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
+import { decodeCursor, encodeCursor } from "./BaseRepository";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class PlaylistRepository {
     private get tableName() { return Resource.SpotifyTable.name; }
@@ -76,11 +68,11 @@ export class PlaylistRepository {
                 Limit: limit,
             };
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
             const response = await docClient.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
             return Success({ items: (response.Items as Playlist[]) || [], nextCursor });
         } catch (error: any) {
@@ -134,6 +126,7 @@ export class PlaylistRepository {
             const response = await docClient.send(new QueryCommand({
                 TableName: this.tableName,
                 KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+                FilterExpression: "attribute_not_exists(deletedAt)",
                 ExpressionAttributeValues: {
                     ":pk": `${this.prefix}#${playlistId}`,
                     ":prefix": "SONG#",

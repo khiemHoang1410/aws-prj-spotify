@@ -16,7 +16,7 @@ import { showToast } from '../../store/uiSlice';
  * - playlistId: string — the editorial playlist to manage
  * - onClose(): called when the modal should be dismissed
  */
-export default function EditorialSongManager({ playlistId, onClose }) {
+export default function EditorialSongManager({ playlistId, onClose, onSongCountChange }) {
   const dispatch = useDispatch();
 
   const [playlist, setPlaylist] = useState(null);
@@ -28,13 +28,18 @@ export default function EditorialSongManager({ playlistId, onClose }) {
 
   const [actionInProgress, setActionInProgress] = useState(null); // songId being acted on
 
+  const deltaRef = useRef(0); // net song count change during this session
   const debounceRef = useRef(null);
 
   // Fetch current playlist songs on mount
   useEffect(() => {
     setLoadingPlaylist(true);
     getEditorialPlaylist(playlistId)
-      .then((data) => setPlaylist(data))
+      .then((data) => {
+        if (data) {
+          setPlaylist({ ...data, songs: data.songs?.items ?? data.songs ?? [] });
+        }
+      })
       .catch(() => dispatch(showToast({ message: 'Không thể tải playlist', type: 'error' })))
       .finally(() => setLoadingPlaylist(false));
   }, [playlistId, dispatch]);
@@ -71,6 +76,7 @@ export default function EditorialSongManager({ playlistId, onClose }) {
         ...prev,
         songs: [...(prev.songs ?? []), song],
       }));
+      deltaRef.current += 1;
       dispatch(showToast({ message: `Đã thêm "${song.title}" vào playlist`, type: 'success' }));
     } catch {
       dispatch(showToast({ message: 'Không thể thêm bài hát', type: 'error' }));
@@ -87,6 +93,7 @@ export default function EditorialSongManager({ playlistId, onClose }) {
         ...prev,
         songs: prev.songs.filter((s) => s.id !== song.id),
       }));
+      deltaRef.current -= 1;
       dispatch(showToast({ message: `Đã xóa "${song.title}" khỏi playlist`, type: 'success' }));
     } catch {
       dispatch(showToast({ message: 'Không thể xóa bài hát', type: 'error' }));
@@ -97,8 +104,13 @@ export default function EditorialSongManager({ playlistId, onClose }) {
 
   const currentSongIds = new Set((playlist?.songs ?? []).map((s) => s.id));
 
+  const handleClose = () => {
+    if (deltaRef.current !== 0) onSongCountChange?.(deltaRef.current);
+    onClose();
+  };
+
   const handleBackdropClick = (e) => {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) handleClose();
   };
 
   return (
@@ -116,7 +128,7 @@ export default function EditorialSongManager({ playlistId, onClose }) {
             )}
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1 rounded-md text-neutral-400 hover:text-white hover:bg-neutral-700 transition"
             aria-label="Đóng"
           >
@@ -225,7 +237,7 @@ export default function EditorialSongManager({ playlistId, onClose }) {
         {/* Footer */}
         <div className="flex items-center justify-end px-6 py-4 border-t border-neutral-700 flex-shrink-0">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="px-4 py-2 text-sm font-medium text-neutral-300 bg-neutral-800 border border-neutral-600 rounded-lg hover:bg-neutral-700 transition"
           >
             Đóng
