@@ -4,8 +4,8 @@
   "description": "Spotify Backend using Clean Architecture and SST Ion",
   "scripts": {
     "dev": "sst dev",
-    "deploy": "sst deploy --stage prod",
-    "deploy:khiemhoang": "sst deploy --stage khiemhoang",
+    "deploy": "sst deploy --stage khiemhoang",
+    "deploy:prod": "sst deploy --stage prod",
     "remove": "sst remove",
     "console": "sst console",
     "typecheck": "tsc --noEmit",

@@ -238,8 +238,10 @@ export const refillQueueIfNeeded = createAsyncThunk(
     // 2. Nếu related không đủ → bổ sung bằng trending
     if (candidates.length < needed) {
       try {
-        const trending = await fetchTrendingSongs(20);
-        const extra = trending.filter(s => !existingIds.has(s.song_id) && !candidates.some(c => c.song_id === s.song_id));
+        const fetchCount = needed - candidates.length + 5; // buffer nhỏ để bù filter
+        const trending = await fetchTrendingSongs(Math.min(fetchCount, 20));
+        const candidateIds = new Set(candidates.map(c => c.song_id));
+        const extra = trending.filter(s => !existingIds.has(s.song_id) && !candidateIds.has(s.song_id));
         candidates = [...candidates, ...extra];
       } catch {
         // Ignore

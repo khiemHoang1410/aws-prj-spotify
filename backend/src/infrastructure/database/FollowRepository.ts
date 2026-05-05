@@ -1,9 +1,8 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, DeleteCommand, QueryCommand, GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, DeleteCommand, QueryCommand, GetCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { Resource } from "sst";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 // Follow dùng composite key: pk = FOLLOW#userId, sk = artistId
 // Không dùng BaseRepository vì key pattern khác

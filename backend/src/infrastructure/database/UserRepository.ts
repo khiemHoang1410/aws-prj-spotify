@@ -1,13 +1,10 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { QueryCommand } from "@aws-sdk/lib-dynamodb";
-import { BaseRepository } from "./BaseRepository";
+import { BaseRepository, decodeCursor, encodeCursor } from "./BaseRepository";
 import { User } from "../../domain/entities/User";
 import { Result, Failure, Success } from "../../shared/utils/Result";
 import { Resource } from "sst";
-import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
 
 export class UserRepository extends BaseRepository<User> {
     protected readonly entityPrefix = "USER";
@@ -63,12 +60,12 @@ export class UserRepository extends BaseRepository<User> {
             }
 
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
 
             const response = await docClient.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
 
             return Success({ items: (response.Items as User[]) || [], nextCursor });

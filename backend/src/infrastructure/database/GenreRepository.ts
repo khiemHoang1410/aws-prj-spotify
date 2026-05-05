@@ -1,15 +1,9 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-    DynamoDBDocumentClient,
-    QueryCommand,
-    GetCommand,
-    UpdateCommand,
-} from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, GetCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Genre } from "../../domain/entities/Genre";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class GenreRepository extends BaseRepository<Genre> {
     protected readonly entityPrefix = "GENRE";

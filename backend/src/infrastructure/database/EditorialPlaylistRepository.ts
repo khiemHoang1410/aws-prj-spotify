@@ -1,19 +1,10 @@
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import {
-    DynamoDBDocumentClient,
-    QueryCommand,
-    PutCommand,
-    DeleteCommand,
-    UpdateCommand,
-    BatchWriteCommand,
-    TransactWriteCommand,
-} from "@aws-sdk/lib-dynamodb";
-import { BaseRepository } from "./BaseRepository";
+import { QueryCommand, PutCommand, DeleteCommand, UpdateCommand, BatchWriteCommand, TransactWriteCommand } from "@aws-sdk/lib-dynamodb";
+import { BaseRepository, decodeCursor, encodeCursor } from "./BaseRepository";
 import { EditorialPlaylist } from "../../domain/entities/EditorialPlaylist";
 import { Song } from "../../domain/entities/Song";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylist> {
     protected readonly entityPrefix = "EDITORIAL";
@@ -30,11 +21,11 @@ export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylis
                 Limit: limit,
             };
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
             const response = await docClient.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
             return Success({ items: (response.Items as EditorialPlaylist[]) || [], nextCursor });
         } catch (error: any) {
@@ -59,7 +50,7 @@ export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylis
                 Limit: limit,
             };
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
             const response = await docClient.send(new QueryCommand(params));
             const items = ((response.Items as EditorialPlaylist[]) || [])
@@ -69,7 +60,7 @@ export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylis
                     return bTime.localeCompare(aTime); // desc
                 });
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
             return Success({ items, nextCursor });
         } catch (error: any) {
@@ -187,11 +178,11 @@ export class EditorialPlaylistRepository extends BaseRepository<EditorialPlaylis
                 Limit: limit,
             };
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
             const response = await docClient.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
             return Success({ items: response.Items || [], nextCursor });
         } catch (error: any) {

@@ -145,6 +145,7 @@ export default $config({
     const jwtAuth = { auth: { jwt: { authorizer: authorizer.id } } };
     const withVpc = { transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } } };
     const withVpcAndAuth = { ...jwtAuth, ...withVpc };
+    const withVpcAndSearch = { environment: { OPENSEARCH_ENDPOINT: sstEnv.openSearchEndpoint }, transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } } };
 
     // Public routes
     Object.entries(songPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
@@ -152,12 +153,7 @@ export default $config({
     Object.entries(albumPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(authRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(playlistPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
-    // Search route — inject OPENSEARCH_ENDPOINT qua FunctionArgs object
-    api.route("GET /search", {
-        handler: "src/interfaces/http/handlers/search/search.handler",
-        environment: { OPENSEARCH_ENDPOINT: sstEnv.openSearchEndpoint },
-        transform: { function: (args: any) => { Object.assign(args, lambdaVpcConfig); } },
-    });
+    Object.entries(searchPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpcAndSearch));
     Object.entries(systemPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(userPublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));
     Object.entries(genrePublicRoutes).forEach(([route, handler]) => api.route(route, handler, withVpc));

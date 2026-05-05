@@ -1,10 +1,22 @@
 import { Resource } from "sst";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const client = new DynamoDBClient({});
-const docClient = DynamoDBDocumentClient.from(client);
+/** Decode a pagination cursor. Returns null if cursor is missing/invalid. */
+export function decodeCursor(cursor: string | undefined): Record<string, any> | null {
+    if (!cursor) return null;
+    try {
+        return JSON.parse(Buffer.from(cursor, "base64url").toString("utf-8"));
+    } catch {
+        return null;
+    }
+}
+
+/** Encode a DynamoDB LastEvaluatedKey to a pagination cursor string. */
+export function encodeCursor(key: Record<string, any>): string {
+    return Buffer.from(JSON.stringify(key)).toString("base64url");
+}
 
 export abstract class BaseRepository<T extends { id: string; createdAt?: string; updatedAt?: string }> {
     protected readonly tableName = Resource.SpotifyTable.name;
@@ -63,6 +75,9 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
     }
 
     async findAllPaginated(limit: number, cursor?: string): Promise<Result<{ items: T[]; nextCursor?: string }>> {
+        if (cursor !== undefined && decodeCursor(cursor) === null) {
+            return Failure("Cursor không hợp lệ", 400);
+        }
         try {
             const params: any = {
                 TableName: this.tableName,
@@ -72,13 +87,10 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 ExpressionAttributeValues: { ":type": this.entityPrefix, ":sk": "METADATA" },
                 Limit: limit,
             };
-            if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
-            }
+            const decoded = decodeCursor(cursor);
+            if (decoded) params.ExclusiveStartKey = decoded;
             const response = await docClient.send(new QueryCommand(params));
-            const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
-                : undefined;
+            const nextCursor = response.LastEvaluatedKey ? encodeCursor(response.LastEvaluatedKey) : undefined;
             return Success({ items: (response.Items as T[]) || [], nextCursor });
         } catch (error: any) {
             return Failure(`Lỗi phân trang ${this.entityPrefix}: ${error.message}`, 500);
@@ -136,10 +148,11 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
      * Đếm số lượng items (không load data về memory).
      * Dùng Select: COUNT trên EntityTypeIndex — không tốn RCU đọc attributes.
      */
-    async count(): Promise<Result<number>> {
+    async count(maxPages = 20): Promise<Result<number>> {
         try {
             let total = 0;
             let lastKey: Record<string, any> | undefined;
+            let pages = 0;
 
             do {
                 const params: any = {
@@ -155,7 +168,8 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 const response = await docClient.send(new QueryCommand(params));
                 total += response.Count ?? 0;
                 lastKey = response.LastEvaluatedKey;
-            } while (lastKey);
+                pages++;
+            } while (lastKey && pages < maxPages);
 
             return Success(total);
         } catch (error: any) {
@@ -163,14 +177,11 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
         }
     }
 
-    /**
-     * Đếm items được tạo từ một mốc thời gian trở đi.
-     * Dùng FilterExpression trên createdAt — vẫn cần scan nhưng không load attributes.
-     */
-    async countSince(isoTimestamp: string): Promise<Result<number>> {
+    async countSince(isoTimestamp: string, maxPages = 20): Promise<Result<number>> {
         try {
             let total = 0;
             let lastKey: Record<string, any> | undefined;
+            let pages = 0;
 
             do {
                 const params: any = {
@@ -190,7 +201,8 @@ export abstract class BaseRepository<T extends { id: string; createdAt?: string;
                 const response = await docClient.send(new QueryCommand(params));
                 total += response.Count ?? 0;
                 lastKey = response.LastEvaluatedKey;
-            } while (lastKey);
+                pages++;
+            } while (lastKey && pages < maxPages);
 
             return Success(total);
         } catch (error: any) {

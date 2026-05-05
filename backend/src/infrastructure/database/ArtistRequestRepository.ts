@@ -1,10 +1,9 @@
-import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { BaseRepository } from "./BaseRepository";
+import { QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
+import { BaseRepository, decodeCursor, encodeCursor } from "./BaseRepository";
 import { ArtistRequest } from "../../domain/entities/ArtistRequest";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class ArtistRequestRepository extends BaseRepository<ArtistRequest> {
     protected readonly entityPrefix = "ARTIST_REQUEST";
@@ -83,12 +82,12 @@ export class ArtistRequestRepository extends BaseRepository<ArtistRequest> {
             }
 
             if (cursor) {
-                params.ExclusiveStartKey = JSON.parse(Buffer.from(cursor, "base64").toString("utf-8"));
+                params.ExclusiveStartKey = decodeCursor(cursor)!;
             }
 
             const response = await docClient.send(new QueryCommand(params));
             const nextCursor = response.LastEvaluatedKey
-                ? Buffer.from(JSON.stringify(response.LastEvaluatedKey)).toString("base64")
+                ? encodeCursor(response.LastEvaluatedKey)
                 : undefined;
 
             return Success({ items: (response.Items as ArtistRequest[]) || [], nextCursor });

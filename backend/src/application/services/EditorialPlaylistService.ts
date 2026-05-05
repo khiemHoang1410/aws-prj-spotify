@@ -110,7 +110,8 @@ export class EditorialPlaylistService {
 
         return Success({
             ...playlistResult.data,
-            songs: songsResult.data,
+            songs: songsResult.data.items,
+            nextSongCursor: songsResult.data.nextCursor,
         });
     }
 

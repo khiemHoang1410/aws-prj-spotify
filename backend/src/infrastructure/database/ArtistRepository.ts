@@ -1,11 +1,10 @@
-import { DynamoDBDocumentClient, QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { QueryCommand, ScanCommand } from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Artist } from "../../domain/entities/Artist";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 import { Resource } from "sst";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class ArtistRepository extends BaseRepository<Artist> {
     protected readonly entityPrefix = "ARTIST";

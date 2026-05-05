@@ -1,10 +1,9 @@
-import { DynamoDBDocumentClient, QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
-import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+import { QueryCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { BaseRepository } from "./BaseRepository";
 import { Notification } from "../../domain/entities/Notification";
 import { Result, Success, Failure } from "../../shared/utils/Result";
+import { dynamoDb as docClient } from "./dynamoClient";
 
-const docClient = DynamoDBDocumentClient.from(new DynamoDBClient({}));
 
 export class NotificationRepository extends BaseRepository<Notification> {
     protected readonly entityPrefix = "NOTIFICATION";
