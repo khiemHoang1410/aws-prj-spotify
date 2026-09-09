@@ -4,6 +4,8 @@
   "description": "Spotify Backend using Clean Architecture and SST Ion",
   "scripts": {
     "dev": "sst dev",
+    "dev:local": "tsx src/local/server.ts",
+    "setup:local": "tsx scripts/setup-aws-local.ts && tsx scripts/seed-local.ts",
     "deploy": "sst deploy --stage khiemhoang",
     "deploy:prod": "sst deploy --stage prod",
     "remove": "sst remove",
@@ -24,14 +26,21 @@
     "@opensearch-project/opensearch": "^2.13.0",
     "@smithy/protocol-http": "^5.3.14",
     "@smithy/signature-v4": "^5.3.14",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
     "sst": "4.5.12",
     "uuid": "^13.0.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.161",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.5.0",
     "@vitest/coverage-v8": "^4.1.1",
+    "tsx": "^4.23.13",
     "typescript": "^6.0.2",
     "vitest": "^4.1.1"
   }

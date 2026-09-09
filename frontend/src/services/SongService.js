@@ -1,3 +1,4 @@
+import { MOCK_SONGS } from '../data/mockData';
 import api from './apiClient';
 import { adaptSong, adaptPaginatedResponse } from './adapters';
 
@@ -7,7 +8,7 @@ export const getSongs = async () => {
     const data = await api.get('/songs', { silent: true });
     return adaptPaginatedResponse(data, adaptSong);
   } catch {
-    return [];
+    return MOCK_SONGS;
   }
 };
 

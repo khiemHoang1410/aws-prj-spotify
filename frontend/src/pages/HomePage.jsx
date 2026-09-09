@@ -56,7 +56,8 @@ export default function HomePage() {
   }, [songs, likedSongs]);
 
   const handlePlaySong = (song, contextSongs) => {
-    if (!isAuthenticated) { dispatch(openModal('login')); return; }
+    // Cho phép nghe nhạc không cần login (Guest Mode)
+    // if (!isAuthenticated) { dispatch(openModal('login')); return; }
     dispatch(playWithContext({ song, songs: contextSongs || [] }));
   };
 

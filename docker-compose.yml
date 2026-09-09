@@ -1,0 +1,49 @@
+services:
+  # 1. AWS Official DynamoDB Local (100% Miễn phí & Chính chủ từ AWS)
+  dynamodb-local:
+    container_name: spotify-dynamodb-local
+    image: amazon/dynamodb-local:latest
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    working_dir: /home/dynamodblocal
+    ports:
+      - "8000:8000"
+    volumes:
+      - "./.dynamodb-data:/home/dynamodblocal/data"
+    networks:
+      - spotify-network
+
+  # 2. DynamoDB Admin GUI (Xem bảng và dữ liệu trực quan trên web)
+  dynamodb-admin:
+    container_name: spotify-dynamodb-admin
+    image: aaronshaf/dynamodb-admin:latest
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
+      - AWS_REGION=ap-southeast-1
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+    depends_on:
+      - dynamodb-local
+    networks:
+      - spotify-network
+
+  # 3. MinIO — AWS S3 Compatible Storage (Lưu trữ Audio, Image trên Local)
+  minio:
+    container_name: spotify-s3-minio
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"   # S3 API Endpoint
+      - "9001:9001"   # S3 Web Console UI
+    environment:
+      - MINIO_ROOT_USER=localuser
+      - MINIO_ROOT_PASSWORD=localpassword123
+    volumes:
+      - "./.minio-data:/data"
+    networks:
+      - spotify-network
+
+networks:
+  spotify-network:
+    driver: bridge

@@ -20,6 +20,15 @@ test-build.js
 .minio-data/
 .localstack/
 
+# Media & Audio files (Tuyệt đối không push file âm thanh lên Git)
+*.mp3
+*.wav
+*.m4a
+*.ogg
+*.flac
+*.aac
+frontend/public/audio/
+
 # Logs & temp
 *.log
 npm-debug.log*

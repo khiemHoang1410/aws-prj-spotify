@@ -1,3 +1,4 @@
+import { MOCK_ARTISTS } from '../data/mockData';
 import api from './apiClient';
 import { adaptArtist, adaptSong, adaptAlbum, adaptPaginatedResponse } from './adapters';
 
@@ -6,7 +7,7 @@ export const getArtists = async () => {
     const data = await api.get('/artists');
     return adaptPaginatedResponse(data, adaptArtist);
   } catch {
-    return [];
+    return MOCK_ARTISTS;
   }
 };
 

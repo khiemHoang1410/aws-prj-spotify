@@ -21,12 +21,11 @@ import EditSongPage from '../pages/EditSongPage';
 import AdminLayout from '../pages/admin/AdminLayout';
 import PageIntro from '../pages/PageIntro';
 import EditorialPlaylistDetail from '../pages/EditorialPlaylistDetail';
-import JokeGeneratorPage from '../pages/JokeGeneratorPage';
-import TodoListPage from '../pages/TodoListPage';
 import PlayHistoryPage from '../pages/PlayHistoryPage';
 import MyLibraryPage from '../pages/MyLibraryPage';
 import SongDetailPage from '../pages/SongDetailPage';
 import SectionPage from '../pages/SectionPage';
+import NotFoundPage from '../pages/NotFoundPage';
 
 export const router = createBrowserRouter([
   // Trang intro — standalone, không có app shell
@@ -46,8 +45,6 @@ export const router = createBrowserRouter([
       { path: '/genre/:id', element: <GenrePage /> },
       { path: '/section/:sectionKey', element: <SectionPage /> },
       { path: '/playlists/editorial/:id', element: <EditorialPlaylistDetail /> },
-      { path: '/jokes', element: <JokeGeneratorPage /> },
-      { path: '/todos', element: <TodoListPage /> },
 
       // Protected — cần đăng nhập
       { path: '/liked-songs', element: <ProtectedRoute><LikedSongsPage /></ProtectedRoute> },
@@ -65,6 +62,9 @@ export const router = createBrowserRouter([
 
       // Admin only
       { path: '/admin/*', element: <ProtectedRoute requiredRole="admin"><AdminLayout /></ProtectedRoute> },
+
+      // 404 Wildcard Route
+      { path: '*', element: <NotFoundPage /> },
     ],
   },
 ]);
