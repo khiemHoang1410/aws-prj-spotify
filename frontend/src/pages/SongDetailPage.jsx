@@ -41,6 +41,7 @@ export default function SongDetailPage() {
 
   const { currentSong: reduxSong, currentTime, isPlaying } = useSelector((s) => s.player);
   const { isAuthenticated, likedSongs } = useSelector((s) => s.auth);
+  const { showLyrics = true } = useSelector((s) => s.settings || {});
 
   const songId = parseSongId(songSlug);
   const isValidUUID = UUID_REGEX.test(songId);
@@ -53,9 +54,17 @@ export default function SongDetailPage() {
   const [relatedSongs, setRelatedSongs] = useState([]);
   const [isLoading, setIsLoading] = useState(!initialSong);
   const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState('lyrics');
+  const [activeTab, setActiveTab] = useState(showLyrics ? 'lyrics' : 'comments');
   const [contextMenu, setContextMenu] = useState({ open: false, x: 0, y: 0 });
   const [isSticky, setIsSticky] = useState(false);
+
+  useEffect(() => {
+    if (!showLyrics && activeTab === 'lyrics') {
+      setActiveTab('comments');
+    }
+  }, [showLyrics, activeTab]);
+
+  const availableTabs = TABS.filter((tab) => (tab.id === 'lyrics' ? showLyrics : true));
 
   const actionBarRef = useRef(null);
   const heroRef = useRef(null);
@@ -272,7 +281,7 @@ export default function SongDetailPage() {
         <div className="flex-1 min-w-0">
           {/* Tab bar */}
           <div className="flex gap-1 overflow-x-auto pb-1 mb-4 border-b border-white/10 scrollbar-none">
-            {TABS.map(({ id, label, icon: Icon }) => (
+            {availableTabs.map(({ id, label, icon: Icon }) => (
               <button
                 key={id}
                 onClick={() => setActiveTab(id)}

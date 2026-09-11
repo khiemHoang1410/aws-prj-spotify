@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Globe, Music2, Play, FileText, Bell, Moon, RotateCcw } from 'lucide-react';
+import { Globe, Play, FileText, Bell, Trash2, RotateCcw } from 'lucide-react';
 import { updateSetting, resetSettings } from '../store/settingsSlice';
 import { showToast } from '../store/uiSlice';
-
-const NAV_ITEMS = [
-  { id: 'language', label: 'Ngôn ngữ', icon: Globe },
-  { id: 'audio', label: 'Chất lượng âm thanh', icon: Music2 },
-  { id: 'playback', label: 'Phát lại', icon: Play },
-  { id: 'lyrics', label: 'Lời bài hát', icon: FileText },
-  { id: 'notifications', label: 'Thông báo', icon: Bell },
-  { id: 'display', label: 'Giao diện', icon: Moon },
-];
+import { clearEntries } from '../store/historySlice';
+import { clearPlayHistory } from '../services/HistoryService';
+import { useTranslation } from '../utils/i18n';
 
 function ToggleSwitch({ checked, onChange }) {
   return (
@@ -31,7 +25,7 @@ function SelectOption({ value, onChange, options }) {
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      className="bg-neutral-700 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-green-500"
+      className="bg-neutral-700 text-white text-sm rounded-lg px-3 py-1.5 outline-none focus:ring-1 focus:ring-green-500 cursor-pointer"
     >
       {options.map((opt) => (
         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -42,25 +36,59 @@ function SelectOption({ value, onChange, options }) {
 
 export default function SettingsPage() {
   const dispatch = useDispatch();
+  const { t } = useTranslation();
   const settings = useSelector((state) => state.settings);
+  const historyEntries = useSelector((state) => state.history?.entries || []);
   const [activeSection, setActiveSection] = useState('language');
 
-  const set = (key, value) => dispatch(updateSetting({ key, value }));
+  const navItems = [
+    { id: 'language', label: t('tabLanguage'), icon: Globe },
+    { id: 'playback', label: t('tabPlayback'), icon: Play },
+    { id: 'lyrics', label: t('tabLyrics'), icon: FileText },
+    { id: 'notifications', label: t('tabNotifications'), icon: Bell },
+    { id: 'storage', label: t('tabStorage'), icon: Trash2 },
+  ];
+
+  const set = (key, value) => {
+    dispatch(updateSetting({ key, value }));
+    dispatch(showToast({ message: t('savedSuccess'), type: 'success' }));
+  };
 
   const handleReset = () => {
     dispatch(resetSettings());
-    dispatch(showToast({ message: 'Đã khôi phục cài đặt mặc định', type: 'info' }));
+    dispatch(showToast({ message: t('restoredSuccess'), type: 'info' }));
+  };
+
+  const handleClearHistory = async () => {
+    if (historyEntries.length === 0) {
+      dispatch(showToast({ message: t('clearHistoryEmpty'), type: 'info' }));
+      return;
+    }
+    if (window.confirm(t('confirmClear'))) {
+      try {
+        await clearPlayHistory();
+      } catch {
+        // silent fallback if network issue
+      }
+      dispatch(clearEntries());
+      try {
+        localStorage.removeItem('spotify_play_history');
+      } catch {
+        // ignore
+      }
+      dispatch(showToast({ message: t('clearHistorySuccess'), type: 'success' }));
+    }
   };
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-8">
-        <h1 className="text-3xl font-extrabold text-white">Cài đặt</h1>
+        <h1 className="text-3xl font-extrabold text-white">{t('settingsTitle')}</h1>
         <button
           onClick={handleReset}
           className="flex items-center gap-2 text-sm text-neutral-400 hover:text-white transition"
         >
-          <RotateCcw size={14} /> Khôi phục mặc định
+          <RotateCcw size={14} /> {t('restoreDefaults')}
         </button>
       </div>
 
@@ -68,7 +96,7 @@ export default function SettingsPage() {
         {/* Sticky sidebar nav */}
         <nav className="w-52 flex-shrink-0">
           <ul className="space-y-1 sticky top-24">
-            {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            {navItems.map(({ id, label, icon: Icon }) => (
               <li key={id}>
                 <button
                   onClick={() => setActiveSection(id)}
@@ -87,63 +115,62 @@ export default function SettingsPage() {
         {/* Content */}
         <div className="flex-1 space-y-2">
 
+          {/* 1. Ngôn ngữ (Language) */}
           {activeSection === 'language' && (
-            <Section title="Ngôn ngữ">
-              <SettingRow label="Ngôn ngữ hiển thị" description="Chọn ngôn ngữ cho giao diện">
+            <Section title={t('tabLanguage')}>
+              <SettingRow label={t('langDisplay')} description={t('langDisplayDesc')}>
                 <SelectOption
                   value={settings.language}
                   onChange={(v) => set('language', v)}
-                  options={[{ value: 'vi', label: 'Tiếng Việt' }, { value: 'en', label: 'English' }]}
-                />
-              </SettingRow>
-            </Section>
-          )}
-
-          {activeSection === 'audio' && (
-            <Section title="Chất lượng âm thanh">
-              <SettingRow label="Chất lượng phát" description="Chất lượng stream nhạc (chuẩn phát trực tiếp từ S3: 320 kbps)">
-                <SelectOption
-                  value={settings.audioQuality}
-                  onChange={(v) => set('audioQuality', v)}
                   options={[
-                    { value: 'low', label: 'Thấp (96 kbps)' },
-                    { value: 'normal', label: 'Bình thường (160 kbps)' },
-                    { value: 'high', label: 'Cao (320 kbps - Mặc định)' },
-                    { value: 'lossless', label: 'Không nén (FLAC)' },
+                    { value: 'vi', label: 'Tiếng Việt' },
+                    { value: 'en', label: 'English' },
                   ]}
                 />
               </SettingRow>
             </Section>
           )}
 
+          {/* 2. Phát lại (Playback) */}
           {activeSection === 'playback' && (
-            <Section title="Phát lại">
-              <SettingRow label="Tự động phát" description="Tự động chuyển bài tiếp theo khi kết thúc bài hát">
+            <Section title={t('tabPlayback')}>
+              <SettingRow label={t('autoplayTitle')} description={t('autoplayDesc')}>
                 <ToggleSwitch checked={settings.autoplay} onChange={(v) => set('autoplay', v)} />
               </SettingRow>
             </Section>
           )}
 
+          {/* 3. Lời bài hát (Lyrics) */}
           {activeSection === 'lyrics' && (
-            <Section title="Lời bài hát">
-              <SettingRow label="Hiển thị lời bài hát" description="Hiển thị lời bài hát khi phát nhạc">
+            <Section title={t('tabLyrics')}>
+              <SettingRow label={t('lyricsTitle')} description={t('lyricsDesc')}>
                 <ToggleSwitch checked={settings.showLyrics} onChange={(v) => set('showLyrics', v)} />
               </SettingRow>
             </Section>
           )}
 
+          {/* 4. Thông báo (Notifications) */}
           {activeSection === 'notifications' && (
-            <Section title="Thông báo">
-              <SettingRow label="Bật thông báo" description="Nhận thông báo về bài hát mới và hoạt động">
+            <Section title={t('tabNotifications')}>
+              <SettingRow label={t('notifTitle')} description={t('notifDesc')}>
                 <ToggleSwitch checked={settings.notifications} onChange={(v) => set('notifications', v)} />
               </SettingRow>
             </Section>
           )}
 
-          {activeSection === 'display' && (
-            <Section title="Giao diện">
-              <SettingRow label="Chế độ tối" description="Giao diện chuẩn Spotify Dark Mode (Light Mode đang thử nghiệm)">
-                <ToggleSwitch checked={settings.theme === 'dark'} onChange={(v) => set('theme', v ? 'dark' : 'light')} />
+          {/* 5. Dữ liệu & Bộ nhớ (Data & Storage) */}
+          {activeSection === 'storage' && (
+            <Section title={t('tabStorage')}>
+              <SettingRow
+                label={t('clearHistoryTitle')}
+                description={`${t('clearHistoryDesc')} (${historyEntries.length} bài hát)`}
+              >
+                <button
+                  onClick={handleClearHistory}
+                  className="px-4 py-1.5 bg-red-600/80 hover:bg-red-600 active:scale-95 text-white text-xs font-semibold rounded-full transition"
+                >
+                  {t('clearHistoryBtn')}
+                </button>
               </SettingRow>
             </Section>
           )}

@@ -12,18 +12,20 @@ import { adaptUser } from '../../services/adapters';
 import SearchBar from '../search/SearchBar';
 import api from '../../services/apiClient';
 import { ROLES } from '../../constants/enums';
-
+import { useTranslation } from '../../utils/i18n';
 
 export default function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const notifRef = useRef(null);
   const userMenuRef = useRef(null);
 
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { notifications, unreadCount, isDropdownOpen } = useSelector((state) => state.notification);
+  const { notifications: notificationsEnabled = true } = useSelector((state) => state.settings || {});
   const isHome = location.pathname === '/';
 
   const refreshNotifications = useCallback(async () => {
@@ -37,15 +39,15 @@ export default function Navbar() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    refreshNotifications();
+    if (notificationsEnabled) refreshNotifications();
     getFollowedArtists().then((artists) => {
       dispatch(setFollowedArtists(artists.map((a) => a.name)));
     });
-  }, [isAuthenticated, dispatch]);
+  }, [isAuthenticated, notificationsEnabled, dispatch]);
 
   // Real-time polling: 30s khi tab visible, dừng khi ẩn tab
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || !notificationsEnabled) return;
 
     const POLL_MS = 30_000;
     let timerId;
@@ -144,7 +146,7 @@ export default function Navbar() {
         <button
           className={`p-3 rounded-full hidden md:block transition duration-200 ${isHome ? 'bg-[#333] text-white' : 'bg-[#242424] text-[#b3b3b3] hover:text-white hover:bg-[#333]'}`}
           onClick={() => navigate('/')}
-          title="Trang chủ"
+          title={t('home')}
         >
           <Home size={22} className={isHome ? 'fill-white' : ''} />
         </button>
@@ -161,14 +163,14 @@ export default function Navbar() {
               className="w-auto h-8 flex-shrink-0 flex items-center justify-center text-white font-bold rounded-full hover:bg-[#1DB954] hover:text-black active:text-white transition whitespace-nowrap p-3"
               onClick={() => dispatch(openModal('register'))}
             >
-              <span className="hidden md:block">Đăng ký</span>
+              <span className="hidden md:block">{t('register')}</span>
               <UserRoundPlus className="w-5 aspect-square block md:hidden"/>
             </button>
             <button
               className="w-auto h-8 flex-shrink-0 flex items-center justify-center bg-white text-black font-bold rounded-full hover:bg-[#1E1E1E] hover:text-white active:text-[#1DB954] transition whitespace-nowrap p-3"
               onClick={() => dispatch(openModal('login'))}
             >
-              <span className="hidden md:block">Đăng nhập</span>
+              <span className="hidden md:block">{t('login')}</span>
               <LogIn className="w-5 aspect-square block md:hidden"/>  
             </button>
           </>
@@ -176,9 +178,9 @@ export default function Navbar() {
           <div className="flex items-center gap-5 relative">
             {/* Notifications */}
             <div className="relative" ref={notifRef}>
-              <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition relative" title="Thông báo" onClick={() => dispatch(toggleNotificationDropdown())}>
+              <button className="text-[#b3b3b3] hover:text-white hover:scale-105 transition relative" title={t('notifications')} onClick={() => dispatch(toggleNotificationDropdown())}>
                 <Bell size={20} />
-                {unreadCount > 0 && (
+                {unreadCount > 0 && notificationsEnabled && (
                   <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
@@ -188,7 +190,7 @@ export default function Navbar() {
               {isDropdownOpen && (
                 <div className="absolute top-10 right-0 w-80 bg-[#282828] rounded-lg shadow-2xl z-50 border border-[#3e3e3e] overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-[#3e3e3e]">
-                    <h3 className="text-sm font-bold text-white">Thông báo</h3>
+                    <h3 className="text-sm font-bold text-white">{t('notifications')}</h3>
                     {unreadCount > 0 && (
                       <button className="text-xs text-blue-400 hover:text-blue-300 font-semibold" onClick={async () => {
                         // Truyền tất cả notification IDs để persist vào localStorage cache
@@ -200,13 +202,13 @@ export default function Navbar() {
                           // sẽ trả về is_read: false ngay sau khi cập nhật
                         }
                       }}>
-                        Đánh dấu tất cả đã đọc
+                        {t('markAllAsRead')}
                       </button>
                     )}
                   </div>
                   <div className="max-h-72 overflow-y-auto">
                     {notifications.length === 0 ? (
-                      <div className="px-4 py-8 text-center text-neutral-400 text-sm">Không có thông báo nào</div>
+                      <div className="px-4 py-8 text-center text-neutral-400 text-sm">{t('noNotifications')}</div>
                     ) : (
                       notifications.map((notif) => {
                         const rawDate = notif.created_at || notif.createdAt;
@@ -263,8 +265,8 @@ export default function Navbar() {
             {isUserMenuOpen && (
               <div className="absolute top-12 right-0 w-48 bg-[#282828] rounded-md shadow-2xl z-50 p-1 border border-[#3e3e3e] text-sm font-semibold">
                 {[
-                  { label: 'Tài khoản', to: '/profile' },
-                  { label: 'Cài đặt', to: '/settings' },
+                  { label: t('profile'), to: '/profile' },
+                  { label: t('settings'), to: '/settings' },
                 ].map(({ label, to }) => (
                   <button key={to} className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
                     onClick={() => { setIsUserMenuOpen(false); navigate(to); }}>
@@ -303,7 +305,7 @@ export default function Navbar() {
 
                 <button className="w-full text-left px-3 py-2.5 text-[#e5e5e5] hover:text-white hover:bg-[#3e3e3e] rounded-sm transition"
                   onClick={async () => { setIsUserMenuOpen(false); await logoutUser(); dispatch(logout()); navigate('/'); }}>
-                  Đăng xuất
+                  {t('logout')}
                 </button>
               </div>
             )}

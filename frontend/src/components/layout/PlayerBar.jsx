@@ -36,6 +36,7 @@ export default function PlayerBar() {
   const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
   const historyEntries = useSelector((state) => state.history?.entries || []);
   const autoplay = useSelector((state) => state.settings?.autoplay ?? true);
+  const showLyrics = useSelector((state) => state.settings?.showLyrics ?? true);
 
   const initialVolumeRef = useRef(readInitialVolume());
 
@@ -437,22 +438,24 @@ export default function PlayerBar() {
         </div>
         {/* 3. KHU VỰC BÊN PHẢI */}
         <div className="hidden sm:flex items-center justify-end gap-3 w-[30%] min-w-[180px] text-[#b3b3b3] flex-1">
-          <button
-            className={`hover:scale-105 transition ${isLyricsPage || isPiP ? 'text-green-500' : 'hover:text-white'}`}
-            onClick={() => {
-              if (isPiP) {
-                dispatch(setPiP(false));
-                navigate('/lyrics');
-              } else if (isLyricsPage) {
-                navigate(-1);
-              } else {
-                navigate('/lyrics');
-              }
-            }}
-            title="Lời bài hát"
-          >
-            <Mic2 size={16} />
-          </button>
+          {showLyrics && (
+            <button
+              className={`hover:scale-105 transition ${isLyricsPage || isPiP ? 'text-green-500' : 'hover:text-white'}`}
+              onClick={() => {
+                if (isPiP) {
+                  dispatch(setPiP(false));
+                  navigate('/lyrics');
+                } else if (isLyricsPage) {
+                  navigate(-1);
+                } else {
+                  navigate('/lyrics');
+                }
+              }}
+              title="Lời bài hát"
+            >
+              <Mic2 size={16} />
+            </button>
+          )}
 
           <button
             className={`hover:scale-105 transition ${isRightSidebarOpen ? 'text-green-500' : 'hover:text-white'}`}

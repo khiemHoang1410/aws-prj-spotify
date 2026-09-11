@@ -17,8 +17,8 @@ import { setCurrentSong } from '../../store/playerSlice';
 import { getFollowedArtists } from '../../services/ArtistService';
 import SkeletonCard from '../ui/SkeletonCard';
 import SidebarPlaylistItem from '../playlists/SidebarPlaylistItem';
+import { useTranslation } from '../../utils/i18n';
 
-const FILTER_OPTIONS = ['Danh sách phát', 'Nghệ sĩ'];
 const MAX_PLAYLIST_NAME_LEN = 80;
 
 // Helper to check system playlist by id from state
@@ -57,8 +57,9 @@ export default function Sidebar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useTranslation();
 
-  const [filter, setFilter] = useState('Danh sách phát');
+  const [filter, setFilter] = useState('playlists');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newPlaylistName, setNewPlaylistName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -103,7 +104,7 @@ export default function Sidebar() {
   }, [contextMenu]);
 
   useEffect(() => {
-    if (filter !== 'Nghệ sĩ') return;
+    if (filter !== 'artists') return;
     setIsLoadingArtists(true);
     getFollowedArtists().then(setArtists).finally(() => setIsLoadingArtists(false));
   }, [filter]);
@@ -184,13 +185,13 @@ export default function Sidebar() {
             onClick={handleOpenLibrary}
           >
             <Library size={24} />
-            <span>Thư viện</span>
+            <span>{t('yourLibrary')}</span>
           </button>
           {isAuthenticated && (
             <button
               className="text-[#b3b3b3] hover:text-white hover:bg-[#1a1a1a] p-1 rounded-full transition duration-200"
               onClick={handleCreatePlaylistClick}
-              title="Tạo playlist mới"
+              title={t('createPlaylist')}
             >
               <Plus size={20} />
             </button>
@@ -213,7 +214,7 @@ export default function Sidebar() {
                 className="px-4 py-1.5 bg-white text-black text-sm font-bold rounded-full
                            hover:bg-[#f0f0f0] active:scale-95 transition-all duration-150"
               >
-                Tạo playlist
+                {t('createPlaylist')}
               </button>
             </div>
 
@@ -246,14 +247,14 @@ export default function Sidebar() {
                   className="w-full py-2 bg-[#1DB954] text-black text-sm font-bold rounded-full
                              hover:bg-[#1ed760] active:scale-95 transition-all duration-150"
                 >
-                  Đăng ký miễn phí
+                  {t('register')}
                 </button>
                 <button
                   onClick={() => dispatch(openModal('login'))}
                   className="w-full py-2 border border-[#727272] text-white text-sm font-bold rounded-full
                              hover:border-white active:scale-95 transition-all duration-150"
                 >
-                  Đăng nhập
+                  {t('login')}
                 </button>
               </div>
             </div>
@@ -261,22 +262,25 @@ export default function Sidebar() {
         ) : (
           <>
             <div className="flex gap-2 px-2 mb-3">
-              {FILTER_OPTIONS.map((option) => (
+              {[
+                { id: 'playlists', label: t('playlists') },
+                { id: 'artists', label: t('artists') },
+              ].map(({ id, label }) => (
                 <button
-                  key={option}
+                  key={id}
                   className={`rounded-full px-3 py-1 text-sm font-medium transition ${
-                    filter === option ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
+                    filter === id ? 'bg-white text-black' : 'bg-neutral-800 text-white hover:bg-neutral-700'
                   }`}
-                  onClick={() => setFilter(option)}
+                  onClick={() => setFilter(id)}
                 >
-                  {option}
+                  {label}
                 </button>
               ))}
             </div>
 
         <div className="flex-1 overflow-y-auto px-2 pb-2">
           {/* Nghệ sĩ */}
-          {filter === 'Nghệ sĩ' && (
+          {filter === 'artists' && (
             isLoadingArtists ? (
               <><SkeletonCard variant="row" /><SkeletonCard variant="row" /><SkeletonCard variant="row" /></>
             ) : artists.length === 0 ? (
@@ -309,7 +313,7 @@ export default function Sidebar() {
                           <p className={`text-sm font-medium truncate ${isActive ? 'text-green-400' : 'text-white'}`}>{artist.name}</p>
                           {artist.isVerified && <BadgeCheck size={14} className="text-blue-400 flex-shrink-0" />}
                         </div>
-                        <p className="text-xs text-neutral-400">Nghệ sĩ</p>
+                        <p className="text-xs text-neutral-400">{t('artists')}</p>
                       </div>
                     </div>
                   );
@@ -319,7 +323,7 @@ export default function Sidebar() {
           )}
 
           {/* Playlists */}
-          {filter === 'Danh sách phát' && (
+          {filter === 'playlists' && (
             status === 'loading' ? (
               <><SkeletonCard variant="row" /><SkeletonCard variant="row" /><SkeletonCard variant="row" /></>
             ) : (
@@ -334,8 +338,8 @@ export default function Sidebar() {
                     <Heart size={20} className="text-white" fill="currentColor" />
                   </div>
                   <div className="min-w-0">
-                    <p className={`text-sm font-medium truncate ${location.pathname === '/liked-songs' ? 'text-green-400' : 'text-white'}`}>Bài hát đã thích</p>
-                    <p className="text-xs text-neutral-400">Danh sách phát</p>
+                    <p className={`text-sm font-medium truncate ${location.pathname === '/liked-songs' ? 'text-green-400' : 'text-white'}`}>{t('likedSongs')}</p>
+                    <p className="text-xs text-neutral-400">{t('playlists')}</p>
                   </div>
                 </div>
 
@@ -363,7 +367,7 @@ export default function Sidebar() {
                         onClick={() => navigate('/play-history')}
                       >
                         <Clock size={12} />
-                        Nghe gần đây
+                        {t('recentlyPlayed')}
                       </button>
                       <button
                         className="text-xs text-neutral-500 hover:text-white transition"
