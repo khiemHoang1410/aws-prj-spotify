@@ -4,6 +4,13 @@
  */
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient, PutCommand } from "@aws-sdk/lib-dynamodb";
+import fs from "fs";
+import path from "path";
+
+const lyricsDataPath = path.join(__dirname, "lyrics-data.json");
+const lyricsData: Record<string, string> = fs.existsSync(lyricsDataPath)
+    ? JSON.parse(fs.readFileSync(lyricsDataPath, "utf-8"))
+    : {};
 
 const endpoint = process.env.DYNAMODB_ENDPOINT || "http://localhost:8000";
 const region = "ap-southeast-1";
@@ -120,6 +127,7 @@ const songs = [
         playCount: 1250000,
         genre: "vpop",
         categories: ["vpop", "pop"],
+        lyrics: lyricsData.chayNgayDi || "",
     },
     {
         id: IDS.emCuaNgayHomQua,
@@ -134,6 +142,7 @@ const songs = [
         playCount: 4500000,
         genre: "vpop",
         categories: ["vpop", "pop"],
+        lyrics: lyricsData.emCuaNgayHomQua || "",
     },
     {
         id: IDS.lacTroi,
@@ -148,6 +157,7 @@ const songs = [
         playCount: 3800000,
         genre: "vpop",
         categories: ["vpop", "pop"],
+        lyrics: lyricsData.lacTroi || "",
     },
     {
         id: IDS.noiNayCoAnh,
@@ -162,6 +172,7 @@ const songs = [
         playCount: 3100000,
         genre: "pop",
         categories: ["vpop", "pop"],
+        lyrics: lyricsData.noiNayCoAnh || "",
     },
     {
         id: IDS.waitingForYou,
@@ -176,6 +187,7 @@ const songs = [
         playCount: 2890000,
         genre: "indie",
         categories: ["ballad", "indie"],
+        lyrics: lyricsData.waitingForYou || "",
     },
     {
         id: IDS.mangTienVeChoMe,
@@ -190,6 +202,7 @@ const songs = [
         playCount: 3200000,
         genre: "rap",
         categories: ["rap", "vpop"],
+        lyrics: lyricsData.mangTienVeChoMe || "",
     },
 ];
 
@@ -281,6 +294,7 @@ async function seed() {
                 playCount: s.playCount,
                 genre: s.genre,
                 categories: s.categories,
+                lyrics: (s as any).lyrics || null,
                 createdAt: now,
                 updatedAt: now,
             },
