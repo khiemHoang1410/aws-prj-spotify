@@ -73,6 +73,21 @@ app.get("/editorial-playlists", async (_req, res) => {
     }
 });
 
+app.get("/editorial-playlists/:id", async (req, res) => {
+    try {
+        const response = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `PLAYLIST#${req.params.id}`, sk: "METADATA" },
+        }));
+        if (!response.Item) {
+            return res.json({ id: req.params.id, name: "Playlist Nổi Bật", songs: [] });
+        }
+        res.json(cleanItem(response.Item));
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ─── Albums ──────────────────────────────────────────────────────────────────
 app.get("/albums", async (_req, res) => {
     try {
@@ -89,6 +104,32 @@ app.get("/albums", async (_req, res) => {
     }
 });
 
+app.post("/albums", requireAuth, async (req: any, res) => {
+    try {
+        const id = uuidv7();
+        const now = new Date().toISOString();
+        const item = {
+            pk: `ALBUM#${id}`,
+            sk: "METADATA",
+            entityType: "ALBUM",
+            id,
+            title: req.body.title || req.body.name || "New Album",
+            name: req.body.title || req.body.name || "New Album",
+            artistId: req.body.artistId || req.user.sub,
+            artistName: req.body.artistName || req.user.name || "Artist",
+            coverUrl: req.body.coverUrl || "",
+            releaseDate: req.body.releaseDate || now.split("T")[0],
+            songIds: req.body.songIds || [],
+            createdAt: now,
+            updatedAt: now,
+        };
+        await db.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
+        res.json({ success: true, data: cleanItem(item) });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/albums/:id", async (req, res) => {
     try {
         const response = await db.send(new GetCommand({
@@ -96,6 +137,22 @@ app.get("/albums/:id", async (req, res) => {
             Key: { pk: `ALBUM#${req.params.id}`, sk: "METADATA" },
         }));
         if (!response.Item) return res.status(404).json({ error: "Album không tồn tại" });
+        res.json(cleanItem(response.Item));
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ─── Public Users ────────────────────────────────────────────────────────────
+app.get("/users/:id", async (req, res) => {
+    try {
+        const response = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `USER#${req.params.id}`, sk: "METADATA" },
+        }));
+        if (!response.Item) {
+            return res.json({ id: req.params.id, name: "Người dùng", role: "listener", avatarUrl: `https://i.pravatar.cc/150?u=${req.params.id}` });
+        }
         res.json(cleanItem(response.Item));
     } catch (err: any) {
         res.status(500).json({ error: err.message });

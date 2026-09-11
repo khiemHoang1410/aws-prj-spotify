@@ -203,6 +203,32 @@ artistsRouter.delete("/:id/follow", requireAuth, async (req: any, res) => {
     }
 });
 
+// Update artist profile
+artistsRouter.put("/:id", requireAuth, async (req: any, res) => {
+    try {
+        const artistId = req.params.id;
+        const existing = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `ARTIST#${artistId}`, sk: "METADATA" },
+        }));
+        if (!existing.Item) return res.status(404).json({ error: "Nghệ sĩ không tồn tại" });
+
+        const now = new Date().toISOString();
+        const updated = {
+            ...existing.Item,
+            name: req.body.name || existing.Item.name,
+            bio: req.body.bio !== undefined ? req.body.bio : existing.Item.bio,
+            photoUrl: req.body.photoUrl || existing.Item.photoUrl,
+            backgroundUrl: req.body.backgroundUrl || existing.Item.backgroundUrl,
+            updatedAt: now,
+        };
+        await db.send(new PutCommand({ TableName: TABLE_NAME, Item: updated }));
+        res.json({ success: true, data: cleanItem(updated) });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Related artists
 artistsRouter.get("/:id/related", async (req, res) => {
     try {

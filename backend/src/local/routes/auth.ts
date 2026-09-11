@@ -148,3 +148,40 @@ meRouter.post("/artist-request", requireAuth, async (req: any, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+meRouter.get("/artist-request", requireAuth, async (req: any, res) => {
+    try {
+        const user = req.user as AuthUser;
+        const response = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "EntityTypeIndex",
+            KeyConditionExpression: "entityType = :type AND sk = :sk",
+            ExpressionAttributeValues: { ":type": "ARTIST_REQUEST", ":sk": "METADATA" },
+        }));
+        const items = response.Items || [];
+        const request = items.find((i: any) => i.userId === user.sub);
+        if (!request) {
+            return res.json({ hasRequested: false, status: "none" });
+        }
+        res.json({ hasRequested: true, status: request.status, data: cleanItem(request) });
+    } catch {
+        res.json({ hasRequested: false, status: "none" });
+    }
+});
+
+meRouter.get("/artist-profile", requireAuth, async (req: any, res) => {
+    try {
+        const user = req.user as AuthUser;
+        const response = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "EntityTypeIndex",
+            KeyConditionExpression: "entityType = :type AND sk = :sk",
+            ExpressionAttributeValues: { ":type": "ARTIST", ":sk": "METADATA" },
+        }));
+        const all = (response.Items || []).map(cleanItem);
+        const myArtist = all.find((a: any) => a.userId === user.sub) || all[0] || null;
+        res.json(myArtist);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});

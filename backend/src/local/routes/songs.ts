@@ -97,9 +97,46 @@ songsRouter.get("/:id/lyrics", async (req, res) => {
     }
 });
 
+// Create song (after upload)
+songsRouter.post("/", requireAuth, async (req: any, res) => {
+    try {
+        const id = uuidv7();
+        const now = new Date().toISOString();
+        const songItem = {
+            pk: `SONG#${id}`,
+            sk: "METADATA",
+            entityType: "SONG",
+            id,
+            title: req.body.title || "Untitled",
+            name: req.body.title || "Untitled",
+            artistId: req.body.artistId || req.user.sub,
+            artistName: req.body.artistName || req.user.name,
+            duration: req.body.duration || 180,
+            fileUrl: req.body.fileUrl || req.body.audioUrl || "",
+            coverUrl: req.body.coverUrl || req.body.imageUrl || "",
+            albumId: req.body.albumId || null,
+            playCount: 0,
+            genre: req.body.genre || "vpop",
+            categories: req.body.categories || ["vpop"],
+            lyrics: req.body.lyrics || null,
+            createdAt: now,
+            updatedAt: now,
+        };
+        await db.send(new PutCommand({ TableName: TABLE_NAME, Item: songItem }));
+        res.json({ success: true, data: cleanItem(songItem) });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Record view
 songsRouter.post("/:id/view", (_req, res) => {
     res.json({ success: true });
+});
+
+// Report song
+songsRouter.post("/:id/report", requireAuth, (_req, res) => {
+    res.json({ success: true, message: "Đã ghi nhận báo cáo bài hát" });
 });
 
 // Record stream

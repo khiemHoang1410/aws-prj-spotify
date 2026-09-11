@@ -6,6 +6,7 @@
     "dev": "sst dev",
     "dev:local": "tsx watch src/local/server.ts",
     "setup:local": "tsx scripts/setup-aws-local.ts && tsx scripts/seed-local.ts",
+    "scan:api": "node scripts/scan-api.mjs",
     "deploy": "sst deploy --stage khiemhoang",
     "deploy:prod": "sst deploy --stage prod",
     "remove": "sst remove",
