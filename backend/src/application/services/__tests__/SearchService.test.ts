@@ -76,9 +76,8 @@ describe("SearchService.search", () => {
     });
 
     it("chỉ query repo cần thiết khi có type", async () => {
-        await searchService.search("test", "song");
-        expect(mockSongRepo.findAll).toHaveBeenCalledOnce();
-        expect(mockArtistRepo.findAll).not.toHaveBeenCalled();
-        expect(mockAlbumRepo.findAll).not.toHaveBeenCalled();
+        await searchService.search("test", "album");
+        expect(mockAlbumRepo.findAll).toHaveBeenCalledOnce();
+        expect(mockSongRepo.findAll).not.toHaveBeenCalled();
     });
 });

@@ -306,6 +306,93 @@ app.delete("/songs/:id/like", requireAuth, (req, res) => {
     res.json({ success: true, message: "Đã bỏ thích bài hát" });
 });
 
+// Comments Endpoints
+app.get("/songs/:id/comments", async (req, res) => {
+    try {
+        const songId = req.params.id;
+        const response = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            KeyConditionExpression: "pk = :pk AND begins_with(sk, :prefix)",
+            ExpressionAttributeValues: {
+                ":pk": `SONG#${songId}`,
+                ":prefix": "COMMENT#",
+            },
+            ScanIndexForward: false,
+        }));
+        const items = (response.Items || []).map(cleanItem);
+        res.json({ items, count: items.length });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.post("/songs/:id/comments", requireAuth, async (req: any, res) => {
+    try {
+        const songId = req.params.id;
+        const user = req.user;
+        const { content } = req.body;
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: "Nội dung bình luận không được để trống" });
+        }
+        if (content.length > 500) {
+            return res.status(400).json({ error: "Bình luận không được quá 500 ký tự" });
+        }
+
+        const commentId = uuidv7();
+        const now = new Date().toISOString();
+        const commentItem = {
+            pk: `SONG#${songId}`,
+            sk: `COMMENT#${commentId}`,
+            commentId,
+            songId,
+            userId: user.sub,
+            userName: user.name || user.email.split("@")[0],
+            userAvatar: `https://i.pravatar.cc/150?u=${user.email}`,
+            content: content.trim(),
+            createdAt: now,
+        };
+
+        await db.send(new PutCommand({ TableName: TABLE_NAME, Item: commentItem }));
+        res.json(cleanItem(commentItem));
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.delete("/songs/:id/comments/:commentId", requireAuth, async (req: any, res) => {
+    try {
+        const { id: songId, commentId } = req.params;
+        const user = req.user;
+
+        const existing = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: {
+                pk: `SONG#${songId}`,
+                sk: `COMMENT#${commentId}`,
+            },
+        }));
+
+        if (!existing.Item) {
+            return res.status(404).json({ error: "Bình luận không tồn tại" });
+        }
+        if (existing.Item.userId !== user.sub && user.role !== "admin") {
+            return res.status(403).json({ error: "Không có quyền xóa bình luận này" });
+        }
+
+        await db.send(new DeleteCommand({
+            TableName: TABLE_NAME,
+            Key: {
+                pk: `SONG#${songId}`,
+                sk: `COMMENT#${commentId}`,
+            },
+        }));
+
+        res.json({ message: "Đã xóa bình luận thành công" });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 app.get("/me/liked-songs", requireAuth, async (req, res) => {
     try {
         const response = await db.send(new QueryCommand({

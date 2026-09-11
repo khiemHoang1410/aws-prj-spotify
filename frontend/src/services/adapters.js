@@ -114,3 +114,16 @@ export const normalizeHistoryEntry = (item) => {
     played_at: item.playedAt || item.played_at || null,
   };
 };
+
+export const adaptComment = (comment) => {
+  if (!comment) return null;
+  return {
+    comment_id: comment.commentId || comment.comment_id || (comment.sk ? comment.sk.replace(/^COMMENT#/, '') : null),
+    song_id: comment.songId || comment.song_id,
+    user_id: comment.userId || comment.user_id,
+    user_name: comment.userName || comment.user_name || 'Người dùng',
+    user_avatar: comment.userAvatar || comment.user_avatar || null,
+    content: comment.content || '',
+    created_at: comment.createdAt || comment.created_at || null,
+  };
+};

@@ -55,8 +55,9 @@ const mockCategory = {
 
 beforeEach(() => {
     vi.clearAllMocks();
-    // Default: category exists
+    // Default: category exists & increment returns resolved Promise
     mockCategoryRepo.findBySlug.mockResolvedValue({ success: true, data: mockCategory });
+    mockCategoryRepo.incrementSongCount.mockResolvedValue({ success: true, data: undefined });
 });
 
 describe("SongService.createSong", () => {
@@ -77,7 +78,7 @@ describe("SongService.createSong", () => {
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
-        expect(result.error).toBe("genre là bắt buộc");
+        expect(result.error).toBe("Cần ít nhất một thể loại");
         expect(mockCategoryRepo.findBySlug).not.toHaveBeenCalled();
     });
 
@@ -86,7 +87,7 @@ describe("SongService.createSong", () => {
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
-        expect(result.error).toBe("genre là bắt buộc");
+        expect(result.error).toBe("Cần ít nhất một thể loại");
     });
 
     it("trả về lỗi 400 khi genre dài hơn 50 ký tự", async () => {
@@ -95,7 +96,7 @@ describe("SongService.createSong", () => {
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
-        expect(result.error).toBe("genre không được vượt quá 50 ký tự");
+        expect(result.error).toBe("Tên thể loại không được vượt quá 50 ký tự");
     });
 
     it("trả về lỗi 400 khi genre không phải slug hợp lệ", async () => {
@@ -105,7 +106,7 @@ describe("SongService.createSong", () => {
 
         expect(result.success).toBe(false);
         expect(result.code).toBe(400);
-        expect(result.error).toBe("genre không hợp lệ");
+        expect(result.error).toBe("Thể loại 'unknown-genre' không hợp lệ");
         expect(mockSongRepo.save).not.toHaveBeenCalled();
     });
 

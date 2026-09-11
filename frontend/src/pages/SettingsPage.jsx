@@ -101,14 +101,14 @@ export default function SettingsPage() {
 
           {activeSection === 'audio' && (
             <Section title="Chất lượng âm thanh">
-              <SettingRow label="Chất lượng phát" description="Chất lượng stream nhạc">
+              <SettingRow label="Chất lượng phát" description="Chất lượng stream nhạc (chuẩn phát trực tiếp từ S3: 320 kbps)">
                 <SelectOption
                   value={settings.audioQuality}
                   onChange={(v) => set('audioQuality', v)}
                   options={[
                     { value: 'low', label: 'Thấp (96 kbps)' },
                     { value: 'normal', label: 'Bình thường (160 kbps)' },
-                    { value: 'high', label: 'Cao (320 kbps)' },
+                    { value: 'high', label: 'Cao (320 kbps - Mặc định)' },
                     { value: 'lossless', label: 'Không nén (FLAC)' },
                   ]}
                 />
@@ -118,7 +118,7 @@ export default function SettingsPage() {
 
           {activeSection === 'playback' && (
             <Section title="Phát lại">
-              <SettingRow label="Tự động phát" description="Tự động phát bài tiếp theo khi kết thúc">
+              <SettingRow label="Tự động phát" description="Tự động chuyển bài tiếp theo khi kết thúc bài hát">
                 <ToggleSwitch checked={settings.autoplay} onChange={(v) => set('autoplay', v)} />
               </SettingRow>
             </Section>
@@ -142,7 +142,7 @@ export default function SettingsPage() {
 
           {activeSection === 'display' && (
             <Section title="Giao diện">
-              <SettingRow label="Chế độ tối" description="Ngay lúc này chỉ hỗ trợ dark mode">
+              <SettingRow label="Chế độ tối" description="Giao diện chuẩn Spotify Dark Mode (Light Mode đang thử nghiệm)">
                 <ToggleSwitch checked={settings.theme === 'dark'} onChange={(v) => set('theme', v ? 'dark' : 'light')} />
               </SettingRow>
             </Section>

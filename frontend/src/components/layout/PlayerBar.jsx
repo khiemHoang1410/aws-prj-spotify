@@ -35,6 +35,7 @@ export default function PlayerBar() {
   const { isRightSidebarOpen, isPiP } = useSelector((state) => state.ui);
   const { likedSongs, isAuthenticated } = useSelector((state) => state.auth);
   const historyEntries = useSelector((state) => state.history?.entries || []);
+  const autoplay = useSelector((state) => state.settings?.autoplay ?? true);
 
   const initialVolumeRef = useRef(readInitialVolume());
 
@@ -211,6 +212,13 @@ export default function PlayerBar() {
   const handleSongEnded = async () => {
     if (repeatMode === REPEAT_MODE.ONE || repeatMode === REPEAT_MODE.ALL) {
       restartCurrentSong();
+      return;
+    }
+
+    if (!autoplay) {
+      dispatch(togglePlay());
+      setCurrentTimeLocal(0);
+      dispatch(updateCurrentTime(0));
       return;
     }
 

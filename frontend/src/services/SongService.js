@@ -1,6 +1,6 @@
 import { MOCK_SONGS } from '../data/mockData';
 import api from './apiClient';
-import { adaptSong, adaptPaginatedResponse } from './adapters';
+import { adaptSong, adaptPaginatedResponse, adaptComment } from './adapters';
 
 export const getSongs = async () => {
   try {
@@ -124,3 +124,24 @@ export const getTrendingSongs = async (limit = 20) => {
 
 /** Client-side relevance search — deprecated, dùng searchSongs() */
 export const searchWithRelevance = () => ({ songs: [], matchedCategories: [] });
+
+// ─── Song Comments ────────────────────────────────────────────────────────────
+
+export const getSongComments = async (songId, limit = 50) => {
+  try {
+    const data = await api.get(`/songs/${encodeURIComponent(songId)}/comments?limit=${limit}`);
+    const items = Array.isArray(data) ? data : (data?.items || []);
+    return items.map(adaptComment);
+  } catch {
+    return [];
+  }
+};
+
+export const addSongComment = async (songId, content) => {
+  const data = await api.post(`/songs/${encodeURIComponent(songId)}/comments`, { content });
+  return adaptComment(data);
+};
+
+export const deleteSongComment = async (songId, commentId) => {
+  return api.delete(`/songs/${encodeURIComponent(songId)}/comments/${encodeURIComponent(commentId)}`);
+};

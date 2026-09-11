@@ -1,10 +1,10 @@
 import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
+import { ArtistService } from "../../../../application/services/ArtistService";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { Failure } from "../../../../shared/utils/Result";
 import { validate, validateUUID, requireAtLeastOneField } from "../../../../shared/utils/validate";
 
-const artistRepo = new ArtistRepository();
+const artistService = new ArtistService(new ArtistRepository());
 
 const UpdateArtistSchema = z.object({
     name: z.string().min(1).max(255).optional(),
@@ -23,11 +23,8 @@ export const handler = makeAuthHandler(async (body, params, auth) => {
     const fieldsResult = requireAtLeastOneField(validation.data);
     if (!fieldsResult.success) return fieldsResult;
 
-    const existing = await artistRepo.findById(idResult.data);
-    if (!existing.success || !existing.data) return Failure("Nghệ sĩ không tồn tại", 404);
-    if (existing.data.userId !== auth.userId && auth.role !== "admin") {
-        return Failure("Không có quyền chỉnh sửa nghệ sĩ này", 403);
-    }
-
-    return artistRepo.update(idResult.data, fieldsResult.data);
+    return await artistService.updateArtist(idResult.data, fieldsResult.data, {
+        userId: auth.userId,
+        role: auth.role,
+    });
 }, "artist");

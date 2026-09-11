@@ -11,6 +11,7 @@ import { toggleLikeSongThunk, openModal } from '../store/authSlice';
 import SongHero from '../components/song-detail/SongHero';
 import LyricsSection from '../components/song-detail/LyricsSection';
 import RelatedSongs from '../components/song-detail/RelatedSongs';
+import CommentsSection from '../components/song-detail/CommentsSection';
 import SongContextMenu from '../components/ui/SongContextMenu';
 import SkeletonCard from '../components/ui/SkeletonCard';
 
@@ -297,7 +298,7 @@ export default function SongDetailPage() {
               />
             )}
 
-            {activeTab === 'comments' && <CommentsPlaceholder />}
+            {activeTab === 'comments' && <CommentsSection songId={songId} />}
 
             {activeTab === 'info' && <CreditsTab song={song} />}
           </div>
@@ -316,30 +317,6 @@ export default function SongDetailPage() {
   );
 }
 
-function CommentsPlaceholder() {
-  return (
-    <div>
-      <div className="flex items-center gap-2 mb-4">
-        <span className="text-xs font-semibold bg-yellow-500/20 text-yellow-400 px-2 py-0.5 rounded-full">
-          Sắp ra mắt
-        </span>
-        <span className="text-sm text-neutral-400">Tính năng bình luận đang được phát triển</span>
-      </div>
-      <div className="space-y-4">
-        {[1, 2, 3].map((i) => (
-          <div key={i} className="flex gap-3 opacity-40">
-            <div className="w-8 h-8 rounded-full bg-neutral-700 animate-pulse flex-shrink-0" />
-            <div className="flex-1 space-y-2">
-              <div className="h-3 bg-neutral-700 rounded animate-pulse w-24" />
-              <div className="h-3 bg-neutral-700 rounded animate-pulse w-full" />
-              <div className="h-3 bg-neutral-700 rounded animate-pulse w-3/4" />
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function CreditsTab({ song }) {
   return (

@@ -36,14 +36,16 @@ export class SongService {
                 }
             }
 
-            // Inject normalized fields:
+            // 3. Validate schema với normalized fields:
             // - genre (singular) = primary slug → GSI key cho GenreIndex
             // - genres = tất cả slugs đã chọn
-            rawData.genre = rawGenres[0];
-            rawData.genres = rawGenres;
+            const normalizedInput = {
+                ...rawData,
+                genre: rawGenres[0],
+                genres: rawGenres,
+            };
 
-            // 3. Validate schema
-            const validation = SongSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(rawData);
+            const validation = SongSchema.omit({ id: true, createdAt: true, updatedAt: true }).safeParse(normalizedInput);
             if (!validation.success) {
                 return Failure(validation.error.issues[0].message, 400);
             }

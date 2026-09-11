@@ -38,6 +38,8 @@ response*.json
 .gitnexus*
 .claude/
 .kiro/
+.agents/
+AGENTS.md
 
 # OS & IDE
 .DS_Store

@@ -60,12 +60,22 @@ export const createHandler = makeAuthHandler(async (body, params, auth) => {
             commentId,
             songId: idResult.data,
             userId: auth.userId,
+            userName: auth.email ? auth.email.split("@")[0] : "User",
+            userAvatar: auth.email ? `https://i.pravatar.cc/150?u=${auth.email}` : undefined,
             content,
             createdAt: now,
         },
     }));
 
-    return Success({ commentId, songId: idResult.data, userId: auth.userId, content, createdAt: now });
+    return Success({
+        commentId,
+        songId: idResult.data,
+        userId: auth.userId,
+        userName: auth.email ? auth.email.split("@")[0] : "User",
+        userAvatar: auth.email ? `https://i.pravatar.cc/150?u=${auth.email}` : undefined,
+        content,
+        createdAt: now,
+    });
 });
 
 // DELETE /songs/{id}/comments/{commentId}
