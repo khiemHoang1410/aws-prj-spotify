@@ -65,6 +65,18 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction) => 
     next();
 };
 
+export const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
+    const user = extractUser(req);
+    if (!user) {
+        return res.status(401).json({ error: "Unauthorized: Vui lòng đăng nhập" });
+    }
+    if (user.role !== "admin") {
+        return res.status(403).json({ error: "Forbidden: Yêu cầu quyền quản trị viên" });
+    }
+    (req as any).user = user;
+    next();
+};
+
 export const cleanItem = (item: any) => {
     if (!item) return item;
     const { pk, sk, entityType, ...rest } = item;

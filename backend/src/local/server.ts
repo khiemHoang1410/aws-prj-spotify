@@ -8,6 +8,7 @@ import { artistsRouter } from "./routes/artists";
 import { playlistsRouter } from "./routes/playlists";
 import { interactionsRouter } from "./routes/interactions";
 import { notificationsRouter } from "./routes/notifications";
+import { adminRouter } from "./routes/admin";
 
 const app = express();
 
@@ -39,6 +40,7 @@ app.use("/songs", songsRouter);
 app.use("/artists", artistsRouter);
 app.use("/playlists", playlistsRouter);
 app.use("/notifications", notificationsRouter);
+app.use("/admin", adminRouter);
 app.use("/", interactionsRouter); // Handles /songs/:id/like, /me/liked-songs, /me/play-history, /users/:id/play-history
 
 // ─── Genres ──────────────────────────────────────────────────────────────────

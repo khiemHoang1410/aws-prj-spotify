@@ -110,6 +110,8 @@ function resolvePath(rawPath) {
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:albumId|album_id))[a-zA-Z0-9_.]*\}/gi, SAMPLE_IDS.albumId);
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:playlistId|playlist_id))[a-zA-Z0-9_.]*\}/gi, SAMPLE_IDS.playlistId);
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:notificationId))[a-zA-Z0-9_.]*\}/gi, 'notif-1');
+  p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:requestId|request_id))[a-zA-Z0-9_.]*\}/gi, '01966004-0001-7000-8000-000000000001');
+  p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:reportId|report_id))[a-zA-Z0-9_.]*\}/gi, '01966005-0001-7000-8000-000000000001');
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:commentId|comment_id))[a-zA-Z0-9_.]*\}/gi, SAMPLE_IDS.commentId);
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:genreId|genre))[a-zA-Z0-9_.]*\}/gi, SAMPLE_IDS.genreId);
   p = p.replace(/\$\{(?:[a-zA-Z0-9_.]*(?:userId|user_id))[a-zA-Z0-9_.]*\}/gi, SAMPLE_IDS.userId);

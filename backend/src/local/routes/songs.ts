@@ -135,8 +135,29 @@ songsRouter.post("/:id/view", (_req, res) => {
 });
 
 // Report song
-songsRouter.post("/:id/report", requireAuth, (_req, res) => {
-    res.json({ success: true, message: "Đã ghi nhận báo cáo bài hát" });
+songsRouter.post("/:id/report", requireAuth, async (req: any, res) => {
+    try {
+        const user = req.user;
+        const reportId = uuidv7();
+        const now = new Date().toISOString();
+        const item = {
+            pk: `REPORT#${reportId}`,
+            sk: "METADATA",
+            entityType: "REPORT",
+            id: reportId,
+            songId: req.params.id,
+            userId: user.sub,
+            reason: req.body.reason || "Vi phạm bản quyền",
+            description: req.body.description || "",
+            status: "pending",
+            createdAt: now,
+            updatedAt: now,
+        };
+        await db.send(new PutCommand({ TableName: TABLE_NAME, Item: item }));
+        res.json({ success: true, message: "Đã ghi nhận báo cáo bài hát" });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Record stream
