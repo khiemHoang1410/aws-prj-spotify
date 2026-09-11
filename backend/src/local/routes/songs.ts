@@ -102,6 +102,29 @@ songsRouter.post("/:id/view", (_req, res) => {
     res.json({ success: true });
 });
 
+// Record stream
+songsRouter.post("/:id/stream", (_req, res) => {
+    res.json({ success: true });
+});
+
+// Related songs (autoplay / recommendations)
+songsRouter.get("/:id/related", async (req, res) => {
+    try {
+        const response = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "EntityTypeIndex",
+            KeyConditionExpression: "entityType = :type AND sk = :sk",
+            ExpressionAttributeValues: { ":type": "SONG", ":sk": "METADATA" },
+            Limit: 20,
+        }));
+        const allSongs = (response.Items || []).map(cleanItem);
+        const related = allSongs.filter((s: any) => s.id !== req.params.id);
+        res.json(related);
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Comments
 songsRouter.get("/:id/comments", async (req, res) => {
     try {

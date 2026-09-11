@@ -57,6 +57,22 @@ app.get("/genres", async (_req, res) => {
     }
 });
 
+// ─── Editorial Playlists ──────────────────────────────────────────────────
+app.get("/editorial-playlists", async (_req, res) => {
+    try {
+        const response = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "EntityTypeIndex",
+            KeyConditionExpression: "entityType = :type AND sk = :sk",
+            ExpressionAttributeValues: { ":type": "PLAYLIST", ":sk": "METADATA" },
+        }));
+        const items = (response.Items || []).map(cleanItem);
+        res.json({ items, count: items.length });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ─── Albums ──────────────────────────────────────────────────────────────────
 app.get("/albums", async (_req, res) => {
     try {
@@ -81,6 +97,44 @@ app.get("/albums/:id", async (req, res) => {
         }));
         if (!response.Item) return res.status(404).json({ error: "Album không tồn tại" });
         res.json(cleanItem(response.Item));
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+app.get("/albums/:id/songs", async (req, res) => {
+    try {
+        const albumId = req.params.id;
+        const albumRes = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `ALBUM#${albumId}`, sk: "METADATA" },
+        }));
+        if (!albumRes.Item) return res.status(404).json({ error: "Album không tồn tại" });
+
+        const songIds: string[] = albumRes.Item.songIds || [];
+        if (songIds.length > 0) {
+            const songs = await Promise.all(
+                songIds.map(async (sid) => {
+                    const r = await db.send(new GetCommand({
+                        TableName: TABLE_NAME,
+                        Key: { pk: `SONG#${sid}`, sk: "METADATA" },
+                    }));
+                    return r.Item ? cleanItem(r.Item) : null;
+                })
+            );
+            const validSongs = songs.filter(Boolean);
+            return res.json({ items: validSongs, count: validSongs.length });
+        }
+
+        // Fallback query songs by albumId
+        const songsRes = await db.send(new QueryCommand({
+            TableName: TABLE_NAME,
+            IndexName: "EntityTypeIndex",
+            KeyConditionExpression: "entityType = :type AND sk = :sk",
+            ExpressionAttributeValues: { ":type": "SONG", ":sk": "METADATA" },
+        }));
+        const matching = (songsRes.Items || []).filter((s: any) => s.albumId === albumId).map(cleanItem);
+        res.json({ items: matching, count: matching.length });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }

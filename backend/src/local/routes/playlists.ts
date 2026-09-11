@@ -89,6 +89,22 @@ playlistsRouter.get("/:id", async (req, res) => {
     }
 });
 
+// List songs in playlist
+playlistsRouter.get("/:id/songs", async (req, res) => {
+    try {
+        const playlistId = req.params.id;
+        const response = await db.send(new GetCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `PLAYLIST#${playlistId}`, sk: "METADATA" },
+        }));
+        if (!response.Item) return res.status(404).json({ error: "Danh sách phát không tồn tại" });
+        const songs = (response.Item.songs || []).map(cleanItem);
+        res.json({ items: songs, count: songs.length });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // Update playlist
 playlistsRouter.put("/:id", requireAuth, async (req: any, res) => {
     try {

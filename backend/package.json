@@ -4,7 +4,7 @@
   "description": "Spotify Backend using Clean Architecture and SST Ion",
   "scripts": {
     "dev": "sst dev",
-    "dev:local": "tsx src/local/server.ts",
+    "dev:local": "tsx watch src/local/server.ts",
     "setup:local": "tsx scripts/setup-aws-local.ts && tsx scripts/seed-local.ts",
     "deploy": "sst deploy --stage khiemhoang",
     "deploy:prod": "sst deploy --stage prod",
