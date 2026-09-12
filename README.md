@@ -1,8 +1,11 @@
-# 🎵 Spotify Clone — AWS Serverless
+# 🎵 Spotify Clone — AWS Serverless & Clean Architecture
 
-Nền tảng nghe nhạc trực tuyến mô phỏng Spotify, xây dựng trên kiến trúc serverless AWS. Dự án được thực hiện bởi AWS Study Group.
+Nền tảng nghe nhạc trực tuyến mô phỏng Spotify, xây dựng trên kiến trúc **AWS Serverless** và mô hình **Clean Architecture 4 tầng**. Dự án hỗ trợ cả triển khai trên đám mây AWS và môi trường cục bộ (**Local Cloud Emulation**) qua Docker Compose.
 
-**Live:** [hskhiem.io.vn](https://hskhiem.io.vn)
+[![CI/CD Pipeline](https://github.com/khiemHoang1410/aws-prj-spotify/actions/workflows/deploy.yml/badge.svg)](https://github.com/khiemHoang1410/aws-prj-spotify/actions/workflows/deploy.yml)
+![Tests](https://img.shields.io/badge/Unit%20Tests-116%20Passed-brightgreen)
+![TypeScript](https://img.shields.io/badge/TypeScript-0%20Errors-blue)
+![Architecture](https://img.shields.io/badge/Architecture-Clean%20Architecture-orange)
 
 ---
 
@@ -257,7 +260,29 @@ cd backend && npm install
 cd ../frontend && npm install
 ```
 
-### 2. Cấu hình AWS credentials
+### 2. Khởi động Local với Docker (Khuyên dùng — Không tốn phí AWS)
+
+Dự án hỗ trợ chạy toàn bộ tính năng độc lập tại máy thông qua **Docker Compose** (DynamoDB Local & MinIO):
+
+```bash
+# Bật database & storage giả lập
+docker compose up -d
+
+# Khởi tạo schema và nạp dữ liệu mẫu (bài hát, nghệ sĩ, lyrics...)
+cd backend
+npm run setup:local
+
+# Chạy Backend server local (Express)
+npm run dev:local
+# Server lắng nghe tại: http://localhost:4000
+
+# Mở terminal mới để chạy Frontend
+cd ../frontend
+npm run dev
+# Truy cập giao diện tại: http://localhost:5173
+```
+
+### 3. Cấu hình AWS credentials (Chỉ khi deploy lên AWS thật)
 
 ```bash
 aws configure
