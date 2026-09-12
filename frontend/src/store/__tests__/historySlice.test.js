@@ -7,11 +7,11 @@ import historyReducer, {
   removeEntry,
   loadHistory,
   clearAllHistory,
-} from '../store/historySlice';
-import authReducer, { logout, loginSuccess } from '../store/authSlice';
+} from '../historySlice';
+import authReducer, { logout, loginSuccess } from '../authSlice';
 
 // ─── Mock apiClient ───────────────────────────────────────────────────────────
-vi.mock('../services/apiClient', () => ({
+vi.mock('../../services/apiClient', () => ({
   default: {
     get: vi.fn(),
     post: vi.fn(),
@@ -194,7 +194,7 @@ describe('historySlice — loadHistory thunk', () => {
   });
 
   it('bail out khi isRestoring = true — không gọi API, không set entries', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
     const store = makeStore({
       auth: {
         isAuthenticated: false, user: null, isRestoring: true,
@@ -212,7 +212,7 @@ describe('historySlice — loadHistory thunk', () => {
   });
 
   it('trả entries rỗng khi isRestoring=false và isAuthenticated=false', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
 
     // Giả sử localStorage có data cũ từ session trước
     localStorage.setItem('spotify_play_history', JSON.stringify([makeEntry()]));
@@ -235,7 +235,7 @@ describe('historySlice — loadHistory thunk', () => {
   });
 
   it('gọi API khi isAuthenticated=true và isRestoring=false', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
     apiClient.get.mockResolvedValueOnce({
       items: [{ entryId: 'e1', songId: 'song-1', songTitle: 'Test', artistName: 'Artist', duration: 180 }],
       nextCursor: null,
@@ -263,7 +263,7 @@ describe('historySlice — loadHistory thunk', () => {
   });
 
   it('fallback localStorage khi API lỗi và đã authenticated', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
     apiClient.get.mockRejectedValueOnce(new Error('Network error'));
 
     localStorage.setItem('spotify_play_history', JSON.stringify([
@@ -298,7 +298,7 @@ describe('historySlice — clearAllHistory thunk', () => {
   });
 
   it('xóa entries và localStorage khi authenticated', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
     apiClient.delete.mockResolvedValueOnce({});
 
     localStorage.setItem('spotify_play_history', JSON.stringify([makeEntry()]));
@@ -324,7 +324,7 @@ describe('historySlice — clearAllHistory thunk', () => {
   });
 
   it('xóa entries và localStorage khi không authenticated (guest)', async () => {
-    const { default: apiClient } = await import('../services/apiClient');
+    const { default: apiClient } = await import('../../services/apiClient');
 
     localStorage.setItem('spotify_play_history', JSON.stringify([makeEntry()]));
 
