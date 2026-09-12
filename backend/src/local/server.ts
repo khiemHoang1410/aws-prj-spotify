@@ -1,6 +1,7 @@
 import express from "express";
 import cors from "cors";
-import { QueryCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, GetCommand, PutCommand } from "@aws-sdk/lib-dynamodb";
+import { v7 as uuidv7 } from "uuid";
 import { PORT, DYNAMODB_ENDPOINT, TABLE_NAME, db, cleanItem, requireAuth } from "./db";
 import { authRouter, meRouter } from "./routes/auth";
 import { songsRouter } from "./routes/songs";

@@ -1,7 +1,7 @@
 // sst.config.ts
 
 export default $config({
-  app(input) {
+  app(input: any) {
     return {
       name: "spotify-backend",
       // Lambda/API Gateway vẫn remove được khi sst remove

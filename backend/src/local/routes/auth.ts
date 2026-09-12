@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { PutCommand, GetCommand } from "@aws-sdk/lib-dynamodb";
+import { PutCommand, GetCommand, QueryCommand } from "@aws-sdk/lib-dynamodb";
 import { v7 as uuidv7 } from "uuid";
 import { db, TABLE_NAME, generateTokens, requireAuth, AuthUser, cleanItem } from "../db";
 
