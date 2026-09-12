@@ -333,27 +333,26 @@ Cần thêm secrets vào GitHub repo (`Settings → Secrets → Actions`):
 
 ---
 
-## Seed Data
+## Seed Data & Tài khoản thử nghiệm (Test Accounts)
+
+### 1. Setup & Seed Dữ liệu Local (Docker / DynamoDB Local)
 
 ```bash
 cd backend
 
-# Seed dữ liệu mẫu (songs, artists, albums)
-npx tsx scripts/seed-data.ts
+# Tự động tạo bảng DynamoDB + S3 buckets và nạp dữ liệu (artists, songs, albums, genres, lyrics)
+npm run setup:local
 
-# Tạo tài khoản admin
+# Tạo tài khoản admin mặc định
 npx tsx scripts/seed-admin.ts
-
-# Seed artists
-npx tsx scripts/seed-artists.ts
 ```
 
-Trước khi chạy seed, tạo file `backend/.env` từ template:
+### 2. Tài khoản thử nghiệm (Demo Credentials)
 
-```bash
-cp backend/.env.example backend/.env
-# Điền USER_POOL_ID, USER_POOL_CLIENT_ID, TABLE_NAME, BUCKET_NAME từ output của sst dev
-```
+| Role | Email | Mật khẩu | Quyền hạn |
+|------|-------|----------|-----------|
+| **Admin** | `admin@spotify.local` | `Admin@12345` | Truy cập Admin Panel, duyệt nghệ sĩ, xử lý báo cáo |
+| **Listener / Test User** | `test@example.com` | `Test12345!` | Nghe nhạc, tạo playlist, like bài hát, theo dõi nghệ sĩ |
 
 ---
 
