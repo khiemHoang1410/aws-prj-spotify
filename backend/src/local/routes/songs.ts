@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { QueryCommand, GetCommand, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+import { QueryCommand, GetCommand, PutCommand, DeleteCommand, UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { v7 as uuidv7 } from "uuid";
 import { db, TABLE_NAME, cleanItem, requireAuth } from "../db";
 
@@ -129,10 +129,6 @@ songsRouter.post("/", requireAuth, async (req: any, res) => {
     }
 });
 
-// Record view
-songsRouter.post("/:id/view", (_req, res) => {
-    res.json({ success: true });
-});
 
 // Report song
 songsRouter.post("/:id/report", requireAuth, async (req: any, res) => {
@@ -160,9 +156,34 @@ songsRouter.post("/:id/report", requireAuth, async (req: any, res) => {
     }
 });
 
-// Record stream
-songsRouter.post("/:id/stream", (_req, res) => {
-    res.json({ success: true });
+// Record stream — tăng playCount khi người dùng nghe trên 30s
+songsRouter.post("/:id/stream", async (req, res) => {
+    try {
+        await db.send(new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `SONG#${req.params.id}`, sk: "METADATA" },
+            UpdateExpression: "ADD playCount :one",
+            ExpressionAttributeValues: { ":one": 1 },
+        }));
+        res.json({ success: true, message: "Đã tăng lượt nghe" });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Record view — tăng playCount khi bài hát được nghe
+songsRouter.post("/:id/view", async (req, res) => {
+    try {
+        await db.send(new UpdateCommand({
+            TableName: TABLE_NAME,
+            Key: { pk: `SONG#${req.params.id}`, sk: "METADATA" },
+            UpdateExpression: "ADD playCount :one",
+            ExpressionAttributeValues: { ":one": 1 },
+        }));
+        res.json({ success: true, counted: true });
+    } catch (err: any) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Related songs (autoplay / recommendations)

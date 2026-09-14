@@ -7,6 +7,8 @@ export const PORT = process.env.PORT || 4000;
 export const JWT_SECRET = process.env.JWT_SECRET || "spotify-local-jwt-secret-key-2026";
 export const TABLE_NAME = process.env.TABLE_NAME || "spotify-dev-table";
 export const DYNAMODB_ENDPOINT = process.env.DYNAMODB_ENDPOINT || "http://localhost:8000";
+process.env.DYNAMODB_ENDPOINT = DYNAMODB_ENDPOINT;
+process.env.TABLE_NAME = TABLE_NAME;
 
 const client = new DynamoDBClient({
     endpoint: DYNAMODB_ENDPOINT,

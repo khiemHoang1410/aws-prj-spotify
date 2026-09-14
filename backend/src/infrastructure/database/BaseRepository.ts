@@ -1,4 +1,5 @@
 import { Resource } from "sst";
+import { config } from "../../config";
 import { PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { Result, Success, Failure } from "../../shared/utils/Result";
 import { dynamoDb as docClient } from "./dynamoClient";
@@ -19,7 +20,7 @@ export function encodeCursor(key: Record<string, any>): string {
 }
 
 export abstract class BaseRepository<T extends { id: string; createdAt?: string; updatedAt?: string }> {
-    protected readonly tableName = Resource.SpotifyTable.name;
+    protected readonly tableName = config.tableName;
     protected abstract readonly entityPrefix: string;
 
     async save(item: T): Promise<Result<T>> {

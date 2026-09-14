@@ -1,4 +1,5 @@
 import { Resource } from "sst";
+import { config } from "../../config";
 import { PutCommand, GetCommand, QueryCommand, DeleteCommand, UpdateCommand, BatchGetCommand } from "@aws-sdk/lib-dynamodb";
 import { Playlist } from "../../domain/entities/Playlist";
 import { Song } from "../../domain/entities/Song";
@@ -8,7 +9,7 @@ import { decodeCursor, encodeCursor } from "./BaseRepository";
 
 
 export class PlaylistRepository {
-    private get tableName() { return Resource.SpotifyTable.name; }
+    private get tableName() { return config.tableName; }
     private readonly prefix = "PLAYLIST";
 
     async save(playlist: Playlist): Promise<Result<Playlist>> {

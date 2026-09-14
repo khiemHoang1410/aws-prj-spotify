@@ -9,11 +9,23 @@ import { Resource } from "sst";
  * Không dùng src/shared/config.ts nữa — tất cả tập trung ở đây.
  */
 export const config = {
-    // --- AWS / Infra (SST Resource) ---
+    // --- AWS / Infra (SST Resource with local fallback) ---
     region: process.env.AWS_REGION || "ap-southeast-1",
-    tableName: Resource.SpotifyTable.name,
+    tableName: (() => {
+        try {
+            return (Resource as any)?.SpotifyTable?.name || process.env.TABLE_NAME || "spotify-dev-table";
+        } catch {
+            return process.env.TABLE_NAME || "spotify-dev-table";
+        }
+    })(),
     s3: {
-        bucketName: Resource.SpotifyMedia.name,
+        bucketName: (() => {
+            try {
+                return (Resource as any)?.SpotifyMedia?.name || process.env.MEDIA_BUCKET || "spotify-dev-media";
+            } catch {
+                return process.env.MEDIA_BUCKET || "spotify-dev-media";
+            }
+        })(),
         uploadUrlExpiresIn: Number(process.env.UPLOAD_URL_EXPIRES_IN) || 300, // giây
     },
     stage: process.env.SST_STAGE || "dev",

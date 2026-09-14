@@ -248,8 +248,100 @@ const genres = [
     { id: "acoustic", name: "Acoustic", color: "#D84000" },
 ];
 
+const editorialPlaylists = [
+    {
+        id: "01966003-0001-7000-8000-000000000001",
+        name: "V-Pop Hôm Nay",
+        title: "V-Pop Hôm Nay",
+        description: "Những giai điệu V-Pop thịnh hành và được yêu thích nhất hiện tại.",
+        coverUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80",
+        songIds: [IDS.chayNgayDi, IDS.emCuaNgayHomQua, IDS.lacTroi, IDS.noiNayCoAnh, IDS.waitingForYou, IDS.mangTienVeChoMe],
+        isPublic: true,
+        status: "published",
+    },
+    {
+        id: "01966003-0002-7000-8000-000000000002",
+        name: "Chill & Relax",
+        title: "Chill & Relax",
+        description: "Thư giãn cùng những thanh âm êm dịu, xoa dịu tâm hồn bạn.",
+        coverUrl: "https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80",
+        songIds: [IDS.noiNayCoAnh, IDS.waitingForYou, IDS.mangTienVeChoMe],
+        isPublic: true,
+        status: "published",
+    },
+    {
+        id: "01966003-0003-7000-8000-000000000003",
+        name: "Top Hits Việt Nam",
+        title: "Top Hits Việt Nam",
+        description: "Bảng xếp hạng các bài hát có lượt nghe cao nhất trên nền tảng.",
+        coverUrl: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80",
+        songIds: [IDS.chayNgayDi, IDS.lacTroi, IDS.waitingForYou],
+        isPublic: true,
+        status: "published",
+    },
+];
+
+const sampleUsers = [
+    {
+        id: "01966004-0001-7000-8000-000000000001",
+        email: "listener@spotify.com",
+        displayName: "Nguyễn Văn Listener",
+        role: "listener",
+        avatarUrl: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
+    },
+    {
+        id: "01966004-0002-7000-8000-000000000002",
+        email: "artist@spotify.com",
+        displayName: "Sơn Tùng Official",
+        role: "artist",
+        avatarUrl: "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
+    },
+    {
+        id: "01966004-0003-7000-8000-000000000003",
+        email: "admin@spotify.com",
+        displayName: "Super Admin",
+        role: "admin",
+        avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
+    },
+];
+
 async function seed() {
     console.log(`\n🌱 Seeding data vào DynamoDB Local: ${TABLE_NAME}...\n`);
+
+    // 0. Clean dummy scanner data
+    try {
+        const { QueryCommand, DeleteCommand } = await import("@aws-sdk/lib-dynamodb");
+        const [songsRes, playlistsRes] = await Promise.all([
+            db.send(new QueryCommand({
+                TableName: TABLE_NAME,
+                IndexName: "EntityTypeIndex",
+                KeyConditionExpression: "entityType = :type AND sk = :sk",
+                ExpressionAttributeValues: { ":type": "SONG", ":sk": "METADATA" },
+            })),
+            db.send(new QueryCommand({
+                TableName: TABLE_NAME,
+                IndexName: "EntityTypeIndex",
+                KeyConditionExpression: "entityType = :type AND sk = :sk",
+                ExpressionAttributeValues: { ":type": "PLAYLIST", ":sk": "METADATA" },
+            })),
+        ]);
+
+        for (const item of (songsRes.Items || [])) {
+            if (item.artistId === "scanner-admin-id" || item.title === "Untitled") {
+                await db.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { pk: item.pk, sk: item.sk } }));
+                console.log(`🗑️ Đã xóa dummy song: ${item.pk}`);
+            }
+        }
+
+        for (const item of (playlistsRes.Items || [])) {
+            if (item.name === "Test" || item.name === "My Awesome Test Playlist" || item.title === "Test") {
+                await db.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { pk: item.pk, sk: item.sk } }));
+                console.log(`🗑️ Đã xóa dummy playlist: ${item.pk}`);
+            }
+        }
+    } catch (e: any) {
+        console.warn("Lưu ý khi dọn dummy:", e.message);
+    }
 
     // 1. Artists
     for (const a of artists) {
@@ -343,7 +435,52 @@ async function seed() {
         console.log(`✅ Genre: ${g.name}`);
     }
 
-    console.log(`\n🎉 Seeding thành công toàn bộ dữ liệu vào DynamoDB Local!`);
+    // 5. Editorial Playlists
+    for (const ep of editorialPlaylists) {
+        await db.send(new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+                pk: `PLAYLIST#${ep.id}`,
+                sk: "METADATA",
+                entityType: "PLAYLIST",
+                id: ep.id,
+                name: ep.name,
+                title: ep.title,
+                description: ep.description,
+                coverUrl: ep.coverUrl,
+                songIds: ep.songIds,
+                isPublic: ep.isPublic,
+                status: ep.status,
+                createdAt: now,
+                updatedAt: now,
+            },
+        }));
+        console.log(`✅ Editorial Playlist: ${ep.name}`);
+    }
+
+    // 6. Sample Users
+    for (const u of sampleUsers) {
+        await db.send(new PutCommand({
+            TableName: TABLE_NAME,
+            Item: {
+                pk: `USER#${u.id}`,
+                sk: "METADATA",
+                entityType: "USER",
+                id: u.id,
+                email: u.email,
+                displayName: u.displayName,
+                role: u.role,
+                avatarUrl: u.avatarUrl,
+                isVerified: true,
+                isBanned: false,
+                createdAt: now,
+                updatedAt: now,
+            },
+        }));
+        console.log(`✅ User: ${u.displayName} (${u.role})`);
+    }
+
+    console.log(`\n🎉 Seeding thành công toàn bộ dữ liệu sạch vào DynamoDB Local!`);
 }
 
 seed().catch(console.error);

@@ -4,8 +4,19 @@ import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
 import { DynamoDBDocumentClient } from "@aws-sdk/lib-dynamodb";
 import { config } from "../../config";
 
-// Khởi tạo client cơ bản
-const client = new DynamoDBClient({ region: config.region });
+// Khởi tạo client cơ bản (hỗ trợ cả AWS Cloud và DynamoDB Local)
+const client = new DynamoDBClient({
+    region: config.region,
+    ...(process.env.DYNAMODB_ENDPOINT
+        ? {
+              endpoint: process.env.DYNAMODB_ENDPOINT,
+              credentials: {
+                  accessKeyId: "localuser",
+                  secretAccessKey: "localpassword123",
+              },
+          }
+        : {}),
+});
 
 // Bọc client bằng DocumentClient để tự động xử lý kiểu dữ liệu (Marshalling)
 const dynamoDb = DynamoDBDocumentClient.from(client, {
