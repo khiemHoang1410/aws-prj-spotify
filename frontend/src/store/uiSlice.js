@@ -18,6 +18,9 @@ const uiSlice = createSlice({
     // Report modal
     isReportModalOpen: false,
     reportTargetSong: null,
+
+    // AI Playlist modal
+    isAiModalOpen: false,
   },
   reducers: {
     setSearchQuery: (state, action) => {
@@ -59,6 +62,12 @@ const uiSlice = createSlice({
       state.isReportModalOpen = false;
       state.reportTargetSong = null;
     },
+    openAiModal: (state) => {
+      state.isAiModalOpen = true;
+    },
+    closeAiModal: (state) => {
+      state.isAiModalOpen = false;
+    },
   },
 });
 
@@ -67,5 +76,6 @@ export const {
   toggleRightSidebar, setPiP,
   showToast, hideToast,
   openReportModal, closeReportModal,
+  openAiModal, closeAiModal,
 } = uiSlice.actions;
 export default uiSlice.reducer;

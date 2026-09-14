@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock } from 'lucide-react';
+import { Library, Plus, AudioLines, Heart, X, BadgeCheck, Trash2, Edit3, ListPlus, Clock, Sparkles } from 'lucide-react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { showToast } from '../../store/uiSlice';
+import { showToast, openAiModal } from '../../store/uiSlice';
 import { openModal } from '../../store/authSlice';
 import { getSongById } from '../../services/SongService';
 import {
@@ -175,6 +175,35 @@ export default function Sidebar() {
       >
         <AudioLines size={28} />
         <span className="font-bold text-lg tracking-tight" >Spotify</span>
+      </div>
+
+      {/* Nút Tạo Playlist bằng AI (AI DJ) */}
+      <div className="px-2 mb-1">
+        <button
+          onClick={() => dispatch(openAiModal())}
+          className="w-full relative group overflow-hidden rounded-xl p-[1px] focus:outline-none transition-all duration-300 active:scale-95 shadow-md hover:shadow-purple-500/25"
+        >
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-emerald-400 rounded-xl opacity-80 group-hover:opacity-100 transition-opacity" />
+          <div className="relative flex items-center justify-between px-3 py-2 bg-[#181818] rounded-[11px] group-hover:bg-[#202020] transition-colors">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center flex-shrink-0 shadow-md">
+                <Sparkles size={14} className="text-white animate-pulse" />
+              </div>
+              <div className="text-left min-w-0">
+                <p className="text-xs font-bold text-white tracking-wide truncate flex items-center gap-1.5">
+                  AI Playlist DJ
+                  <span className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded bg-purple-500/30 text-purple-300">
+                    GenAI
+                  </span>
+                </p>
+                <p className="text-[10px] text-neutral-400 truncate">Tạo list nhạc theo cảm xúc</p>
+              </div>
+            </div>
+            <span className="text-purple-300 text-xs font-bold group-hover:translate-x-0.5 transition-transform">
+              ✨
+            </span>
+          </div>
+        </button>
       </div>
 
       {/* Thư viện */}

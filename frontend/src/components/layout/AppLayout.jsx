@@ -14,6 +14,7 @@ import QueueSidebar from './QueueSidebar';
 import AuthModal from '../modals/AuthModal';
 import ForgotPasswordModal from '../modals/ForgotPasswordModal';
 import ReportModal from '../modals/ReportModal';
+import AiPlaylistModal from '../modals/AiPlaylistModal';
 import Toast from '../ui/Toast';
 import MiniLyricsPanel from '../Lyrics/MiniLyricsPanel';
 import ErrorBoundary from '../ui/ErrorBoundary';
@@ -188,6 +189,7 @@ export default function AppLayout() {
       <Toast />
       {isPiP && currentSong && <MiniLyricsPanel />}
       {isReportModalOpen && <ReportModal />}
+      <AiPlaylistModal />
     </div>
   );
 }

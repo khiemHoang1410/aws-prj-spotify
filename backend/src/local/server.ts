@@ -10,6 +10,7 @@ import { playlistsRouter } from "./routes/playlists";
 import { interactionsRouter } from "./routes/interactions";
 import { notificationsRouter } from "./routes/notifications";
 import { adminRouter } from "./routes/admin";
+import { aiRouter } from "./routes/ai";
 
 const app = express();
 
@@ -42,6 +43,7 @@ app.use("/artists", artistsRouter);
 app.use("/playlists", playlistsRouter);
 app.use("/notifications", notificationsRouter);
 app.use("/admin", adminRouter);
+app.use("/ai", aiRouter);
 app.use("/", interactionsRouter); // Handles /songs/:id/like, /me/liked-songs, /me/play-history, /users/:id/play-history
 
 // ─── Genres ──────────────────────────────────────────────────────────────────
@@ -83,9 +85,24 @@ app.get("/editorial-playlists/:id", async (req, res) => {
             Key: { pk: `PLAYLIST#${req.params.id}`, sk: "METADATA" },
         }));
         if (!response.Item) {
-            return res.json({ id: req.params.id, name: "Playlist Nổi Bật", songs: [] });
+            return res.status(404).json({ error: "Editorial playlist không tồn tại" });
         }
-        res.json(cleanItem(response.Item));
+        const item = cleanItem(response.Item);
+        const songIds: string[] = item.songIds || [];
+        let songs: any[] = [];
+        if (songIds.length > 0) {
+            const songFetches = await Promise.all(
+                songIds.map(async (sid) => {
+                    const r = await db.send(new GetCommand({
+                        TableName: TABLE_NAME,
+                        Key: { pk: `SONG#${sid}`, sk: "METADATA" },
+                    }));
+                    return r.Item ? cleanItem(r.Item) : null;
+                })
+            );
+            songs = songFetches.filter(Boolean);
+        }
+        res.json({ ...item, songs, count: songs.length });
     } catch (err: any) {
         res.status(500).json({ error: err.message });
     }
@@ -203,7 +220,15 @@ app.get("/albums/:id/songs", async (req, res) => {
 // ─── Search ──────────────────────────────────────────────────────────────────
 app.get("/search", async (req, res) => {
     try {
-        const query = ((req.query.q as string) || "").trim().toLowerCase();
+        const norm = (s: string) =>
+            (s || "")
+                .replace(/đ/g, "d")
+                .replace(/Đ/g, "d")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .toLowerCase();
+
+        const query = norm((req.query.q as string) || "");
         if (!query) return res.json({ songs: [], artists: [], albums: [] });
 
         const [songsRes, artistsRes, albumsRes] = await Promise.all([
@@ -230,19 +255,19 @@ app.get("/search", async (req, res) => {
         const songs = (songsRes.Items || [])
             .map(cleanItem)
             .filter((s: any) =>
-                s.title?.toLowerCase().includes(query) ||
-                s.name?.toLowerCase().includes(query) ||
-                s.artistName?.toLowerCase().includes(query) ||
-                s.genre?.toLowerCase().includes(query)
+                norm(s.title).includes(query) ||
+                norm(s.name).includes(query) ||
+                norm(s.artistName).includes(query) ||
+                norm(s.genre).includes(query)
             );
 
         const artists = (artistsRes.Items || [])
             .map(cleanItem)
-            .filter((a: any) => a.name?.toLowerCase().includes(query));
+            .filter((a: any) => norm(a.name).includes(query));
 
         const albums = (albumsRes.Items || [])
             .map(cleanItem)
-            .filter((alb: any) => alb.title?.toLowerCase().includes(query) || alb.name?.toLowerCase().includes(query));
+            .filter((alb: any) => norm(alb.title).includes(query) || norm(alb.name).includes(query));
 
         res.json({ songs, artists, albums });
     } catch (err: any) {
