@@ -25,8 +25,7 @@ export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) 
     const cursor = query.cursor as string | undefined;
     const status = query.status as string | undefined;
 
-    const repo = new ArtistRequestRepository();
-    const result = await repo.findAllPaginated(limit, cursor, status ? { status } : undefined);
+    const result = await artistRequestService.listRequests(limit, cursor, status);
     if (!result.success) return result;
 
     // Normalize field names cho frontend (stageName → name)

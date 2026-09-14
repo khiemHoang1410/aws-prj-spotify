@@ -56,6 +56,14 @@ export class ArtistRequestService {
         return await this.requestRepo.findAllPending();
     }
 
+    async listRequests(
+        limit: number = 20,
+        cursor?: string,
+        status?: string
+    ): Promise<Result<{ items: ArtistRequest[]; nextCursor?: string }>> {
+        return await this.requestRepo.findAllPaginated(limit, cursor, status ? { status } : undefined);
+    }
+
     async approveRequest(requestId: string, adminNote?: string): Promise<Result<Artist>> {
         try {
             // 1. Lấy request

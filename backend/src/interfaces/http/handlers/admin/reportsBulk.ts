@@ -1,9 +1,16 @@
 import { z } from "zod";
 import { makeAuthHandler } from "../../middlewares/withAuth";
+import { ReportService } from "../../../../application/services/ReportService";
 import { ReportRepository } from "../../../../infrastructure/database/ReportRepository";
+import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { UserRepository } from "../../../../infrastructure/database/UserRepository";
 import { validate } from "../../../../shared/utils/validate";
 
-const reportRepo = new ReportRepository();
+const reportService = new ReportService(
+    new ReportRepository(),
+    new SongRepository(),
+    new UserRepository()
+);
 
 const BulkResolveSchema = z.object({
     ids: z.array(z.string()).min(1).max(100),
@@ -14,21 +21,11 @@ export const handler = makeAuthHandler(async (body) => {
     const v = validate(BulkResolveSchema, body);
     if (!v.success) return v;
 
-    const results = await Promise.allSettled(
-        v.data.ids.map((id) => reportRepo.resolve(id))
-    );
-
-    const summary = results.map((r, i) => ({
-        id: v.data.ids[i],
-        success: r.status === "fulfilled" && (r.value as any).success,
-        error: r.status === "rejected" ? r.reason?.message : undefined,
-    }));
-
-    const succeeded = summary.filter((s) => s.success).length;
-    const failed = summary.length - succeeded;
+    const result = await reportService.bulkResolve(v.data.ids);
+    if (!result.success) return result;
 
     return {
         success: true,
-        data: { results: summary, succeeded, failed },
+        data: result.data,
     } as any;
 }, "admin");

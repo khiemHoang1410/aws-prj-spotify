@@ -6,9 +6,9 @@ export const ReportSchema = z.object({
     userId: z.string().min(1),
     reason: z.string().min(1).max(200),
     description: z.string().max(500).optional().nullable(),
-    status: z.enum(["pending", "resolved"]).default("pending"),
-    createdAt: z.iso.datetime().optional(),
-    updatedAt: z.iso.datetime().optional(),
+    status: z.enum(["pending", "resolved", "dismissed"]).default("pending"),
+    createdAt: z.string().datetime().optional(),
+    updatedAt: z.string().datetime().optional(),
 });
 
 export type Report = z.infer<typeof ReportSchema> & { id: string };

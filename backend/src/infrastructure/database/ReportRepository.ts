@@ -80,4 +80,23 @@ export class ReportRepository extends BaseRepository<Report> {
             return Failure(`Lỗi resolve report: ${error.message}`, 500);
         }
     }
+
+    async dismiss(id: string): Promise<Result<void>> {
+        try {
+            await docClient.send(new UpdateCommand({
+                TableName: this.tableName,
+                Key: { pk: `${this.entityPrefix}#${id}`, sk: "METADATA" },
+                UpdateExpression: "SET #status = :status, updatedAt = :now",
+                ExpressionAttributeNames: { "#status": "status" },
+                ExpressionAttributeValues: {
+                    ":status": "dismissed",
+                    ":now": new Date().toISOString(),
+                },
+                ConditionExpression: "attribute_exists(pk)",
+            }));
+            return Success(undefined);
+        } catch (error: any) {
+            return Failure(`Lỗi dismiss report: ${error.message}`, 500);
+        }
+    }
 }

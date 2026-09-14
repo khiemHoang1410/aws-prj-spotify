@@ -1,10 +1,20 @@
 import { makeAuthHandler } from "../../middlewares/withAuth";
+import { AdminService } from "../../../../application/services/AdminService";
 import { SongRepository } from "../../../../infrastructure/database/SongRepository";
+import { AlbumRepository } from "../../../../infrastructure/database/AlbumRepository";
 import { ArtistRepository } from "../../../../infrastructure/database/ArtistRepository";
-import { Success } from "../../../../shared/utils/Result";
+import { UserRepository } from "../../../../infrastructure/database/UserRepository";
+import { ReportRepository } from "../../../../infrastructure/database/ReportRepository";
+import { ArtistRequestRepository } from "../../../../infrastructure/database/ArtistRequestRepository";
 
-const songRepo = new SongRepository();
-const artistRepo = new ArtistRepository();
+const adminService = new AdminService(
+    new SongRepository(),
+    new AlbumRepository(),
+    new ArtistRepository(),
+    new UserRepository(),
+    new ReportRepository(),
+    new ArtistRequestRepository()
+);
 
 // GET /admin/songs
 export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) => {
@@ -12,31 +22,5 @@ export const listHandler = makeAuthHandler(async (_body, _params, _auth, query) 
     const cursor = query.cursor as string | undefined;
     const search = (query.search as string | undefined)?.trim();
 
-    const result = await songRepo.findAllPaginated(limit, cursor);
-    if (!result.success) return result;
-
-    // Apply title search filter in-memory (DynamoDB FilterExpression on paginated results)
-    let items = result.data.items;
-    if (search) {
-        const q = search.toLowerCase();
-        items = items.filter((s) => s.title?.toLowerCase().includes(q));
-    }
-
-    if (items.length === 0) {
-        return Success({ items: [], nextCursor: result.data.nextCursor });
-    }
-
-    // Batch fetch artists — 1 request thay vì N requests
-    const artistIds = [...new Set(items.map((s) => s.artistId).filter(Boolean))];
-    const artistsMap = await artistRepo.findByIds(artistIds);
-
-    const enriched = items.map((song) => {
-        const artist = artistsMap.success ? artistsMap.data.get(song.artistId) : undefined;
-        return {
-            ...song,
-            artistName: artist ? artist.name : song.artistId,
-        };
-    });
-
-    return Success({ items: enriched, nextCursor: result.data.nextCursor });
+    return adminService.listSongs(limit, cursor, search);
 }, "admin");
